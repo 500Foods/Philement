@@ -1,0 +1,98 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Luxon format token reference on Profile > Date Formats. Lookup 059 key 16 (acuranzo_1409). Static rows built client-side by LuxonTokenTable.",
+  "table": "luxon-tokens",
+  "title": "Luxon Tokens",
+  "queryRef": null,
+  "readonly": true,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": false,
+  "columns": {
+    "id": {
+      "title": "ID",
+      "field": "id",
+      "coltype": "string",
+      "visible": false,
+      "sort": true,
+      "filter": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Primary key (same as token)"
+    },
+    "group": {
+      "title": "Group",
+      "field": "group",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Token category (Timezones, Years, Months, ...)",
+      "width": 160
+    },
+    "token": {
+      "title": "Token",
+      "field": "token",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Luxon format token",
+      "width": 90,
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
+      }
+    },
+    "description": {
+      "title": "Description",
+      "field": "description",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "What the token renders"
+    },
+    "example": {
+      "title": "Sample",
+      "field": "example",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Token applied to the page's sample datetime",
+      "width": 200
+    },
+    "current": {
+      "title": "Current",
+      "field": "current",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Token applied to the current datetime",
+      "width": 200
+    }
+  }
+}

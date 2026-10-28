@@ -1195,6 +1195,16 @@ describe('LithiumTable', () => {
   // ── wrapFormatter ──────────────────────────────────────────────────────
 
   describe('wrapFormatter', () => {
+    it('should pass native-only tickCross through unwrapped', () => {
+      expect(wrapFormatter('tickCross', { allowTruthy: true }, null, false)).toBe('tickCross');
+    });
+
+    it('should always wrap lookup and resolve nested labels', () => {
+      const f = wrapFormatter('lookup', { lookup: { sum: 'Sum' } }, null, null);
+      expect(typeof f).toBe('function');
+      expect(f({ getValue: () => 'sum' })).toBe('Sum');
+    });
+
     it('should return original formatter when no blank/zero handling needed', () => {
       const result = wrapFormatter('number', {}, null, null);
 
@@ -1275,7 +1285,7 @@ describe('LithiumTable', () => {
     });
 
     it('should pass through unknown formatter types as raw values', () => {
-      const formatter = wrapFormatter('datetime', {}, '', null);
+      const formatter = wrapFormatter('customUnknownFmt', {}, '', null);
       const mockCell = { getValue: () => '2026-01-15' };
 
       expect(formatter(mockCell)).toBe('2026-01-15');

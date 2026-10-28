@@ -928,8 +928,15 @@ export default class LookupsManager {
 
     const result = await authQuery(this.app.api, queryRef, params);
 
-    if (isInsert && result?.[0]?.[pkField] != null) {
-      row.update({ [pkField]: result[0][pkField] });
+    // Composite key: lookup_id is sent (:LOOKUPID); QueryRef 42 generates and
+    // returns key_idx. (This block was copied from the parent save and used the
+    // parent's undeclared pkField.)
+    if (isInsert) {
+      const ret = result?.[0] || {};
+      const patch = {};
+      if (ret.key_idx != null) patch.key_idx = ret.key_idx;
+      if (ret.lookup_id != null) patch.lookup_id = ret.lookup_id;
+      if (Object.keys(patch).length) row.update(patch);
     }
   }
 
@@ -1841,9 +1848,7 @@ _saveChildSelection(rowData) {
      }
 
       // Destroy JSON editor (CodeMirror EditorView)
-      if (this.collectionEditor) {
-        destroyCodeMirrorScrollbars(this.collectionEditor);
-      }
+      // No OverlayScrollbars on this editor; collectionEditor.destroy() below is the teardown.
       if (this.jsonEditorFooter) {
         this.jsonEditorFooter.destroy();
         this.jsonEditorFooter = null;

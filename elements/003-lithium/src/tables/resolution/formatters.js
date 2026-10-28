@@ -128,6 +128,24 @@ export const LITHIUM_CALCULATIONS = {
   max: lithiumMax,
 };
 
+/**
+ * Resolve a bottomCalc value (string or function) back to its calc name.
+ * Function .name is unreliable in minified builds (e.g. 'Ce', 'xe'), so
+ * reverse-map by identity against LITHIUM_CALCULATIONS.
+ * @param {string|Function|null} calc
+ * @returns {string} Calc name, or 'none'
+ */
+export function resolveBottomCalcName(calc) {
+  if (!calc) return 'none';
+  if (typeof calc === 'string') return calc;
+  if (typeof calc === 'function') {
+    for (const [name, fn] of Object.entries(LITHIUM_CALCULATIONS)) {
+      if (fn === calc) return name;
+    }
+  }
+  return 'none';
+}
+
 // ── Formatter Wrapper ───────────────────────────────────────────────────────
 
 /**
@@ -279,9 +297,21 @@ export function createHtmlFormatter() {
  * @returns {string|Function} The original formatter (when no wrapping needed)
  *                            or a Tabulator formatter function
  */
+const NATIVE_ONLY_FORMATTERS = new Set([
+  'tickCross', 'toggle', 'datetime', 'datetimediff', 'link', 'image', 'star',
+  'progress', 'traffic', 'color', 'buttonTick', 'buttonCross', 'rownum', 'handle',
+]);
+
 export function wrapFormatter(formatter, formatterParams, blankValue, zeroValue) {
+  // Native-only Tabulator formatters can't be replicated by formatBuiltinValue;
+  // wrapping them would render raw values (e.g. "true"/"false"), so pass through.
+  if (typeof formatter === 'string' && NATIVE_ONLY_FORMATTERS.has(formatter)) {
+    return formatter;
+  }
   // If no special handling needed, return the original formatter as-is
-  if (!needsBlankZeroWrapper(blankValue, zeroValue)) {
+  // Always wrap 'lookup': Lithium nests the map under formatterParams.lookup,
+  // while Tabulator's built-in lookup expects it at the top level.
+  if (formatter !== 'lookup' && !needsBlankZeroWrapper(blankValue, zeroValue)) {
     return formatter;
   }
 

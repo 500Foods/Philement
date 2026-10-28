@@ -607,9 +607,13 @@ enum MHD_Result handle_get_auth_oidc_callback(
     const char *tz = "UTC";
     time_t issued_at = time(NULL);
 
+    // Always resolve from this request so X-GeoIP2-* is captured for the
+    // login/token audit (api_get_request_geo); prefer the state-record IP.
+    char *callback_ip = api_get_client_ip(connection);
     char *client_ip = state_record->client_ip
         ? strdup(state_record->client_ip)
-        : api_get_client_ip(connection);
+        : callback_ip;
+    if (client_ip != callback_ip) free(callback_ip);
 
     char *jwt_token = generate_jwt_with_oidc(account, &sys_info, client_ip, tz,
                                              database, issued_at,
@@ -653,6 +657,21 @@ enum MHD_Result handle_get_auth_oidc_callback(
                                    return_to);
     }
     free(jwt_hash);
+
+    // ---- Audit: record the login in actions (QueryRef 004), same as the
+    // password path. Best-effort: never fails the callback. ----
+    {
+        const char *audit_login_id =
+            (account->email && *account->email) ? account->email :
+            (account->username && *account->username) ? account->username :
+            NULL;
+        if (audit_login_id) {
+            const char *user_agent = MHD_lookup_connection_value(
+                connection, MHD_HEADER_KIND, "User-Agent");
+            log_login_attempt(audit_login_id, client_ip, user_agent,
+                              time(NULL), database);
+        }
+    }
 
     // ---- Generate the handoff code and put the record ----
     char *handoff_code = oidc_rp_make_random_hex(32);

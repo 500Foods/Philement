@@ -1,7 +1,8 @@
 /**
  * Profile Manager - Photo Page
  *
- * Handles user photo upload, capture, editing, and saving as 200x200 base64 PNG
+ * Handles user photo upload, capture, editing, and saving as 200x200 base64 PNG (photo)
+ * plus a 128x128 full-square base64 PNG (icon) for the sidebar nav button
  * Features: custom sliders with icon thumbs, drag-to-reposition, FloatingUI tooltips
  */
 
@@ -621,12 +622,15 @@ case 'y':
       // this._showStatus('Processing photo...', 'info');
 
       // Capture 200x200 PNG
-      const base64 = await this._capturePhoto();
+      const base64 = await this._capturePhoto(200);
+      // Capture 128x128 full-square icon (largest preview size) for sidebar nav
+      const iconBase64 = await this._capturePhoto(128);
 
       // Save to settings with all data including original dimensions and slider positions
       const photoData = {
         _name: 'Photo',
         photo: base64,
+        icon: iconBase64,
         original: this.originalPhotoData ? this.originalPhotoData.split(',')[1] : null,
         originalWidth: this.originalWidth,
         originalHeight: this.originalHeight,
@@ -650,15 +654,16 @@ case 'y':
   }
 
 /**
-     * Capture photo as 200x200 PNG base64
+     * Capture photo as size x size square PNG base64 (no rounded mask)
+     * @param {number} [size=200] Output edge length in px
      * @returns {Promise<string>} Base64 encoded PNG (without data: prefix)
      * @private
      */
-   async _capturePhoto() {
+   async _capturePhoto(size = 200) {
      return new Promise((resolve) => {
        const canvas = document.createElement('canvas');
-       canvas.width = 200;
-       canvas.height = 200;
+       canvas.width = size;
+       canvas.height = size;
        const ctx = canvas.getContext('2d');
 
        const editor = this.elements.editor;
@@ -711,7 +716,7 @@ case 'y':
        ctx.drawImage(
          tempCanvas,
          cropInset, cropInset, cropSize, cropSize,
-         0, 0, 200, 200
+         0, 0, size, size
        );
 
        resolve(canvas.toDataURL('image/png').split(',')[1]);

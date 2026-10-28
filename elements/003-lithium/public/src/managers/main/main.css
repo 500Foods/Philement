@@ -580,6 +580,22 @@
   position: relative;
 }
 
+/* ---- Profile photo icon (full square, no rounding) ---- */
+
+.sidebar-icon-btn.has-profile-photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.sidebar-icon-btn .sidebar-profile-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+  pointer-events: none;
+}
+
 /* ---- Expanded state (default) ---- */
 
 /* ---- Hover / disabled ---- */

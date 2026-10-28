@@ -75,6 +75,7 @@ export function normalizeColumnRows(rows = []) {
     order: Number.isFinite(Number(row.order)) ? Number(row.order) : index + 1,
     visible: row.visible !== false,
     editable: row.editable !== false,
+    groupable: row.groupable === true,
     field_name: row.field_name || row.field || '',
     column_name: row.column_name || '',
     format: row.format || 'string',

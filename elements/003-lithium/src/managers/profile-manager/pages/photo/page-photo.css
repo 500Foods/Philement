@@ -202,7 +202,7 @@
 }
 
 .photo-preview {
-  border-radius: var(--border-radius-md);
+  border-radius: 0; /* square, matches sidebar nav icon */
   object-fit: cover;
   border: 1px solid var(--accent-alt-primary);
 }

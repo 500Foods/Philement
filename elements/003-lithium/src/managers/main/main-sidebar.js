@@ -6,7 +6,8 @@
 import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
 import { canAccessManager } from '../../core/permissions.js';
 import { processIcons, setIcon } from '../../core/icons.js';
-import { initTooltips } from '../../core/tooltip-api.js';
+import { initTooltips, updateTooltipContent } from '../../core/tooltip-api.js';
+import { getClaims, retrieveJWT } from '../../core/jwt.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import {
   permittedManagersForMenu,
@@ -19,6 +20,67 @@ import {
  * Methods to be mixed into MainManager prototype
  */
 export const sidebarMethods = {
+  /**
+   * Show the saved profile photo icon (section -12) on the sidebar profile button.
+   * Prefers `icon` (128x128 square), falls back to `photo` (200x200), else FA user-cog.
+   */
+  _applyProfilePhotoIcon() {
+    const btn = this.elements?.sidebarProfileBtn || this.container?.querySelector('#sidebar-profile-btn');
+    if (!btn) return;
+    const settings = window.lithiumSettings;
+    const section = settings?.getSection ? settings.getSection('-12') : settings?.get?.('-12');
+    const b64 = section?.icon || section?.photo || null;
+    if (b64) {
+      if (btn._profileIconB64 === b64) return;
+      btn._profileIconB64 = b64;
+      btn.classList.add('has-profile-photo');
+      btn.innerHTML = `<img class="sidebar-profile-photo" alt="" src="data:image/png;base64,${b64}">`;
+    } else {
+      if (btn._profileIconB64 === null) return;
+      btn._profileIconB64 = null;
+      btn.classList.remove('has-profile-photo');
+      btn.innerHTML = '<fa fa-user-cog></fa>';
+      processIcons(btn);
+    }
+  },
+
+  /**
+   * Apply profile icon now and subscribe (once) to settings changes.
+   */
+  initProfilePhotoIcon() {
+    this._applyProfilePhotoIcon();
+    this._applyProfileTooltip();
+    if (!this._profileIconUnsub && window.lithiumSettings?.onChange) {
+      this._profileIconUnsub = window.lithiumSettings.onChange(() => {
+        this._applyProfilePhotoIcon();
+        this._applyProfileTooltip();
+      });
+    }
+  },
+
+  /**
+   * Set the sidebar profile button tooltip to "User Profile for<br>First Last".
+   * Name source: Names page (section -2) firstName/lastName, then displayName,
+   * then the JWT username claim. Falls back to plain "User Profile".
+   */
+  _applyProfileTooltip() {
+    const btn = this.elements?.sidebarProfileBtn || this.container?.querySelector('#sidebar-profile-btn');
+    if (!btn) return;
+    const settings = window.lithiumSettings;
+    const names = (settings?.getSection ? settings.getSection('-2') : settings?.get?.('-2')) || {};
+    let name = [names.firstName, names.lastName].map((v) => (v || '').trim()).filter(Boolean).join(' ');
+    if (!name) name = (names.displayName || '').trim();
+    if (!name) {
+      try { name = (getClaims(retrieveJWT())?.username || '').trim(); } catch (_e) { name = ''; }
+    }
+    const esc = (v) => v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const content = name ? `User Profile for<br>${esc(name)}` : 'User Profile';
+    if (btn._profileTooltip === content) return;
+    btn._profileTooltip = content;
+    btn.setAttribute('data-tooltip', content);
+    updateTooltipContent('#sidebar-profile-btn', content);
+  },
+
   /**
    * Load menu data from server
    */

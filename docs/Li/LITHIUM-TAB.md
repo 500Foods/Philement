@@ -727,7 +727,7 @@ Access via **Template** button in Control block:
 - **Copy to Clipboard** — Export configuration as JSON (see [LITHIUM-COL.md](LITHIUM-COL.md))
 - **Delete Template** — Remove the selected saved template
 
-A saved local template named `Default` auto-loads on startup. There is no separate "Make default" action in the current menu.
+A saved local template named `Default` auto-loads on startup. Use **Make Default** in the template menu (or save a template with that exact name) to set it.
 
 ### Template Format
 

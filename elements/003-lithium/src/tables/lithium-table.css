@@ -885,7 +885,10 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
   padding: 0;
 }
 
-.lithium-table-container .tabulator-cell.tabulator-editing > input,
+/* Text-style editors only. The tickCross editor is a native checkbox; giving it
+   4px 6px padding (with !important) squeezed/offset it and was the source of the
+   Column Manager Vis/Edit/Grp shift on edit. */
+.lithium-table-container .tabulator-cell.tabulator-editing > input:not([type="checkbox"]),
 .lithium-table-container .tabulator-cell.tabulator-editing > select {
   padding: 4px 6px !important;
 }

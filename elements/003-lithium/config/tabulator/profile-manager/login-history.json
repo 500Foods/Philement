@@ -1,0 +1,130 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Read-only Recent Activity table on Profile > Security > Login History. Lookup 059 key 17 (acuranzo_1408). Rows from QueryRef 159, pre-formatted client-side.",
+  "table": "login-history",
+  "title": "Login History",
+  "queryRef": 159,
+  "readonly": true,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": false,
+  "initialSort": [
+    {
+      "column": "when_txt",
+      "dir": "desc"
+    }
+  ],
+  "columns": {
+    "row_id": {
+      "title": "#",
+      "field": "row_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Client-side row number"
+    },
+    "when_txt": {
+      "title": "When",
+      "field": "when_txt",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Login event time (24h, PCT)",
+      "width": 170,
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
+      }
+    },
+    "result_txt": {
+      "title": "Result",
+      "field": "result_txt",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Login event type (Attempt / Success / Passed)",
+      "width": 100
+    },
+    "login_id": {
+      "title": "Login ID",
+      "field": "login_id",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Login ID",
+      "width": 160
+    },
+    "ip_address": {
+      "title": "IP",
+      "field": "ip_address",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "IP",
+      "width": 130
+    },
+    "location_txt": {
+      "title": "Location",
+      "field": "location_txt",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "City, region, country from Traefik GeoIP (X-GeoIP2-*) at login time",
+      "width": 200
+    },
+    "action_msecs": {
+      "title": "Duration (ms)",
+      "field": "action_msecs",
+      "coltype": "integer",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Login duration in milliseconds",
+      "width": 110
+    },
+    "app_version": {
+      "title": "App Version",
+      "field": "app_version",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "App Version"
+    }
+  }
+}

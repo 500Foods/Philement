@@ -201,11 +201,61 @@ char *api_get_tcp_peer_ip(struct MHD_Connection *connection) {
         struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
         ip_str = malloc(INET6_ADDRSTRLEN);
         if (ip_str) {
-            inet_ntop(AF_INET6, &(addr_in6->sin6_addr), ip_str, INET6_ADDRSTRLEN);
+            // Dual-stack sockets report IPv4 peers as ::ffff:a.b.c.d; unmap so
+            // IPv4 TrustedProxies CIDRs (e.g. 10.0.0.0/8) match the peer.
+            if (IN6_IS_ADDR_V4MAPPED(&addr_in6->sin6_addr)) {
+                inet_ntop(AF_INET, &addr_in6->sin6_addr.s6_addr[12], ip_str, INET6_ADDRSTRLEN);
+            } else {
+                inet_ntop(AF_INET6, &(addr_in6->sin6_addr), ip_str, INET6_ADDRSTRLEN);
+            }
         }
     }
 
     return ip_str ? ip_str : strdup("unknown");
+}
+
+/*
+ * Login GeoIP (Traefik traefikgeoip2 plugin headers).
+ *
+ * Captured per-thread by api_get_client_ip() so login/token writers that
+ * already resolve the client IP can read geo without signature changes.
+ * Only populated when the immediate TCP peer is a trusted proxy; otherwise
+ * cleared so client-supplied X-GeoIP2-* headers are ignored. The plugin's
+ * "Unknown" sentinel is stored as empty (QueryRefs map '' -> NULL).
+ */
+#define API_GEO_FIELD_MAX 100
+static __thread char g_geo_city[API_GEO_FIELD_MAX + 1];
+static __thread char g_geo_region[API_GEO_FIELD_MAX + 1];
+static __thread char g_geo_country[API_GEO_FIELD_MAX + 1];
+
+void api_copy_geo_header(struct MHD_Connection *connection, const char *name,
+                         char *dest, bool trusted) {
+    dest[0] = '\0';
+    if (!trusted || !connection) return;
+    const char *v = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, name);
+    if (!v || !*v || strcmp(v, "Unknown") == 0) return;
+    size_t n = 0;
+    for (const char *c = v; *c && n < API_GEO_FIELD_MAX; c++) {
+        unsigned char ch = (unsigned char)*c;
+        if (ch >= 0x20 && ch != 0x7f) dest[n++] = (char)ch;
+    }
+    dest[n] = '\0';
+}
+
+void api_capture_request_geo(struct MHD_Connection *connection, bool trusted) {
+    api_copy_geo_header(connection, API_GEO_HEADER_CITY, g_geo_city, trusted);
+    api_copy_geo_header(connection, API_GEO_HEADER_REGION, g_geo_region, trusted);
+    api_copy_geo_header(connection, API_GEO_HEADER_COUNTRY, g_geo_country, trusted);
+}
+
+void api_get_request_geo(const char **city, const char **region, const char **country) {
+    if (city) *city = g_geo_city;
+    if (region) *region = g_geo_region;
+    if (country) *country = g_geo_country;
+}
+
+void api_clear_request_geo(void) {
+    g_geo_city[0] = g_geo_region[0] = g_geo_country[0] = '\0';
 }
 
 /**
@@ -227,6 +277,7 @@ char *api_get_client_ip(struct MHD_Connection *connection) {
 
     char *tcp_peer = api_get_tcp_peer_ip(connection);
     bool peer_trusted = is_trusted_proxy(tcp_peer);
+    api_capture_request_geo(connection, peer_trusted);
 
     const char *xff = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "X-Forwarded-For");
 

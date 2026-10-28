@@ -47,7 +47,9 @@ div.lithium-table-container div.tabulator-tableholder div#tabulator-table-body.t
   border-right: 1px solid var(--accent-primary);
 }
 
-.tabulator-cell.tabulator-editing > input,
+/* Excludes checkboxes (tickCross editor): width:100%, border and padding are
+   for text inputs and distort/offset a native checkbox. */
+.tabulator-cell.tabulator-editing > input:not([type="checkbox"]),
 .tabulator-cell.tabulator-editing > select {
   font-size: var(--font-size-sm);
   border: 1px solid var(--accent-primary);
@@ -209,7 +211,13 @@ div.lithium-table-container div.tabulator-tableholder div#tabulator-table-body.t
   box-shadow: var(--shadow-lg);
   max-height: 200px;
   overflow: hidden;
-  z-index: 1000;
+  /* Above Column Manager popup (30000), below tour (~40002) / tooltip (50000) */
+  z-index: 31000;
+}
+
+/* Tabulator edit popups mount on body; keep above Column Manager (30000) */
+.tabulator-popup-container {
+  z-index: 31000;
 }
 
 .tabulator-edit-list-item {

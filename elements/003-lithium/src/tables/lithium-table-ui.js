@@ -363,8 +363,42 @@ export const LithiumTableUIMixin = {
     const templates = getSavedTemplates(this);
     const defaultTemplate = templates.find((template) => getTemplateName(this, template) === 'Default');
     if (defaultTemplate) {
-      await this.loadTemplate?.(defaultTemplate);
+      const columnCount = Object.keys(defaultTemplate.columns || {}).length;
+      if (columnCount === 0) {
+        log(Subsystems.TABLE, Status.WARN,
+          `[${this.cssPrefix}] Saved Default template has no columns — not applying`);
+      } else if (this._wasInitializedWithoutData || this._hasOnlyPlaceholderColumns?.()) {
+        // Data-first tables still have the Loading... column; apply after first data load
+        this._pendingDefaultTemplate = defaultTemplate;
+        log(Subsystems.TABLE, Status.INFO,
+          `[${this.cssPrefix}] Deferring Default template until columns are ready`);
+      } else {
+        await this.loadTemplate?.(defaultTemplate);
+      }
     }
+  },
+
+  /**
+   * True when the live Tabulator only has the temporary Loading... column.
+   * @returns {boolean}
+   */
+  _hasOnlyPlaceholderColumns() {
+    if (!this.table?.getColumns) return false;
+    const fields = this.table.getColumns()
+      .map((col) => col.getField())
+      .filter((field) => field && field !== '_selector');
+    return fields.length === 0 || fields.every((field) => field === '_placeholder');
+  },
+
+  /**
+   * Apply a Default template that was deferred until after the first data load.
+   * @returns {Promise<void>}
+   */
+  async applyPendingDefaultTemplate() {
+    const pending = this._pendingDefaultTemplate;
+    if (!pending) return;
+    this._pendingDefaultTemplate = null;
+    await this.loadTemplate?.(pending);
   },
 
   // ── Template System ───────────────────────────────────────────────────────
@@ -417,12 +451,20 @@ export const LithiumTableUIMixin = {
     const trimmed = name?.trim();
     if (!trimmed) return;
 
+    if (trimmed === 'Default' && Object.keys(template.columns || {}).length === 0) {
+      toast.error('Cannot save Default', {
+        description: 'Template has no columns',
+        duration: 4000,
+      });
+      return;
+    }
+
     template._templateMeta = template._templateMeta || {};
     template._templateMeta.name = trimmed;
 
     const templates = getSavedTemplates(this);
 
-    const existingIndex = templates.findIndex((item) => getTemplateName(this, item) === name);
+    const existingIndex = templates.findIndex((item) => getTemplateName(this, item) === trimmed);
 
     if (existingIndex >= 0) {
       templates[existingIndex] = template;
@@ -432,10 +474,16 @@ export const LithiumTableUIMixin = {
 
     try {
       saveStoredTemplates(this, templates);
-      this.templateMenuSelectedName = name;
-      toast.success('Template saved', { description: name, duration: 3000 });
+      this.templateMenuSelectedName = trimmed;
+      if (trimmed === 'Default' && this.storageKey) {
+        const legacyKey = `lithium_table_template_${this.storageKey}_Default`;
+        const { _templateMeta, ...legacyBody } = template;
+        void _templateMeta;
+        localStorage.setItem(legacyKey, JSON.stringify(legacyBody));
+      }
+      toast.success('Template saved', { description: trimmed, duration: 3000 });
       log(Subsystems.TABLE, Status.INFO,
-        `[LithiumTable] Template saved: ${name}`);
+        `[LithiumTable] Template saved: ${trimmed}`);
       return template;
     } catch (_e) {
       toast.error('Failed to save template', {

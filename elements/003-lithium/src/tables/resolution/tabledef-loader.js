@@ -28,6 +28,8 @@ const TABLE_TO_KEY_IDX = {
   'style-manager-list': 8,        // acuranzo_1185
   'style-manager-sections': 9,     // acuranzo_1186
   'version-manager': 10,          // acuranzo_1187
+  'profile-manager/luxon-tokens': 16,  // acuranzo_1409
+  'profile-manager/login-history': 17, // acuranzo_1408
 };
 
 /**

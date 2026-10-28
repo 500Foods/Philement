@@ -25,6 +25,8 @@ export async function applyAllChangesToParent(cm) {
     log(Subsystems.TABLE, Status.INFO,
       `[ColumnManager] Applying column state to parent table (${Object.keys(templateColumns).length} columns)`);
     cm.parentTable.applyTemplateColumns(templateColumns);
+    // Grouping popup reads tableDef.columns[].groupable (not Tabulator defs).
+    syncGroupableToParent(cm, templateColumns);
   }
 
   captureParentStateAsOriginal(cm);
@@ -51,6 +53,57 @@ export async function discardAllChanges(cm) {
 
   cm._pendingReorder = null;
   clearDirty(cm);
+}
+
+
+/**
+ * Sync groupable flags into parent tableDef + _columnMeta.
+ * applyTemplateColumns only rebuilds Tabulator columns; the Grouping popup
+ * reads table.tableDef.columns[field].groupable exclusively.
+ * Data-first tables (empty tableDef.columns) must get stubs created here.
+ * @param {Object} cm - ColumnManager instance
+ * @param {Object} templateColumns - Pending template column patches
+ */
+function syncGroupableToParent(cm, templateColumns) {
+  if (!cm.parentTable || !templateColumns) return;
+
+  if (!cm.parentTable.tableDef) {
+    cm.parentTable.tableDef = { columns: {} };
+  }
+  if (!cm.parentTable.tableDef.columns) {
+    cm.parentTable.tableDef.columns = {};
+  }
+
+  const columnMeta = cm.parentTable._columnMeta || new Map();
+  cm.parentTable._columnMeta = columnMeta;
+
+  Object.entries(templateColumns).forEach(([field, patch]) => {
+    if (!field || field === '_selector' || !patch) return;
+    if (!Object.prototype.hasOwnProperty.call(patch, 'groupable')) return;
+
+    // tickCross may yield true/false or 1/0 depending on Tabulator version
+    const groupable = patch.groupable === true || patch.groupable === 1;
+
+    let colDef = cm.parentTable.tableDef.columns[field];
+    if (!colDef) {
+      colDef = Object.values(cm.parentTable.tableDef.columns)
+        .find((c) => c && c.field === field);
+    }
+    if (!colDef) {
+      colDef = {
+        field,
+        title: patch.title || field,
+      };
+      cm.parentTable.tableDef.columns[field] = colDef;
+    }
+
+    colDef.groupable = groupable;
+    if (colDef.field == null) colDef.field = field;
+    if (!colDef.title) colDef.title = patch.title || field;
+
+    const existing = columnMeta.get(field) || {};
+    columnMeta.set(field, { ...existing, groupable });
+  });
 }
 
 /**
@@ -97,6 +150,7 @@ export function buildPendingTemplateColumns(cm) {
       coltype: managerRow.format,
       visible: managerRow.visible,
       editable: managerRow.editable,
+      groupable: managerRow.groupable === true || managerRow.groupable === 1,
     };
 
     // Flatten alignment and bottomCalc directly onto patchColumn

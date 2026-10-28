@@ -361,4 +361,11 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1401](/elements/002-helium/acuranzo/migrations/acuranzo_1401.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Orchestrator submits Build.ReceiveSuggested when a row is waiting |
 | [1402](/elements/002-helium/acuranzo/migrations/acuranzo_1402.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 060 key 0 Profile Sections: add page indices |
 | [1403](/elements/002-helium/acuranzo/migrations/acuranzo_1403.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 059 key 4 profile-manager/user-options tableDef |
-| **328** | | | | **1720** | **328** | |
+| [1404](/elements/002-helium/acuranzo/migrations/acuranzo_1404.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | UPDATE Lookup 059 key 4 (profile-manager/user-options): groupable + icon minWidth |
+| [1405](/elements/002-helium/acuranzo/migrations/acuranzo_1405.lua) | queries | 1.0.0 | 2026-10-27 | 4 | ✗ | QueryRef #075 - Create Account Settings (fix VALUES parentheses) |
+| [1406](/elements/002-helium/acuranzo/migrations/acuranzo_1406.lua) | queries | 1.0.0 | 2026-10-27 | 4 | ✗ | QueryRef #159 - Get Login History |
+| [1407](/elements/002-helium/acuranzo/migrations/acuranzo_1407.lua) | queries | 1.0.0 | 2026-10-27 | 4 | ✗ | QueryRef #160 - Get Login History Summary |
+| [1408](/elements/002-helium/acuranzo/migrations/acuranzo_1408.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 059 key 17 profile-manager/login-history tableDef |
+| [1409](/elements/002-helium/acuranzo/migrations/acuranzo_1409.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 059 key 16 profile-manager/luxon-tokens tableDef |
+| [1410](/elements/002-helium/acuranzo/migrations/acuranzo_1410.lua) | queries | 1.0.0 | 2026-10-28 | 24 | ✗ | Login GeoIP: tokens/actions geo_city, geo_region, geo_country |
+| **335** | | | | **1768** | **335** | |

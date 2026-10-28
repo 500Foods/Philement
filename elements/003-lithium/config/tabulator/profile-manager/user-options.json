@@ -97,5 +97,6 @@
       "lookupRef": "a1"
     }
   },
-  "groupStartOpen": false
+  "groupStartOpen": false,
+  "columnCalcs": "table"
 }

@@ -8,7 +8,7 @@
 
 
 import { eventBus, Events } from '../../core/event-bus.js';
-import { getClaims, storeJWT } from '../../core/jwt.js';
+import { getClaims, retrieveJWT, storeJWT } from '../../core/jwt.js';
 import { parseRoleIds } from '../../core/utils.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
@@ -443,7 +443,7 @@ export default class ProfileManager {
    * Load user info from JWT claims
    */
   loadUserInfo() {
-    const claims = getClaims();
+    const claims = getClaims(retrieveJWT());
     if (!claims) return;
 
     this.user = {
@@ -701,7 +701,7 @@ export default class ProfileManager {
       log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Table has ${rows.length} rows`);
 
       // Find the row with matching index
-      const targetRow = rows.find(row => row.getData().index === index);
+      const targetRow = rows.find(row => Number(row.getData().index) === Number(index));
 
       log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Target row found: ${!!targetRow}`);
 

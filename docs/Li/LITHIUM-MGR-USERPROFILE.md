@@ -83,6 +83,17 @@ The Settings tab displays different content based on the `index` field of the se
 
 Manager pages use their actual Manager ID from lithium.json (e.g., Lookups Manager = 23). These are dynamically loaded from the Main Menu data and grouped under their respective menu groups.
 
+### Login History (-17)
+
+No longer a stub. Read-only (`canSave()` is false). Loads on init, show and refresh:
+
+- **QueryRef 159 – Get Login History** (acuranzo_1406): up to 200 `actions` rows, newest first, `feature_a21 = 100`. Types 3/4 match `account_id = ACCOUNTID`; type 2 (attempts, no account_id) match `action = LOGINID`.
+- **QueryRef 160 – Get Login History Summary** (acuranzo_1407): one row with `total_logins`, `last_login`, `failed_attempts`, `active_sessions` (`sessions.status_a25 = 0`).
+- **Lookup 059 key 17 – `profile-manager/login-history` tableDef** (acuranzo_1408): read-only Recent Activity LithiumTable (When, Result, Login ID, IP, Duration (ms), App Version; hidden `row_id` key). The page loads it via `lookupKeyIdx: 17`; rows come from QueryRef 159, pre-formatted client-side. Reference copy: `config/tabulator/profile-manager/login-history.json`.
+- Params: `{ INTEGER: { ACCOUNTID: claims.user_id }, STRING: { LOGINID: claims.username } }`.
+- Cards: Total Logins, Last Login, Failed Attempts, Active Sessions. Table: When (24h, America/Vancouver, `PCT`), Result, Login ID, IP, Duration (ms), App Version.
+- Query errors are logged (Subsystems.MANAGER, WARN); cards stay "-" and the table shows an empty-state message.
+
 ---
 
 ## Architecture
@@ -117,7 +128,7 @@ src/managers/profile-manager/
     ├── page-concierge.js           # Concierge page (index -13) (17 lines)
     ├── page-annotations.js         # Annotations page (index -14) (17 lines)
     ├── page-training.js            # Training page (index -16) (17 lines)
-    ├── page-login-history.js       # Login History page (index -17) (19 lines)
+    ├── page-login-history.js       # Login History page (index -17), QueryRefs 159/160
     ├── manager-5/                  # Manager folders use numeric naming
     │   ├── page-manager-5.html     # Crimson Manager placeholder
     │   ├── page-manager-5.css
@@ -961,6 +972,7 @@ The page consists of four main sections arranged vertically:
 3. **Time Formats Table** - Built-in and custom time format patterns
 4. **DateTime Formats Table** - Built-in and custom datetime format patterns
 5. **Token Reference** - LithiumTable showing available Luxon format tokens
+   - Tabledef: **Lookup 059 key 16 – `profile-manager/luxon-tokens`** (acuranzo_1409). Columns Group, Token, Description, Sample, Current (hidden `id` key); readonly, rows built client-side by `LuxonTokenTable` (`lookupKeyIdx: 16`). Reference copy: `config/tabulator/profile-manager/luxon-tokens.json`.
 
 ### Top Preview Section
 

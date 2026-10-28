@@ -8,6 +8,7 @@
 
 import { log, Subsystems, Status } from '../../core/log.js';
 
+import { resolveBottomCalcName } from '../resolution/formatters.js';
 /**
  * Load column data from the parent table
  * @param {Object} cm - ColumnManager instance
@@ -42,14 +43,7 @@ export async function loadColumnData(cm) {
       }
 
       // Handle bottomCalc - ensure it's a string value, not a function
-      let summaryValue = 'none';
-      if (def.bottomCalc) {
-        if (typeof def.bottomCalc === 'string') {
-          summaryValue = def.bottomCalc;
-        } else if (typeof def.bottomCalc === 'function') {
-          summaryValue = def.bottomCalc.name || 'none';
-        }
-      }
+      const summaryValue = resolveBottomCalcName(def.bottomCalc);
 
       // Get Lithium metadata from parent table's _columnMeta Map
       const field = col.getField();
@@ -63,6 +57,8 @@ export async function loadColumnData(cm) {
         bottomCalc: summaryValue,
         hozAlign: def.hozAlign || 'left',
         editable: lithiumMeta.editable ?? (def.editable === true),
+        groupable: lithiumMeta.groupable === true
+          || cm.parentTable.tableDef?.columns?.[field]?.groupable === true,
         editor: def.editor || null,
         sorter: def.sorter || null,
         formatter: def.formatter || null,
@@ -84,6 +80,7 @@ export async function loadColumnData(cm) {
       drag_handle: '', // Formatter renders the icon; data value unused
       visible: col.visible,
       editable: col.editable !== false,
+      groupable: col.groupable === true,
       field_name: col.field,
       column_name: col.title,
       format: col.coltype,
@@ -184,14 +181,7 @@ export function captureParentStateAsOriginal(cm) {
       }
     }
 
-    let summaryValue = 'none';
-    if (def.bottomCalc) {
-      if (typeof def.bottomCalc === 'string') {
-        summaryValue = def.bottomCalc;
-      } else if (typeof def.bottomCalc === 'function') {
-        summaryValue = def.bottomCalc.name || 'none';
-      }
-    }
+    const summaryValue = resolveBottomCalcName(def.bottomCalc);
 
     return {
       field: field,
@@ -203,6 +193,8 @@ export function captureParentStateAsOriginal(cm) {
       width: actualWidth,
       category: def.category || 'Default',
       editable: lithiumMeta.editable ?? (def.editable === true),
+      groupable: lithiumMeta.groupable === true
+        || cm.parentTable.tableDef?.columns?.[field]?.groupable === true,
     };
   });
 }
@@ -236,6 +228,7 @@ export function getSummaryOptions() {
     { value: 'avg', label: 'Average' },
     { value: 'min', label: 'Minimum' },
     { value: 'max', label: 'Maximum' },
+    { value: 'unique', label: 'Unique' },
   ];
 }
 

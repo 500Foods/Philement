@@ -116,6 +116,7 @@ export default class MainManager {
       
       this.buildSidebar();
       this.loadSidebarState();
+      this.initProfilePhotoIcon();
       
       // Initialize the radar status icon
       initRadar();
@@ -222,6 +223,12 @@ export default class MainManager {
 
     // Clean up radar controller
     destroyRadar();
+
+    // Unsubscribe profile icon settings listener
+    if (this._profileIconUnsub) {
+      this._profileIconUnsub();
+      this._profileIconUnsub = null;
+    }
 
     // Remove keyboard listeners if still active
     document.removeEventListener('keydown', this.handleKeyDown);

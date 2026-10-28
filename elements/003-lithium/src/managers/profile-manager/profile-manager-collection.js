@@ -365,10 +365,7 @@ const extensions = buildEditorExtensions({
    * Destroy the editor instance
    */
   destroy() {
-    // Destroy OverlayScrollbars first
-    if (this.editor) {
-      destroyCodeMirrorScrollbars(this.editor);
-    }
+    // No OverlayScrollbars on this editor; this.editor.destroy() below is the teardown.
 
     if (this.footer) {
       this.footer.destroy();

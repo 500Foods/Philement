@@ -3,7 +3,7 @@
  * Handles saving/loading sidebar state and user info
  */
 
-import { getClaims } from '../../core/jwt.js';
+import { getClaims, retrieveJWT } from '../../core/jwt.js';
 import { parseRoleIds } from '../../core/utils.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 
@@ -79,7 +79,7 @@ export const stateMethods = {
    * Load user info from JWT claims
    */
   loadUserInfo() {
-    const claims = getClaims();
+    const claims = getClaims(retrieveJWT());
     if (claims) {
       this.user = {
         id: claims.user_id,

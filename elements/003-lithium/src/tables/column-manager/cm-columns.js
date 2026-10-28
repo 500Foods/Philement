@@ -62,6 +62,8 @@ export function buildColumnManagerDefinition(cm) {
     formatterParams: {
       allowEmpty: false,
       allowTruthy: true,
+      tickElement: '<i class="fa-duotone fa-thin fa-square-check cm-bool-icon cm-bool-on"></i>',
+      crossElement: '<i class="fa-duotone fa-thin fa-square cm-bool-icon cm-bool-off"></i>',
     },
     editor: 'tickCross',
   };
@@ -132,6 +134,29 @@ export function buildColumnManagerDefinition(cm) {
     formatterParams: {
       allowEmpty: false,
       allowTruthy: true,
+      tickElement: '<i class="fa-duotone fa-thin fa-square-check cm-bool-icon cm-bool-on"></i>',
+      crossElement: '<i class="fa-duotone fa-thin fa-square cm-bool-icon cm-bool-off"></i>',
+    },
+    editor: 'tickCross',
+  };
+
+  columns.groupable = {
+    field: 'groupable',
+    title: 'Grp',
+    coltype: 'boolean',
+    visible: true,
+    sort: !isManual,
+    filter: true,
+    editable: true,
+    width: 50,
+    hozAlign: 'center',
+    headerSort: false,
+    formatter: 'tickCross',
+    formatterParams: {
+      allowEmpty: false,
+      allowTruthy: true,
+      tickElement: '<i class="fa-duotone fa-thin fa-square-check cm-bool-icon cm-bool-on"></i>',
+      crossElement: '<i class="fa-duotone fa-thin fa-square cm-bool-icon cm-bool-off"></i>',
     },
     editor: 'tickCross',
   };

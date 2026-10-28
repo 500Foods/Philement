@@ -160,7 +160,7 @@ export class LuxonTokenTable {
     });
 
     await this.table.init();
-    this.loadData();
+    await this.loadData();
     // Removed automatic updates - table only updates when explicitly requested
 
     log(Subsystems.UI, Status.DEBUG, '[LuxonTokenTable] Initialized');
@@ -170,21 +170,21 @@ export class LuxonTokenTable {
   /**
    * Load token data into the table
    */
-  loadData() {
+  async loadData() {
     if (!this.table) return;
 
     const data = this.buildTokenData(this.sampleDateTime, this.currentDateTime);
-    this.table.loadStaticData(data, { autoSelect: true });
+    await this.table.loadStaticData(data, { autoSelect: true });
   }
 
   /**
    * Refresh the table with updated datetime values
    */
-  refresh() {
+  async refresh() {
     if (this.isDestroyed || !this.table) return;
 
     this.currentDateTime = DateTime.now();
-    this.loadData();
+    await this.loadData();
   }
 
   /**

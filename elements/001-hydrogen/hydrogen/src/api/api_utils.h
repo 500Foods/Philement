@@ -93,6 +93,27 @@ char *api_get_tcp_peer_ip(struct MHD_Connection *connection);
 char *api_get_client_ip(struct MHD_Connection *connection);
 
 /**
+ * Capture X-GeoIP2-* headers for the current request (trusted proxies only).
+ */
+/** Copy one X-GeoIP2-* header into dest (max 100 chars); clears dest if untrusted/missing/"Unknown". */
+void api_copy_geo_header(struct MHD_Connection *connection, const char *name,
+                         char *dest, bool trusted);
+
+void api_capture_request_geo(struct MHD_Connection *connection, bool trusted);
+
+/* Login GeoIP headers set by Traefik traefikgeoip2 (trusted proxies only). */
+#define API_GEO_HEADER_CITY    "X-GeoIP2-City"
+#define API_GEO_HEADER_REGION  "X-GeoIP2-Region"
+#define API_GEO_HEADER_COUNTRY "X-GeoIP2-Country"
+
+/**
+ * Geo for the current request thread, captured by api_get_client_ip().
+ * Values are never NULL; empty string when absent/untrusted.
+ */
+void api_get_request_geo(const char **city, const char **region, const char **country);
+void api_clear_request_geo(void);
+
+/**
  * Extract JWT claims from an Authorization header
  * Parses a Bearer token and extracts its claims
  * Looks for "Authorization: Bearer <token>" header

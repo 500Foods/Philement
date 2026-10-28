@@ -168,6 +168,8 @@ describe('LithiumColumnManager', () => {
       expect(def.columns).toHaveProperty('visible');
       expect(def.columns).toHaveProperty('field_name');
       expect(def.columns).toHaveProperty('column_name');
+      expect(def.columns).toHaveProperty('editable');
+      expect(def.columns).toHaveProperty('groupable');
       expect(def.columns).toHaveProperty('format');
       expect(def.columns).toHaveProperty('summary');
       expect(def.columns).toHaveProperty('alignment');

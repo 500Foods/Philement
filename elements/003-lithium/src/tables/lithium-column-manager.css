@@ -456,16 +456,71 @@
   border-right: 2px solid #2a5a8c !important;
 }
 
-/* Visible column (checkbox) */
-.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] {
+/* Boolean columns: Vis / Edit / Grp (FA icons + compact checkbox editor) */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"],
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"],
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] {
   text-align: center;
 }
 
-.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] .cm-bool-icon,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"] .cm-bool-icon,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] .cm-bool-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] .cm-bool-on,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"] .cm-bool-on,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] .cm-bool-on {
+  color: #4a90d9;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] .cm-bool-off,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"] .cm-bool-off,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] .cm-bool-off {
+  color: #5a6f86;
+  opacity: 0.7;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] input[type="checkbox"],
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"] input[type="checkbox"],
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] input[type="checkbox"] {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important; /* beats tickCross editor's inline margin-top: 5px */
+  padding: 0;
+  border: 0;
+  vertical-align: middle;
   accent-color: #4a90d9;
   cursor: pointer;
+}
+
+/* Pin Vis/Edit/Grp contents to the vertical centre in every state.
+   Base cells use asymmetric padding (0 6px 2px) + line-height 20px, and FA's
+   SVG gets padding-top: 2px from vendor-fixes; .tabulator-editing drops cell
+   padding to 0. Flex-centre so both states sit at the same point. The main
+   shift (editor checkbox getting 4px 6px padding from the generic editor
+   input rule) is fixed at source in lithium-table.css / vendor-fixes. */
+.col-manager-table-container .lithium-table-container .tabulator-row .tabulator-cell[data-tabulator-field="visible"],
+.col-manager-table-container .lithium-table-container .tabulator-row .tabulator-cell[data-tabulator-field="editable"],
+.col-manager-table-container .lithium-table-container .tabulator-row .tabulator-cell[data-tabulator-field="groupable"] {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] svg.cm-bool-icon,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"] svg.cm-bool-icon,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] svg.cm-bool-icon,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] svg,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="editable"] svg,
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="groupable"] svg {
+  padding: 0 !important;
+  margin: 0 !important;
+  vertical-align: middle;
+  display: block;
 }
 
 /* Field name column */

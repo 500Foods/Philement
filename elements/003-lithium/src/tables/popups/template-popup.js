@@ -34,6 +34,14 @@ export function buildTemplatePopup(table) {
     refreshTemplatePopup(table);
   }, { icon: 'square' }));
 
+  popup.appendChild(createTemplateMenuAction(table, 'Make Default', async () => {
+    logTemplateMenuSelection(table, 'make-default');
+    const saved = await makeDefaultTemplate(table);
+    if (!saved) return;
+    table.templateMenuSelectedName = 'Default';
+    refreshTemplatePopup(table);
+  }, { icon: 'star' }));
+
   popup.appendChild(createTemplateMenuAction(table, 'Clear Template', () => {
     logTemplateMenuSelection(table, 'clear');
     closeNavPopup(table);
@@ -258,6 +266,66 @@ function logTemplateMenuSelection(table, action, detail = '') {
   log(Subsystems.TABLE, Status.INFO, `[LithiumTable] Template menu ${action}${suffix}`);
 }
 
+
+/**
+ * Save the current view (or selected template) as the auto-load Default template.
+ * Naming a template "Default" is what causes auto-load on startup; this is the
+ * one-click equivalent. Also mirrors into the legacy per-table Default key used
+ * by _applyDefaultTemplate during init.
+ * @param {Object} table - LithiumTable instance
+ * @returns {Object|null} Saved Default template or null
+ */
+async function makeDefaultTemplate(table) {
+  const templates = getSavedTemplates(table);
+  const selectedName = getSelectedTemplateName(table, templates);
+  let template = null;
+
+  if (selectedName && selectedName !== 'Default') {
+    const selected = templates.find((item) => getTemplateName(table, item) === selectedName);
+    if (selected) {
+      template = JSON.parse(JSON.stringify(selected));
+    }
+  }
+
+  if (!template) {
+    template = table.generateTemplateJSON?.();
+  }
+  if (!template) return null;
+
+  const columnCount = Object.keys(template.columns || {}).length;
+  if (columnCount === 0) {
+    log(Subsystems.TABLE, Status.ERROR,
+      '[LithiumTable] Refusing to save Default template with no columns');
+    return null;
+  }
+
+  template._templateMeta = template._templateMeta || {};
+  template._templateMeta.name = 'Default';
+
+  const existingIndex = templates.findIndex((item) => getTemplateName(table, item) === 'Default');
+  if (existingIndex >= 0) {
+    templates[existingIndex] = template;
+  } else {
+    templates.push(template);
+  }
+
+  try {
+    saveStoredTemplates(table, templates);
+    // Keep legacy init-time Default key in sync
+    if (table.storageKey) {
+      const legacyKey = `lithium_table_template_${table.storageKey}_Default`;
+      const { _templateMeta, ...legacyBody } = template;
+      void _templateMeta;
+      localStorage.setItem(legacyKey, JSON.stringify(legacyBody));
+    }
+    log(Subsystems.TABLE, Status.INFO, '[LithiumTable] Template saved as Default');
+    return template;
+  } catch (_e) {
+    log(Subsystems.TABLE, Status.ERROR, '[LithiumTable] Failed to save Default template');
+    return null;
+  }
+}
+
 /**
  * Save current table configuration as template
  * @param {Object} table - LithiumTable instance
@@ -277,11 +345,17 @@ async function saveTemplate(table) {
   const trimmed = name?.trim();
   if (!trimmed) return null;
 
+  if (trimmed === 'Default' && Object.keys(template.columns || {}).length === 0) {
+    log(Subsystems.TABLE, Status.ERROR,
+      '[LithiumTable] Refusing to save Default template with no columns');
+    return null;
+  }
+
   template._templateMeta = template._templateMeta || {};
   template._templateMeta.name = trimmed;
 
   const templates = getSavedTemplates(table);
-  const existingIndex = templates.findIndex((item) => getTemplateName(table, item) === name);
+  const existingIndex = templates.findIndex((item) => getTemplateName(table, item) === trimmed);
 
   if (existingIndex >= 0) {
     templates[existingIndex] = template;
@@ -291,8 +365,14 @@ async function saveTemplate(table) {
 
   try {
     saveStoredTemplates(table, templates);
-    table.templateMenuSelectedName = name;
-    log(Subsystems.TABLE, Status.INFO, `[LithiumTable] Template saved: ${name}`);
+    table.templateMenuSelectedName = trimmed;
+    if (trimmed === 'Default' && table.storageKey) {
+      const legacyKey = `lithium_table_template_${table.storageKey}_Default`;
+      const { _templateMeta, ...legacyBody } = template;
+      void _templateMeta;
+      localStorage.setItem(legacyKey, JSON.stringify(legacyBody));
+    }
+    log(Subsystems.TABLE, Status.INFO, `[LithiumTable] Template saved: ${trimmed}`);
     return template;
   } catch (_e) {
     log(Subsystems.TABLE, Status.ERROR, '[LithiumTable] Failed to save template');

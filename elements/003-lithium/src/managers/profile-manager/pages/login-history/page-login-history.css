@@ -1,1 +1,19 @@
 /* login-history settings page styles */
+.login-history-table-container {
+  min-height: 300px;
+  max-height: 420px;
+  max-width: 1000px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.login-history-table-container .tabulator {
+  height: 100% !important;
+}
+
+.login-history-navigator {
+  flex-shrink: 0;
+  max-width: 1010px;
+}
+
+.login-history-empty { padding: 8px; opacity: 0.7; }

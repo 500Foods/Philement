@@ -28,7 +28,7 @@ import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
-import { getClaims } from '../../core/jwt.js';
+import { getClaims, retrieveJWT } from '../../core/jwt.js';
 import { hasFeature } from '../../core/permissions.js';
 
 // CodeMirror — shared setup + direct imports for undo/redo
@@ -327,7 +327,7 @@ export default class StyleManager {
   }
 
   applyPermissions() {
-    const claims = getClaims();
+    const claims = getClaims(retrieveJWT());
     const canEdit = hasFeature(this.managerId, 2, claims?.punchcard);
     const canDelete = hasFeature(this.managerId, 5, claims?.punchcard);
     this.permissions = { canEdit, canDelete };
@@ -1670,10 +1670,8 @@ onDeactivate() {
        this.cssEditorFooter = null;
      }
 
-     // Destroy CSS editor OverlayScrollbars
-     if (this.cssEditor) {
-       destroyCodeMirrorScrollbars(this.cssEditor);
-     }
+     // The CSS editor has no OverlayScrollbars instance (no customScrollbars()
+     // extension is installed); this.cssEditor.destroy() below is the full teardown.
 
      // Remove preview style element
      if (this.previewStyleEl) {

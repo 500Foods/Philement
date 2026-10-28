@@ -6,7 +6,7 @@
  */
 
 import { BaseSettingsPage } from '../settings-page-base.js';
-import { getClaims } from '../../../../core/jwt.js';
+import { getClaims, retrieveJWT } from '../../../../core/jwt.js';
 import { parseRoleIds } from '../../../../core/utils.js';
 import { log, Subsystems, Status } from '../../../../core/log.js';
 
@@ -34,7 +34,7 @@ export class AccountPage extends BaseSettingsPage {
    * Load user information from JWT claims
    */
   loadUserInfo() {
-    const claims = getClaims();
+    const claims = getClaims(retrieveJWT());
     if (!claims || !this.container) return;
 
     const fields = {

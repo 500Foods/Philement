@@ -19,6 +19,7 @@ The Column Manager is a popup interface that displays all columns from a parent 
 
 - **Reorder columns** via drag-and-drop
 - **Toggle visibility** (show/hide columns)
+- **Toggle editable / groupable** flags
 - **Edit properties** like title, format, alignment, width, summary
 - **Group columns** by category
 - **Save changes** to apply to the parent table
@@ -92,6 +93,8 @@ LithiumColumnManager
 | Visible | `visible` | boolean | Yes | Show/hide column |
 | Field Name | `field` | string | No | Database field name |
 | Column Name | `title` | string | Yes | Display title |
+| Edit | `editable` | boolean | Yes | Allow cell editing |
+| Grp | `groupable` | boolean | Yes | Offer column in the Grouping popup |
 | Format | `coltype` | lookupFixed | Yes | Data type (string, integer, etc.) |
 | Summary | `bottomCalc` | lookupFixed | Yes | Bottom calculation (count, sum, etc.) |
 | Alignment | `hozAlign` | lookupFixed | Yes | Horizontal alignment |
@@ -328,7 +331,7 @@ The Column Manager no longer mutates parent columns through ad hoc remove/add lo
 buildPendingTemplateColumns() {
   // Merge current popup row values into a template-state patch
   // and preserve column order, visibility, width, alignment,
-  // summary, title, editable flag, and format.
+  // summary, title, editable flag, groupable flag, and format.
 }
 ```
 

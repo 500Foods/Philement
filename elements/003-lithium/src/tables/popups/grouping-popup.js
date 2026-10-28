@@ -497,28 +497,42 @@ function removeAllGrouping(table) {
  * @returns {Array} Array of column info objects
  */
 function getGroupableColumns(table) {
-  if (!table.tableDef?.columns) return [];
-
   const columns = [];
-  for (const [field, col] of Object.entries(table.tableDef.columns)) {
-    // Only include columns explicitly marked as groupable: true
-    if (col.groupable !== true) continue;
+  const seen = new Set();
+  const columnMeta = table._columnMeta || new Map();
+  const tableDefColumns = table.tableDef?.columns || {};
 
-    // Skip selector column
-    if (field === '_selector') continue;
+  const pushIfGroupable = (field, col = {}) => {
+    if (!field || field === '_selector' || seen.has(field)) return;
 
+    const meta = columnMeta.get(field) || {};
+    const groupable = col.groupable === true || meta.groupable === true;
+    if (!groupable) return;
+
+    seen.add(field);
     columns.push({
       field,
-      title: col.title,
-      groupable: col.groupable,
-      groupPri: col.groupPri,
-      groupDir: col.groupDir,
-      lookupRef: col.lookupRef,
-      lookupStyle: col.lookupStyle,
-      groupStyle: col.groupStyle,
-      groupTitle: col.groupTitle,
+      title: col.title || meta.title || field,
+      groupable: true,
+      groupPri: col.groupPri ?? meta.groupPri ?? null,
+      groupDir: col.groupDir || meta.groupDir || 'asc',
+      lookupRef: col.lookupRef || meta.lookupRef || null,
+      lookupStyle: col.lookupStyle || meta.lookupStyle || null,
+      groupStyle: col.groupStyle || meta.groupStyle || null,
+      groupTitle: col.groupTitle || meta.groupTitle || null,
     });
-  }
+  };
+
+  // tableDef columns (canonical source for grouping popup)
+  Object.entries(tableDefColumns).forEach(([field, col]) => {
+    pushIfGroupable(field, col || {});
+  });
+
+  // Data-first tables may only have groupable on _columnMeta until stubs exist
+  columnMeta.forEach((meta, field) => {
+    pushIfGroupable(field, tableDefColumns[field] || {});
+  });
+
   return columns;
 }
 

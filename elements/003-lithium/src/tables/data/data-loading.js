@@ -72,6 +72,10 @@ export async function loadData(table, searchTerm = '', extraParams = {}) {
       await table._rebuildColumnsWithData?.(rows);
     }
 
+    if (table._pendingDefaultTemplate) {
+      await table.applyPendingDefaultTemplate?.();
+    }
+
     table.table.blockRedraw?.();
     try {
       table.table.setData(rows);
@@ -237,7 +241,7 @@ export function getCompositeRowId(rowData, pkFields) {
  * @param {Object} [options]
  * @param {boolean} [options.autoSelect=true] - Auto-select first row after load
  */
-export function loadStaticData(table, rows, options = {}) {
+export async function loadStaticData(table, rows, options = {}) {
   if (!table.table) return;
   const { autoSelect = true } = options;
 
@@ -249,12 +253,22 @@ export function loadStaticData(table, rows, options = {}) {
   // Get currently selected row, or restore from localStorage
   const previouslySelectedId = autoSelect ? (table.getSelectedRowId?.() ?? table.restoreSelectedRowId?.()) : null;
 
+  // Data-first tables init with a placeholder; rebuild once real rows arrive
+  // (same path as server loadData). Then apply any deferred Default template.
+  if (table.currentData.length > 0 && table._wasInitializedWithoutData) {
+    await table._rebuildColumnsWithData?.(table.currentData);
+  }
+
   table.table.blockRedraw?.();
   try {
     table.table.setData(table.currentData);
     table.discoverColumns?.(table.currentData);
   } finally {
     table.table.restoreRedraw?.();
+  }
+
+  if (table._pendingDefaultTemplate) {
+    await table.applyPendingDefaultTemplate?.();
   }
 
   if (autoSelect) {

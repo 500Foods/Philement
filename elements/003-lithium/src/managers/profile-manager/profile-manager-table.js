@@ -86,7 +86,7 @@ export class ProfileManagerTable {
       }
 
       // Don't auto-select - we'll handle selection manually in _restoreSelectedSection
-      this.pm.optionsTable.loadStaticData(this.pm.userOptions, { autoSelect: false });
+      await this.pm.optionsTable.loadStaticData(this.pm.userOptions, { autoSelect: false });
       log(Subsystems.TABLE, Status.INFO,
         `[ProfileManager] Loaded ${this.pm.userOptions.length} user options`);
 
@@ -107,7 +107,7 @@ export class ProfileManagerTable {
         `[ProfileManager] Failed to load user options: ${error.message}`);
       this.pm.userOptions = this.getDefaultUserOptions();
       // Don't auto-select on error either
-      this.pm.optionsTable.loadStaticData(this.pm.userOptions, { autoSelect: false });
+      await this.pm.optionsTable.loadStaticData(this.pm.userOptions, { autoSelect: false });
 
       // Process icons after error recovery once the table DOM is present.
       requestAnimationFrame(() => {
@@ -129,7 +129,7 @@ export class ProfileManagerTable {
    * Skips restoration if there's a pending external section selection waiting to be applied.
    * @private
    */
-  _restoreSelectedSection() {
+  _restoreSelectedSection(attempt = 0) {
     // Don't restore if we have a pending external section (external selection takes priority)
     if (this.pm.pendingExternalSection !== null) {
       log(Subsystems.MANAGER, Status.INFO,
@@ -139,6 +139,8 @@ export class ProfileManagerTable {
 
     try {
       const savedIndex = localStorage.getItem(this.pm._selectedSectionStorageKey);
+      log(Subsystems.MANAGER, Status.INFO,
+        `[ProfileManager] Restoring saved section: ${savedIndex ?? '(none)'}`);
       if (savedIndex === null) {
         log(Subsystems.MANAGER, Status.INFO,
           '[ProfileManager] No saved section, selecting first (Account)');
@@ -161,7 +163,7 @@ export class ProfileManagerTable {
       const rows = table.getRows();
       const tabulatorRow = rows.find(row => {
         const data = row.getData();
-        return data && data.index === index;
+        return data && Number(data.index) === Number(index);
       });
 
       if (tabulatorRow) {
@@ -171,6 +173,10 @@ export class ProfileManagerTable {
         group?.show?.();
         log(Subsystems.MANAGER, Status.INFO,
           `[ProfileManager] Restored section: index ${index}`);
+      } else if (attempt < 10 && rows.length === 0) {
+        // Rows not rendered yet (Tabulator setData still settling) - retry
+        // instead of falling back to Account, which would overwrite the saved page.
+        setTimeout(() => this._restoreSelectedSection(attempt + 1), 50);
       } else {
         log(Subsystems.MANAGER, Status.WARN,
           `[ProfileManager] Saved section index ${index} not found, selecting first`);
@@ -194,7 +200,7 @@ export class ProfileManagerTable {
     const rows = table.getRows();
     const tabulatorRow = rows.find(row => {
       const data = row.getData();
-      return data && data.index === index;
+      return data && Number(data.index) === Number(index);
     });
 
     if (tabulatorRow) {

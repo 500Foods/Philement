@@ -917,36 +917,83 @@ _updateTableScrollbars() {
   _applyDefaultTemplate() {
     if (!this.tableDef || !this.storageKey) return;
 
-    const defaultTemplateKey = `lithium_table_template_${this.storageKey}_Default`;
     try {
-      const defaultTemplateJson = localStorage.getItem(defaultTemplateKey);
-      if (defaultTemplateJson) {
-        const defaultTemplate = JSON.parse(defaultTemplateJson);
-        log(Subsystems.TABLE, Status.INFO,
-          `[${this.cssPrefix}] Applying default template from localStorage`);
+      const defaultTemplate = this._readDefaultTemplateFromStorage();
+      if (!defaultTemplate) return;
 
-        // Merge default template with tableDef
-        // Use deep merge for param objects to preserve coltype defaults
-        const mergedColumns = { ...this.tableDef.columns };
-        if (defaultTemplate.columns) {
-          for (const [field, col] of Object.entries(defaultTemplate.columns)) {
-            if (mergedColumns[field]) {
-              mergedColumns[field] = deepMergeParams(mergedColumns[field], col);
-            } else {
-              mergedColumns[field] = col;
-            }
-          }
-        }
-
-        // Apply other template properties, excluding columns which are already merged
-        const { columns: _col, ...templateProps } = defaultTemplate;
-        void _col; // unused but explicitly excluded
-        this.tableDef = { ...this.tableDef, ...templateProps, columns: mergedColumns };
+      const columnCount = Object.keys(defaultTemplate.columns || {}).length;
+      if (columnCount === 0) {
+        log(Subsystems.TABLE, Status.WARN,
+          `[${this.cssPrefix}] Default template has no columns — skipping apply`);
+        return;
       }
+
+      log(Subsystems.TABLE, Status.INFO,
+        `[${this.cssPrefix}] Applying default template from localStorage (${columnCount} columns)`);
+
+      // Merge default template with tableDef
+      // Use deep merge for param objects to preserve coltype defaults
+      const mergedColumns = { ...(this.tableDef.columns || {}) };
+      for (const [field, col] of Object.entries(defaultTemplate.columns || {})) {
+        if (!field || field === '_selector' || field === '_placeholder') continue;
+        if (mergedColumns[field]) {
+          mergedColumns[field] = deepMergeParams(mergedColumns[field], col);
+        } else {
+          mergedColumns[field] = col;
+        }
+      }
+
+      // Apply other template properties, excluding columns which are already merged
+      // Strip template-only meta so it does not pollute tableDef
+      const {
+        columns: _col,
+        _templateMeta: _meta,
+        _filtersVisible: _fv,
+        _filterValues: _fvals,
+        $schema: _schema,
+        $version: _ver,
+        $description: _desc,
+        ...templateProps
+      } = defaultTemplate;
+      void _col; void _meta; void _fv; void _fvals; void _schema; void _ver; void _desc;
+      this.tableDef = { ...this.tableDef, ...templateProps, columns: mergedColumns };
     } catch (e) {
       log(Subsystems.TABLE, Status.WARN,
         `[${this.cssPrefix}] Failed to apply default template: ${e.message}`);
     }
+  }
+
+  /**
+   * Read the Default template from the templates array (preferred) or legacy key.
+   * @returns {Object|null}
+   */
+  _readDefaultTemplateFromStorage() {
+    // Preferred: saved templates array entry named "Default"
+    try {
+      const stored = localStorage.getItem(`${this.storageKey}_templates`);
+      const templates = stored ? JSON.parse(stored) : [];
+      if (Array.isArray(templates)) {
+        const named = templates.find((template) => {
+          const name = template?._templateMeta?.name || template?.name;
+          return name === 'Default';
+        });
+        if (named) return named;
+      }
+    } catch (_e) {
+      // fall through to legacy key
+    }
+
+    // Legacy: dedicated per-table Default key
+    try {
+      const legacyKey = `lithium_table_template_${this.storageKey}_Default`;
+      const defaultTemplateJson = localStorage.getItem(legacyKey);
+      if (defaultTemplateJson) {
+        return JSON.parse(defaultTemplateJson);
+      }
+    } catch (_e) {
+      return null;
+    }
+    return null;
   }
 
   /**

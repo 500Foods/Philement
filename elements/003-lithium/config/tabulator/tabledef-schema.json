@@ -19,9 +19,9 @@
       "description": "Human-readable title displayed in the UI"
     },
     "queryRef": {
-      "type": "integer",
+      "type": ["integer", "null"],
       "minimum": 1,
-      "description": "Primary query reference number to fetch list data"
+      "description": "Primary query reference number to fetch list data. null = client-built rows (no query)."
     },
     "searchQueryRef": {
       "type": "integer",
@@ -99,6 +99,23 @@
         { "type": "string" },
         { "type": "array", "items": { "type": "string" } }
       ]
+    },
+    "groupStartOpen": {
+      "description": "Whether groups start expanded (true), collapsed (false), or a function/array per Tabulator",
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "array", "items": { "type": "boolean" } }
+      ]
+    },
+    "groupToggleElement": {
+      "type": "string",
+      "enum": ["arrow", "header", "false"],
+      "description": "Which part of the group header toggles open/closed"
+    },
+    "columnCalcs": {
+      "type": "string",
+      "enum": ["both", "table", "group"],
+      "description": "Where column calculations are displayed"
     },
 
     "columns": {

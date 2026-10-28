@@ -17,6 +17,7 @@
 #include <src/api/conduit/query/query.h>
 #include <jansson.h>
 #include <src/config/config_databases.h>
+#include <src/api/api_utils.h>
 
 /* Unity test seam: non-NULL overrides live queue/cache (production stays NULL). */
 AuthServiceDatabaseQueryFn g_auth_service_database_query_fn = NULL;
@@ -495,6 +496,19 @@ int create_account_record(const char* username, const char* email,
 }
 
 /**
+ * Add GEOCITY / GEOREGION / GEOCOUNTRY (QueryRef #004, #013 after 1410).
+ * Values come from trusted-proxy X-GeoIP2-* headers captured by
+ * api_get_client_ip() on this thread; empty string when absent.
+ */
+void add_request_geo_params(json_t* string_params) {
+    const char *city = "", *region = "", *country = "";
+    api_get_request_geo(&city, &region, &country);
+    json_object_set_new(string_params, "GEOCITY", json_string(city));
+    json_object_set_new(string_params, "GEOREGION", json_string(region));
+    json_object_set_new(string_params, "GEOCOUNTRY", json_string(country));
+}
+
+/**
  * Store JWT in database
  */
 bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
@@ -512,6 +526,7 @@ bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int syst
     json_object_set_new(string_params, "TOKENHASH", json_string(jwt_hash));
     json_object_set_new(string_params, "APPVERSION", json_string(VERSION)); // Required by QueryRef #013
     json_object_set_new(string_params, "IPADDRESS", json_string(client_ip ? client_ip : ""));
+    add_request_geo_params(string_params);
     json_object_set_new(integer_params, "ACCOUNTID", json_integer(account_id));
     json_object_set_new(integer_params, "SYSTEMID", json_integer(system_id));
     json_object_set_new(integer_params, "APPID", json_integer(app_id));
@@ -652,6 +667,7 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
     json_t* integer_params = json_object();
     json_object_set_new(string_params, "LOGINID", json_string(login_id));
     json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    add_request_geo_params(string_params);
     // Don't set LOGINRETRYWINDOW here - it will come from database config
     json_object_set_new(params, "STRING", string_params);
     json_object_set_new(params, "INTEGER", integer_params);

@@ -9,6 +9,7 @@
 
 import { COLUMN_VALID_PROPS } from '../resolution/validator.js';
 import { resolveColumns } from '../lithium-table.js';
+import { resolveBottomCalcName } from '../resolution/formatters.js';
 
 /**
  * Properties that are considered canonical for tableDef columns.
@@ -109,6 +110,13 @@ export function extractTableDefColumn(column, originalColDef = {}, lithiumMeta =
   if (lithiumMeta.groupTitle) {
     colDef.groupTitle = lithiumMeta.groupTitle;
   }
+  // Editable / groupable live in _columnMeta (not on Tabulator defs)
+  if (lithiumMeta.editable === true || lithiumMeta.editable === false) {
+    colDef.editable = lithiumMeta.editable === true;
+  }
+  if (lithiumMeta.groupable === true || lithiumMeta.groupable === false) {
+    colDef.groupable = lithiumMeta.groupable === true;
+  }
 
   // Column priority (display order)
   if (def.columnPri !== undefined && def.columnPri !== null) {
@@ -200,11 +208,11 @@ export function extractTableDefColumn(column, originalColDef = {}, lithiumMeta =
 
   // Calculations
   if (def.bottomCalc) {
-    // Store as string if it's a named calculation
-    if (typeof def.bottomCalc === 'string') {
-      colDef.bottomCalc = def.bottomCalc;
+    // Store by name; Lithium calc functions are reverse-mapped to their name
+    const calcName = resolveBottomCalcName(def.bottomCalc);
+    if (calcName !== 'none') {
+      colDef.bottomCalc = calcName;
     }
-    // Functions are not serializable, skip them
   }
   if (def.bottomCalcFormatter && typeof def.bottomCalcFormatter === 'string') {
     colDef.bottomCalcFormatter = def.bottomCalcFormatter;
@@ -580,14 +588,21 @@ export function buildColumnDefinitionsFromTemplateState({
   const orderedEntries = [];
 
   Object.entries(templateColumns || {}).forEach(([field, patchColumn]) => {
+    if (!field || field === '_selector' || field === '_placeholder') return;
     const baseColumn = currentColumnMap.get(field);
-    if (!baseColumn) return;
+    if (!baseColumn) {
+      // Default can apply before data-first columns exist — use the patch alone
+      orderedEntries.push([field, { field, ...(patchColumn || {}) }]);
+      return;
+    }
     currentColumnMap.delete(field);
     // Merge: patchColumn properties override baseColumn
     orderedEntries.push([field, { ...baseColumn, ...patchColumn }]);
   });
 
   currentColumnMap.forEach((baseColumn, field) => {
+    // Drop the temporary Loading... column once a real template is applied
+    if (field === '_placeholder') return;
     orderedEntries.push([field, baseColumn]);
   });
 

@@ -449,16 +449,8 @@ export class EditorManager {
    * Destroy all editors
    */
   destroy() {
-    // Destroy OSB instances first
-    if (this.sqlEditor) {
-      destroyCodeMirrorScrollbars(this.sqlEditor);
-    }
-    if (this.summaryEditor) {
-      destroyCodeMirrorScrollbars(this.summaryEditor);
-    }
-    if (this.collectionEditor) {
-      destroyCodeMirrorScrollbars(this.collectionEditor);
-    }
+    // These CodeMirror editors have no OverlayScrollbars instance;
+    // each editor's .destroy() below is the full teardown.
 
     if (this.sqlEditorFooter) {
       this.sqlEditorFooter.destroy();

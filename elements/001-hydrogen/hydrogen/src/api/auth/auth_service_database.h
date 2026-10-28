@@ -73,5 +73,8 @@ void log_login_attempt(const char* login_id, const char* client_ip,
 
 // Memory cleanup
 void free_account_info(account_info_t* account);
+/** Add GEOCITY/GEOREGION/GEOCOUNTRY string params from the captured request geo. */
+void add_request_geo_params(json_t* string_params);
+
 
 #endif /* HYDROGEN_AUTH_SERVICE_DATABASE_H */

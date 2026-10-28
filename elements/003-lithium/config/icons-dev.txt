@@ -170,6 +170,8 @@
 <i class="fa-brands fa-github"></i>
 <i class="fa-brands fa-markdown"></i>
 <i class="fa-duotone fa-thin fa-grip-dots-vertical"></i>
+<i class="fa-duotone fa-thin fa-square cm-bool-icon cm-bool-off"></i>
+<i class="fa-duotone fa-thin fa-square-check cm-bool-icon cm-bool-on"></i>
 <i class="fa-kit-duotone fa-crimson"></i>
 <i class="fa-solid fa-square"></i>
 <i class="fa-solid fa-square-full"></i>
