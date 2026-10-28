@@ -571,7 +571,8 @@ void update_jwt_storage(int account_id, const char* old_jwt_hash,
 }
 
 /**
- * Delete JWT from storage
+ * End JWT session in storage (QueryRef #019 soft-expires valid_until;
+ * row kept for Login History). Name retained for call sites.
  */
 void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
     if (!jwt_hash || !database) return;
@@ -853,6 +854,32 @@ void log_login_attempt(const char* login_id, const char* client_ip,
 
     if (!submit_auth_query_async(4, database, params)) {
         log_this(SR_AUTH, "Failed to enqueue login attempt audit for %s", LOG_LEVEL_ERROR, 1, login_id);
+    }
+    json_decref(params);
+}
+
+
+/**
+ * Log logout / session end (async). QueryRef #161 inserts actions type 5.
+ */
+void log_logout_attempt(const char* login_id, const char* client_ip,
+                        const char* database) {
+    if (!login_id || !client_ip || !database) return;
+
+    json_t* params = json_object();
+    json_t* string_params = json_object();
+    json_t* integer_params = json_object();
+    json_object_set_new(string_params, "APPVERSION", json_string("1.0.0"));
+    json_object_set_new(string_params, "LOGINID", json_string(login_id));
+    json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
+    add_request_geo_params(string_params);
+    json_object_set_new(integer_params, "LOGINTIMER", json_integer(0));
+    json_object_set_new(integer_params, "LOGINLOGID", json_integer(0));
+    json_object_set_new(params, "STRING", string_params);
+    json_object_set_new(params, "INTEGER", integer_params);
+
+    if (!submit_auth_query_async(161, database, params)) {
+        log_this(SR_AUTH, "Failed to enqueue logout audit for %s", LOG_LEVEL_ERROR, 1, login_id);
     }
     json_decref(params);
 }

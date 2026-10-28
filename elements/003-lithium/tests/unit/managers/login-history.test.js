@@ -25,7 +25,7 @@ describe('Login History page helpers', () => {
       login_id: 'andrew', ip_address: '10.0.0.1', action_msecs: 42, app_version: '1.2.3',
     });
     const r = toLoginTableRow({ action_type_a24: 2 }, 4);
-    expect(r.result_txt).toBe('Attempt');
+    expect(r.result_txt).toBe('Failed');
     expect(r.action_msecs).toBeNull();
     expect(r.when_txt).toBe('-');
   });
@@ -48,6 +48,6 @@ describe('Login History page helpers', () => {
     expect(lua).toMatch(/cfg\.KEY_IDX = "17"/);
   });
   it('labels token issuance rows (type 0)', () => {
-    expect(toLoginTableRow({ action_type_a24: 0, action_type_name: 'Token Issued' }).result_txt).toBe('Token Issued');
+    expect(toLoginTableRow({ action_type_a24: 0, action_type_name: 'Signed in' }).result_txt).toBe('Signed in');
   });
 });

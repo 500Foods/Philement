@@ -14,7 +14,7 @@ import { LithiumTable } from '../../../../tables/lithium-table-main.js';
 export const QUERY_LOGIN_HISTORY = 159;
 export const QUERY_LOGIN_SUMMARY = 160;
 
-const TYPE_LABELS = { 0: 'Token Issued', 2: 'Attempt', 3: 'Success', 4: 'Passed' };
+const TYPE_LABELS = { 0: 'Signed in', 2: 'Failed', 3: 'Success', 4: 'Passed', 5: 'Signed out' };
 
 /** Format a timestamp as 24-hour America/Vancouver time with a PCT label. */
 export function formatLoginTime(value) {
@@ -55,7 +55,7 @@ export function toLoginTableRow(r, i = 0) {
   return {
     row_id: i + 1,
     when_txt: formatLoginTime(r?.created_at),
-    result_txt: TYPE_LABELS[t] || r?.action_type_name || (Number.isNaN(t) ? '' : String(t)),
+    result_txt: r?.action_type_name || TYPE_LABELS[t] || (Number.isNaN(t) ? '' : String(t)),
     action_type_a24: Number.isNaN(t) ? null : t,
     login_id: r?.login_id ?? r?.action ?? '',
     ip_address: r?.ip_address ?? '',

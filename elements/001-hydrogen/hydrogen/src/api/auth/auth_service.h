@@ -139,6 +139,9 @@ bool check_ip_whitelist(const char* client_ip, const char* database);
 bool check_ip_blacklist(const char* client_ip, const char* database);
 
 // Audit logging functions
+void log_logout_attempt(const char* login_id, const char* client_ip,
+                        const char* database);
+
 void log_login_attempt(const char* login_id, const char* client_ip,
                       const char* user_agent, time_t timestamp, const char* database);
 
@@ -209,6 +212,9 @@ int jwt_token_store_status(const char* token_hash, const char* ip_address, const
 int check_failed_attempts(const char* login_id, const char* client_ip,
                           time_t window_start, const char* database);
 void block_ip_address(const char* client_ip, int duration_minutes, const char* database);
+void log_logout_attempt(const char* login_id, const char* client_ip,
+                        const char* database);
+
 void log_login_attempt(const char* login_id, const char* client_ip,
                        const char* user_agent, time_t timestamp, const char* database);
 

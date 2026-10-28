@@ -186,11 +186,18 @@ enum MHD_Result handle_post_auth_oidc_end_session(
             "Database not specified", MHD_HTTP_BAD_REQUEST);
     }
 
-    // Delete the JWT from storage (local logout)
+    // Soft-expire JWT in storage (local logout; keep history row)
     char *jwt_hash = compute_token_hash(token);
     if (jwt_hash) {
         delete_jwt_from_storage(jwt_hash, database);
         free(jwt_hash);
+    }
+    {
+        const char *audit_id = validation.claims->username
+            ? validation.claims->username : "unknown";
+        const char *cip = api_get_client_ip(connection);
+        if (!cip) cip = "";
+        log_logout_attempt(audit_id, cip, database);
     }
 
     log_this(SR_AUTH, "OIDC RP /end-session: local logout for user_id=%d",

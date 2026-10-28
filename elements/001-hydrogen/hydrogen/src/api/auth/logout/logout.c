@@ -156,14 +156,21 @@ enum MHD_Result handle_post_auth_logout(
         return api_send_json_response(connection, response, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    // Delete token from storage
+    // Soft-expire token in storage (row kept for Login History)
     delete_jwt_from_storage(jwt_hash, database);
-    free(jwt_hash); // Clean up hash after deletion
+    free(jwt_hash);
 
-    log_this(SR_AUTH, "JWT token deleted from storage for user_id=%d",
+    log_this(SR_AUTH, "JWT session ended in storage for user_id=%d",
              LOG_LEVEL_DEBUG, 1, validation.claims->user_id);
 
-    // Step 4: Log successful logout
+    // Step 4: Audit logout (actions type 5) + debug log
+    {
+        const char *audit_id = validation.claims->username
+            ? validation.claims->username : "unknown";
+        const char *cip = api_get_client_ip(connection);
+        if (!cip) cip = "";
+        log_logout_attempt(audit_id, cip, database);
+    }
     log_this(SR_AUTH, "Successful logout for user_id=%d (username=%s)",
              LOG_LEVEL_DEBUG, 2, validation.claims->user_id,
              validation.claims->username ? validation.claims->username : "N/A");
