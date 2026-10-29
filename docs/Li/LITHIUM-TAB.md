@@ -1210,6 +1210,8 @@ Enable grouping for a column by setting `groupable: true` and optionally `groupP
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
 - [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) — Query Manager (first LithiumTable implementation)
 - [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) — Lookups Manager (dual-table example)
+- [LITHIUM-TAB-SURVEY.md](LITHIUM-TAB-SURVEY.md) — Every LithiumTable and raw Tabulator instance
+- [LITHIUM-TAB-CHECKLIST.md](LITHIUM-TAB-CHECKLIST.md) — Checklist for adding one LithiumTable
 - [LITHIUM-COL.md](LITHIUM-COL.md) — **Column Manager** — Runtime column customization UI
 - [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables integration
 - [LITHIUM-CSS.md](LITHIUM-CSS.md) — CSS architecture, layers, and theming

@@ -844,7 +844,7 @@ void log_login_attempt(const char* login_id, const char* client_ip,
     json_t* params = json_object();
     json_t* string_params = json_object();
     json_t* integer_params = json_object();
-    json_object_set_new(string_params, "APPVERSION", json_string("1.0.0"));
+    json_object_set_new(string_params, "APPVERSION", json_string(VERSION));
     json_object_set_new(string_params, "LOGINID", json_string(login_id));
     json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
     json_object_set_new(integer_params, "LOGINTIMER", json_integer(0)); // Time taken, not available
@@ -869,7 +869,7 @@ void log_logout_attempt(const char* login_id, const char* client_ip,
     json_t* params = json_object();
     json_t* string_params = json_object();
     json_t* integer_params = json_object();
-    json_object_set_new(string_params, "APPVERSION", json_string("1.0.0"));
+    json_object_set_new(string_params, "APPVERSION", json_string(VERSION));
     json_object_set_new(string_params, "LOGINID", json_string(login_id));
     json_object_set_new(string_params, "IPADDRESS", json_string(client_ip));
     add_request_geo_params(string_params);

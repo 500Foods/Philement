@@ -77,6 +77,8 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | File | Purpose |
 |------|--------|
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — Tabulator + Navigator wrapper |
+| [LITHIUM-TAB-SURVEY.md](LITHIUM-TAB-SURVEY.md) | Every Tabulator / LithiumTable instance — change checklist |
+| [LITHIUM-TAB-CHECKLIST.md](LITHIUM-TAB-CHECKLIST.md) | Checklist for adding one LithiumTable |
 | [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) | Table configuration — columns to database, tableDef flow |
 | [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Column types quick reference |
 | [LITHIUM-TAB-TYPES-*.md](LITHIUM-TAB-TYPES-STAR.md) | Per-type documentation (STRING, INTEGER, DATE, etc.) |

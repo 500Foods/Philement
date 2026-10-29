@@ -368,4 +368,6 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1408](/elements/002-helium/acuranzo/migrations/acuranzo_1408.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 059 key 17 profile-manager/login-history tableDef |
 | [1409](/elements/002-helium/acuranzo/migrations/acuranzo_1409.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 059 key 16 profile-manager/luxon-tokens tableDef |
 | [1410](/elements/002-helium/acuranzo/migrations/acuranzo_1410.lua) | queries | 1.0.0 | 2026-10-28 | 24 | ✗ | Login GeoIP: tokens/actions geo_city, geo_region, geo_country |
-| **335** | | | | **1768** | **335** | |
+| [1411](/elements/002-helium/acuranzo/migrations/acuranzo_1411.lua) | queries | 1.0.0 | 2026-10-28 | 8 | ✗ | Login History: soft-expire JWT (QR 019), logout audit (QR 161 type 5), |
+| [1412](/elements/002-helium/acuranzo/migrations/acuranzo_1412.lua) | lookups | 1.0.0 | 2026-10-28 | 4 | ✗ | UPDATE Lookup 059 key 17 (profile-manager/login-history): Duration as HH:MM:SS.zzz |
+| **337** | | | | **1780** | **337** | |

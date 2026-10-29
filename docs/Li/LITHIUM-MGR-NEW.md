@@ -33,7 +33,7 @@ Use this checklist to track progress. Every item is covered in detail below.
 - [ ] 3. Create the JSON table definition(s) in `config/tabulator/`
 - [ ] 4. Write the HTML template
 - [ ] 5. Write the CSS
-- [ ] 6. Implement the manager class
+- [ ] 6. Implement the manager class. The grid itself is [LITHIUM-TAB-CHECKLIST.md](LITHIUM-TAB-CHECKLIST.md)
 - [ ] 7. Register with the sidebar
 - [ ] 8. Wire up the footer
 - [ ] 9. Test the build
@@ -351,7 +351,7 @@ Manager CSS should be minimal. Most styling is provided by shared classes.
 ### Imports
 
 ```javascript
-import { LithiumTable } from '../../core/lithium-table-main.js';
+import { LithiumTable } from '../../tables/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse } from '../../core/panel-collapse.js';
@@ -420,6 +420,8 @@ export default class MyManager {
 ```
 
 ### Table Initialization
+
+Construct the grid with [LITHIUM-TAB-CHECKLIST.md](LITHIUM-TAB-CHECKLIST.md). The snippet below is the server-list shape (Queries). Import `LithiumTable` from `../../tables/lithium-table-main.js`. Give the grid its own `cssPrefix`. Pass `lookupKeyIdx` for the Lookup 059 row.
 
 ```javascript
   async _initTable() {

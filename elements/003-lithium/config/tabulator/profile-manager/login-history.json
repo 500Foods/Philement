@@ -1,7 +1,7 @@
 {
   "$schema": "../tabledef-schema.json",
   "$version": "1.0.0",
-  "$description": "Read-only Recent Activity table on Profile > Security > Login History. Lookup 059 key 17 (acuranzo_1408). Rows from QueryRef 159, pre-formatted client-side.",
+  "$description": "Read-only Recent Activity table on Profile > Security > Login History. Lookup 059 key 17 (acuranzo_1408/1412). Rows from QueryRef 159, pre-formatted client-side.",
   "table": "login-history",
   "title": "Login History",
   "queryRef": 159,
@@ -101,18 +101,18 @@
       "description": "City, region, country from Traefik GeoIP (X-GeoIP2-*) at login time",
       "width": 200
     },
-    "action_msecs": {
-      "title": "Duration (ms)",
-      "field": "action_msecs",
-      "coltype": "integer",
+    "duration_txt": {
+      "title": "Duration",
+      "field": "duration_txt",
+      "coltype": "string",
       "visible": true,
       "sort": true,
       "filter": true,
       "editable": false,
       "calculated": false,
       "primaryKey": false,
-      "description": "Login duration in milliseconds",
-      "width": 110
+      "description": "Session length as HH:MM:SS.zzz (from token valid_after to valid_until)",
+      "width": 120
     },
     "app_version": {
       "title": "App Version",

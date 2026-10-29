@@ -48,10 +48,25 @@ export function formatLoginLocation(r) {
     .join(', ');
 }
 
+
+/** Format duration milliseconds as HH:MM:SS.zzz (empty when unknown). */
+export function formatLoginDuration(ms) {
+  if (ms === null || ms === undefined || ms === '') return '';
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n < 0) return '';
+  const total = Math.floor(n);
+  const zzz = String(total % 1000).padStart(3, '0');
+  let secs = Math.floor(total / 1000);
+  const ss = String(secs % 60).padStart(2, '0');
+  let mins = Math.floor(secs / 60);
+  const mm = String(mins % 60).padStart(2, '0');
+  const hh = String(Math.floor(mins / 60)).padStart(2, '0');
+  return `${hh}:${mm}:${ss}.${zzz}`;
+}
+
 /** Map a QueryRef 159 row to the flat, display-ready shape the tabledef expects. */
 export function toLoginTableRow(r, i = 0) {
   const t = Number(r?.action_type_a24);
-  const ms = r?.action_msecs;
   return {
     row_id: i + 1,
     when_txt: formatLoginTime(r?.created_at),
@@ -60,7 +75,7 @@ export function toLoginTableRow(r, i = 0) {
     login_id: r?.login_id ?? r?.action ?? '',
     ip_address: r?.ip_address ?? '',
     location_txt: formatLoginLocation(r),
-    action_msecs: ms === null || ms === undefined || ms === '' ? null : Number(ms),
+    duration_txt: formatLoginDuration(r?.action_msecs),
     app_version: r?.app_version ?? '',
   };
 }

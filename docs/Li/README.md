@@ -27,6 +27,8 @@ This directory contains the complete documentation for the Lithium PWA.
 | [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system overview |
 | [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md) | New manager step-by-step guide |
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable component |
+| [LITHIUM-TAB-SURVEY.md](LITHIUM-TAB-SURVEY.md) | Every grid instance — checklist for a shared table change |
+| [LITHIUM-TAB-CHECKLIST.md](LITHIUM-TAB-CHECKLIST.md) | Checklist for adding one LithiumTable |
 | [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Column types reference |
 | [LITHIUM-API.md](LITHIUM-API.md) | API endpoints |
 | [LITHIUM-WEB.md](LITHIUM-WEB.md) | Deployment process |
