@@ -2,7 +2,7 @@
 
 ## Overview
 
-The [`conduit_utils.sh`](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh) library provides reusable functions for testing the Conduit Service endpoints in the Hydrogen test suite. It handles server lifecycle management, database readiness checking, JWT acquisition, and endpoint testing across all 7 supported database engines.
+The [`conduit_utils.sh`](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh) library provides reusable functions for testing the Conduit Service endpoints in the Hydrogen test suite. It handles database readiness checking, JWT acquisition, and endpoint testing across the supported database engines. Server startup, shutdown, and result analysis live in [`conduit_server.sh`](/elements/001-hydrogen/hydrogen/tests/lib/conduit_server.sh), which `conduit_utils.sh` sources, so callers still load one file.
 
 ## Purpose
 

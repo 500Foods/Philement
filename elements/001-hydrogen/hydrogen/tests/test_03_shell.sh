@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.7 - 2026-10-30 - CONDUIT_* readiness timeouts are read in conduit_server.sh
 # 1.4.6 - 2026-09-21 - Added FIREBIRD_DB_USER and FIREBIRD_DB_PASS env vars (Test 37, 40)
 # 1.4.5 - 2026-09-19 - Added FIREBIRD_SYSDBA_PASSWORD and FIREBIRD_DB_PATH env vars (Test 37, 40)
 # 1.4.4 - 2026-09-12 - Whitelist TERMINAL_WS_HELPERS_* and remaining Test 26 lib globals
@@ -39,7 +40,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.4.6"
+TEST_VERSION="1.4.7"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -286,7 +287,7 @@ declare -a ENV_WHITELIST=(
     # First found in tests/lib/oidc_rp_helpers_link.sh
     "MOCK_KC_LOG" "MOCK_KC_PID"
     "MOCK_KC_PORT" "MOCK_KC_SCRIPT" "MOCK_SUBJECT" "OIDC_CHAIN_ERROR" "OIDC_CHAIN_HANDOFF" "OIDC_CHAIN_STATUS"
-    # First found in tests/lib/conduit_utils.sh
+    # First found in tests/lib/conduit_server.sh
     "CONDUIT_STARTUP_TIMEOUT" "CONDUIT_WEBSERVER_READY_TIMEOUT" "CONDUIT_MIGRATION_TIMEOUT"
     # Remaining tests    
     "BLACKBOX_COVERAGE_DIR" "CACHED_VALIDATIONS" "CAPTURE_LOG" "CLOC_EXIT_CODE" "CLOC_PID" "CODE_LINES" 
