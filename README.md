@@ -64,7 +64,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-10-30 22:42:52 UTC
+Last updated at 2026-10-30 22:48:40 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ JSON                           598            487              0        2125679
 C                             1899          77564          62441         334978
 Text                           402            399              0         177976
 Lua                            618          16172          10596         141704
-Markdown                       798          41966            266         133054
+Markdown                       799          41985            268         133187
 JavaScript                     270          11540          15077          60773
 Bourne Shell                   238           9122         126802          54819
 SVG                             16             17             27          17461
@@ -92,12 +92,12 @@ YAML                             2              8             13             37
 Pascal                           2             11              2             31
 MSBuild script                   1              3              0             11
 -------------------------------------------------------------------------------
-SUM:                          5419         165600         232717        3082749
+SUM:                          5420         165619         232719        3082882
 -------------------------------------------------------------------------------
-510 Files were skipped (duplicate, binary, or without source code):
+509 Files were skipped (duplicate, binary, or without source code):
   css: 167
   html: 134
-  md: 43
+  md: 42
   js: 24
   png: 24
   br: 16
