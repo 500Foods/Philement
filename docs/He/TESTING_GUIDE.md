@@ -273,9 +273,22 @@ and/or DB2.
 - Do **not** use PostgreSQL-only `VALUES AS v(cols)` aliases
 - Do **not** assume bare `UNION ALL` derived tables are portable
 - For single-row `SELECT … WHERE NOT EXISTS` on DB2, include `${DUMMY_TABLE}`
-  (see `docs/He/GUIDE.md` → **Portable Multi-Row Data Seeds**)
-- Rebuild payload (`mkt` / `mka`) after fixing the migration; re-run
+  (see [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md) → **Portable Multi-Row Data Seeds**)
+- Rebuild the payload (`mka` or `payloads/payload-generate.sh`) after fixing
+  the migration. `mkt` does not refresh the archive. Re-run
   `test_34_sqlite_migrations` and `test_35_db2_migrations`
+
+### DB2 SQL1585N / SQLSTATE 54048
+
+**Error**: `A temporary table could not be created because there is no available system temporary table space that has a compatible page size.`
+
+**Cause**: The statement's temporary row is wider than every system temporary page. `${QUERIES}` stores `code`, `summary`, and `collection` as `CLOB(100K)`. `WHERE NOT EXISTS` against that table pulls those columns into the temporary row. 32K is DB2's largest page (32677 bytes). A 32K system temporary tablespace does not make this statement fit. `${DUMMY_TABLE}` only supplies a `FROM` for a bare `SELECT`.
+
+**Solution**:
+
+- Take the next id with `SELECT COALESCE(MAX(query_id), 0) + 1` and do not anti-join `${QUERIES}` in that statement (`acuranzo_1411.lua` 1.0.1)
+- Or insert with `VALUES` (`acuranzo_1289.lua` 1.0.2), or update the existing row (`courses_4007.lua` 1.0.2)
+- Rebuild the payload with `mka` or `payloads/payload-generate.sh`, then reload. LOAD skips a migration that is already loaded, so the stored `code` stays on the old statement until that row is replaced
 
 ### Migration State Issues
 

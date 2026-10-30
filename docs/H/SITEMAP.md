@@ -377,8 +377,11 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_54_conduit_alt_query.md](/docs/H/tests/test_54_conduit_alt_query.md): Cross-database single query with override
 - [test_64_queryref_transactions.md](/docs/H/tests/test_64_queryref_transactions.md): Runtime QueryRef transaction blocks (QueryRefs 156–158, port 5640)
 - [test_55_conduit_alt_queries.md](/docs/H/tests/test_55_conduit_alt_queries.md): Cross-database batch query with override
+- [test_56_cap_query.md](/docs/H/tests/test_56_cap_query.md): Conduit cap_query negative paths and protected INSERT fallback (port 5560)
 - [test_57_mailrelay_outbound.md](/docs/H/tests/test_57_mailrelay_outbound.md): Mail Relay outbound delivery testing
 - [test_58_mailrelay_api.md](/docs/H/tests/test_58_mailrelay_api.md): Mail Relay authenticated API end-to-end testing
+- [test_59_auth_chat.md](/docs/H/tests/test_59_auth_chat.md): Authenticated chat REST and WebSocket against a local mock LLM (ports 15900–15902)
+- [test_61_mailrelay_inbound.md](/docs/H/tests/test_61_mailrelay_inbound.md): Mail Relay inbound SMTP listener (sink 5580, inbound 5581)
 - [test_60_performance.md](/docs/H/tests/test_60_performance.md): Performance benchmarking across databases
 - OIDC RP Library Documentation:
   - [oidc_rp_helpers.md](/docs/H/tests/oidc_rp_helpers.md)

@@ -7,7 +7,10 @@
 #include <stdlib.h>
 #include "database_serialize.h"
 
-// JSON string escaping - escapes quotes, backslashes, and control characters
+// JSON string escaping. Quotes, backslashes, and the usual whitespace controls
+// use short escapes. Every other C0 byte below 0x20, including the 0x1A DB2
+// writes when it cannot map a character, becomes \u00XX. jansson rejects a raw
+// C0 byte. Bytes at or above 0x20, including UTF-8 and DEL, pass through.
 int database_json_escape_string(const char* input, char* output, size_t output_size) {
     if (!input || !output || output_size < 2) {
         return -1;
@@ -16,8 +19,10 @@ int database_json_escape_string(const char* input, char* output, size_t output_s
     const char* src = input;
     char* dst = output;
     size_t available = output_size - 1; // Reserve space for null terminator
+    static const char hex[] = "0123456789abcdef";
 
     while (*src && available > 0) {
+        unsigned char ch = (unsigned char)*src;
         if (*src == '"' || *src == '\\') {
             if (available < 2) break;
             *dst++ = '\\';
@@ -38,6 +43,15 @@ int database_json_escape_string(const char* input, char* output, size_t output_s
             *dst++ = '\\';
             *dst++ = 't';
             available -= 2;
+        } else if (ch < 0x20) {
+            if (available < 6) break;
+            *dst++ = '\\';
+            *dst++ = 'u';
+            *dst++ = '0';
+            *dst++ = '0';
+            *dst++ = hex[ch >> 4];
+            *dst++ = hex[ch & 0x0f];
+            available -= 6;
         } else {
             *dst++ = *src;
             available--;

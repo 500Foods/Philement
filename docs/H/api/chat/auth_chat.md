@@ -268,7 +268,7 @@ users.
 
 ## Testing
 
-- **Test 59** — REST + WS coverage. After Phase 3 the stream test
+- **[Test 59](/docs/H/tests/test_59_auth_chat.md)** — REST + WS coverage. After Phase 3 the stream test
   asserts real SSE (200 with chunks) instead of 501. After Phase 4 the
   mock engine exercises `media:` resolution parity and `context_hashes`
   stats on `chat_done`.

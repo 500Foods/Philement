@@ -22,20 +22,22 @@ The documentation for the project is in /docs/H/
 - After ANY C coding change that passes `mkq` or `mkt`, run alias `mkp` (cppcheck / test_91) before considering the change done
 - The trial build outputs minimal text - typically only error messages - greatly reducing AI token usage
 - Once test build succeeds, run alias `mka` to perform build against all targets - can be run from any directory
-- Working with unit tests, after alias `mkq` (or `mkt` if the tree was just configured) use alias `mku <base test name without .c>` to build and run the test fro any directory
+- Working with unit tests, after alias `mkq` (or `mkt` if the tree was just configured) use alias `mku <base test name without .c>` to build and run the test from any directory
+- A new or renamed file under `tests/unity/src/` is picked up only after `mkt`. CMake globs `*_test*.c` at configure time, so `mkq` keeps the previous file list
 - When making only script changes, there is no need to run alias `mkq`/`mkt` - that is for changes to C code only
 - After ANY Bash/script change, run alias `mks` (shellcheck / test_92) before considering the change done
-- Assume all env vars (like HYDROGEN_ROOT) and all aliases are properly defined and declaredp
+- After a docs-only change, run alias `mkl` (Test 04, markdown link check)
+- Assume all env vars (like HYDROGEN_ROOT) and all aliases are properly defined and declared
 
 **IMPORTANT NOTE:**  these aliases are not loaded by default into the regular AI model environment, you can run them by using a zsh instance like this:
 
 ```bash
 zsh -ic 'mkq' 2>&1
 zsh -ic 'mkt' 2>&1
-zsh -ic 'mku mutext_test_stats' 2>&1
+zsh -ic 'mku mutex_test_stats' 2>&1
 ```
 
-## ⚠️ ADDITINAL GUIDANCE
+## ⚠️ ADDITIONAL GUIDANCE
 
 - When searching code, use tools like grep to find patterns efficiently
 - Follow the C and Bash coding requirements strictly to avoid linting errors detected by cppcheck and shellcheck
@@ -46,7 +48,7 @@ zsh -ic 'mku mutext_test_stats' 2>&1
 
 ```directory
 build/          Temporary build artifacts
-cmake/          cmake/CMakeLists.tst for all builds
+cmake/          cmake/CMakeLists.txt for all builds, including Unity
 configs/        JSON configuration files
 examples/       Example code
 extras/         Helpful scripts and code snippets
@@ -54,53 +56,70 @@ payloads/       Payload definitions
 src/
  ├─api/          API endpoints
  ├─config/       Config management
- ├─database/       Database management
+ ├─database/     Database engines and queues
+ ├─handlers/     Signal and crash handlers
  ├─landing/      Shutdown handlers
  ├─launch/       Startup handlers
  ├─logging/      Logging system
+ ├─mailrelay/    Mail relay
+ ├─mcp/          MCP server
  ├─mdns/         Service discovery
+ ├─mirage/       Mirage
+ ├─mutex/        Mutex helpers
+ ├─nats/         NATS client
  ├─network/      Network interfaces
  ├─oidc/         OpenID Connect
  ├─payload/      Payload management
  ├─print/        Print subsystem
  ├─queue/        Thread-safe queues
  ├─registry/     Subsystem registry
+ ├─reporting/    Reporting
+ ├─resources/    Resource caches
+ ├─scripting/    Lua scripting
  ├─state/        System state
- ├─state/        Terminal
+ ├─status/       Status reporting
+ ├─swagger/      Swagger support
+ ├─terminal/     Terminal
  ├─threads/      Thread management
  ├─utils/        Utilities
-  ├─webserver/    HTTP server
-  ├─websocket/    WebSocket
-  ├─mcp/          MCP server
-  └─hydrogen.c    Main entry
+ ├─webserver/    HTTP server
+ ├─websocket/    WebSocket
+ ├─globals.c
+ ├─globals.h
+ ├─hydrogen.c    Main entry
+ ├─hydrogen.h    Umbrella header, included first in every .c
+ └─hydrogen_not.c
 tests/          Test framework
 ```
 
 ## TESTS
+
+This list is every `tests/test_*.sh` script. When a script is added or renamed, update this list and [`/docs/H/tests/TESTING.md`](/docs/H/tests/TESTING.md) in the same change. Per-test pages live in `/docs/H/tests/`.
 
 - tests/test_00_all.sh - Orchestrator that runs all the tests
 - tests/test_01_compilation.sh - Builds all targets
 - tests/test_02_secrets.sh - Checks that PAYLOAD_LOCK and PAYLOAD_KEY are usable
 - tests/test_03_shell.sh - Validates environment variables used in Hydrogen configuration
 - tests/test_04_check_links.sh - Cross-checks all Markdown files for missing links and orphaned files
-- tests/test_10_unity.sh - Runs battery of Unity unit tests
-- tests/test_11_leaks_like_a_sieve.sh - Uses ASAN to test for memory leaks
-- tests/test_12_env_variables.sh - Checks that environment variables on JSON confg files work properly
+- tests/test_10_unity.sh - Runs the Unity unit-test battery
+- tests/test_11_leaks_like_a_sieve.sh - AddressSanitizer leak run (the debug build). Test 10 is Unity
+- tests/test_12_env_variables.sh - Checks that environment variables in JSON config files work
 - tests/test_13_crash_handler.sh - Tests that crash dumps contain debugging information
 - tests/test_14_library_dependencies.sh - Checks for all the libraries the project requires
-- tests/test_15_json_error_handling.sh - Tests that the Hydrogen Server will report JSON errors properly
-- tests/test_16_shutdown.sh - Quick check that Hydrogen Server shuts down cleanly without hanging
-- tests/test_17_startup_shutdown.sh - Checks that the Hyrogen Server starts and stops cleanly in min and max configurations
+- tests/test_15_json_error_handling.sh - Tests that the Hydrogen Server reports JSON errors
+- tests/test_16_shutdown.sh - Quick check that Hydrogen shuts down cleanly without hanging
+- tests/test_17_startup_shutdown.sh - Checks that Hydrogen starts and stops cleanly in min and max configurations
 - tests/test_18_signals.sh - Confirms signal handling for SIGHUP, SIGUSR1, SIGUSR2, SIGTERM and SIGINT
 - tests/test_19_socket_rebind.sh - Confirms TIME_WAIT is configured correctly
 - tests/test_20_api_prefix.sh - Checks that changing the /api prefix works
 - tests/test_21_system_endpoints.sh - Validates the functionality of system endpoints
-- tests/test_22_swagger.sh - Checks that Swagger files are served up from payload
-- tests/test_23_websockets.sh - Retrieves status from WebSockets interface
-- tests/test_24_uploads.sh - Upload file to server
-- tests/test_26_terminal.sh - Testing xterm.js implementation
-- tests/test_27_reporting_image_scale.sh - Reporting image scale endpoint testing with ImageMagick
-- tests/test_30_database.sh - All Engines Parallel Operational Test (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB, MSSQL, plus a combined config)
+- tests/test_22_swagger.sh - Checks that Swagger files are served from the payload
+- tests/test_23_websockets.sh - Retrieves status from the WebSocket interface
+- tests/test_24_uploads.sh - Upload a file to the server
+- tests/test_26_terminal.sh - xterm.js terminal, payload serving, and WebSocket connections
+- tests/test_27_reporting_image_scale.sh - Reporting image scale endpoint with ImageMagick
+- tests/test_30_database.sh - All-engines parallel operational test (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB, MSSQL, plus a combined config)
+- tests/test_31_migrations.sh - SQL-lints Helium migration files on disk with sqruff. Does not launch Hydrogen
 - tests/test_32_postgres_migrations.sh - PostgreSQL migration performance test
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
@@ -109,39 +128,45 @@ tests/          Test framework
 - tests/test_37_firebird_migrations.sh - Firebird migration performance test
 - tests/test_38_yugabytedb_migrations.sh - YugabyteDB migration performance test
 - tests/test_39_mssql_migrations.sh - MSSQL migration performance test
-- tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
-- tests/test_41_exercise_asan.sh - Memory exercise ASAN (500 concurrent auth requests across 7 enabled databases + LeakSanitizer; YugabyteDB disabled)
-- tests/test_42_oidc_rp.sh - OIDC Relying Party - complete authentication flow testing through Role Mapping
-- tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 8 database engines in parallel (with/without DefaultDatabase, fail-fast)
-- tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 7 enabled databases; YugabyteDB disabled; port 5444; suite-parallel with test 41)
+- tests/test_40_auth.sh - Authentication endpoints (JWT tokens across multiple database engines)
+- tests/test_41_exercise_asan.sh - Memory exercise under ASAN (500 concurrent auth requests across 7 enabled databases + LeakSanitizer; YugabyteDB disabled)
+- tests/test_42_oidc_rp.sh - OIDC Relying Party authentication flow through role mapping
+- tests/test_43_scripting.sh - Scripting subsystem orchestrator lifecycle across all 8 database engines in parallel (with and without DefaultDatabase, fail-fast)
+- tests/test_44_exercise_native.sh - Native RSS exercise (5000 concurrent auth requests across 7 enabled databases; YugabyteDB disabled; port 5444; suite-parallel with test 41)
+- tests/test_45_oidc_idp.sh - OIDC Identity Provider across eight engines (WebServer ports 5450–5458)
 - tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 8 engines parallel)
-- tests/test_63_conduit_webhook.sh - Conduit webhook ingress blackbox (HMAC signatures, alias, error paths, 8 engines parallel, ports 1563x)
-- tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines; ports 1547x / 1548x)
-- tests/test_73_argent_mcp.sh - Argent MCP tools and validation variants (8 engines; ports 1573x / 1574x)
+- tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines; WebServer 1547x, MCP 1548x)
 - tests/test_48_mdns.sh - mDNS announcements
-- tests/test_50_conduit_query.sh - Single public query endpoint testing
-- tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing
+- tests/test_50_conduit_query.sh - Single public query endpoint (WebServer port 5500)
+- tests/test_51_conduit_queries.sh - Conduit multiple-queries endpoint (`hydrogen_test_51_conduit_queries.json`, WebServer port 5510)
 - tests/test_52_conduit_auth_query.sh - Authenticated single query endpoint
 - tests/test_53_conduit_auth_queries.sh - Authenticated batch query endpoint
 - tests/test_54_conduit_alt_query.sh - Cross-database single query with override
 - tests/test_55_conduit_alt_queries.sh - Cross-database batch query with override
-- tests/test_57_mailrelay_outbound.sh - Mail Relay outbound delivery testing with local SMTP sink
+- tests/test_56_cap_query.sh - Conduit `/api/conduit/cap_query` (WebServer port 5560). Page: [`test_56_cap_query.md`](/docs/H/tests/test_56_cap_query.md)
+- tests/test_57_mailrelay_outbound.sh - Mail Relay outbound delivery with a local SMTP sink
+- tests/test_58_mailrelay_api.sh - Mail Relay authenticated API, plaintext and STARTTLS, across engines
+- tests/test_59_auth_chat.sh - Authenticated chat REST and WebSocket against a local mock LLM (WebServer 15900, mock LLM 15901, WebSocket 15902). Page: [`test_59_auth_chat.md`](/docs/H/tests/test_59_auth_chat.md)
 - tests/test_60_performance.sh - Performance benchmarking across databases
-- tests/test_62_nats.sh - NATS client blackbox (local nats-server, ports 5620–5629; JWT /api/nats/status and /api/nats/instances)
-- tests/test_70_installer.sh - Standalone installer building test
+- tests/test_61_mailrelay_inbound.sh - Mail Relay inbound SMTP listener (mailval sink 5580, inbound SMTP 5581). Page: [`test_61_mailrelay_inbound.md`](/docs/H/tests/test_61_mailrelay_inbound.md)
+- tests/test_62_nats.sh - NATS client blackbox (local nats-server, ports 5620–5629; JWT `/api/nats/status` and `/api/nats/instances`)
+- tests/test_63_conduit_webhook.sh - Conduit webhook ingress (HMAC signatures, alias, error paths, 8 engines, WebServer ports 1563x)
+- tests/test_64_queryref_transactions.sh - QueryRef transaction blocks on `/api/conduit/alt_query` (QueryRefs 156–158, WebServer port 5640)
+- tests/test_70_installer.sh - Standalone installer build
 - tests/test_71_database_diagrams.sh - Database diagram generation
-- tests/test_72_schemahelper.sh - SchemaHelper fixture + luacheck integration (no live DB)
-- tests/test_89_coverage.sh - Shows Unity and Blackbox test coverage
-- tests/test_90_markdownlint.sh - Lint for Markdown
-- tests/test_91_cppcheck.sh - Lint for C
-- tests/test_92_shellcheck.sh - Lint for Bash
-- tests/test_93_jsonlint.sh - Lint for JSON
-- tests/test_94_eslint.sh - Lint for JavaScript
-- tests/test_95_stylelint.sh - Lint for CSS
-- tests/test_96_htmlhint.sh - Lint for HTML
-- tests/test_97_xmlstarlet.sh - Lint for XML/SVG (xmlstarlet)
-- tests/test_98_luacheck.sh - Lua code analysis with luacheck
-- tests/test_99_code_size.sh - Checks limits on source code, runs cloc
+- tests/test_72_schemahelper.sh - SchemaHelper fixture and luacheck (no live DB)
+- tests/test_73_argent_mcp.sh - Argent MCP tools and validation variants (8 engines; WebServer 1573x, MCP 1574x)
+- tests/test_89_coverage.sh - Unity and blackbox coverage
+- tests/test_90_markdownlint.sh - Markdown lint
+- tests/test_91_cppcheck.sh - C lint (cppcheck)
+- tests/test_92_shellcheck.sh - Bash lint (shellcheck)
+- tests/test_93_jsonlint.sh - JSON lint
+- tests/test_94_eslint.sh - JavaScript lint
+- tests/test_95_stylelint.sh - CSS lint
+- tests/test_96_htmlhint.sh - HTML lint
+- tests/test_97_xmlstarlet.sh - XML and SVG lint (xmlstarlet)
+- tests/test_98_luacheck.sh - Lua lint (luacheck)
+- tests/test_99_code_size.sh - Source size limits and cloc. There is no test_99_cleanup.sh
 
 ## CRITICAL DOCUMENTATION
 
@@ -155,7 +180,7 @@ tests/          Test framework
 - /docs/H/core/subsystems/scripting/lua_api.md - Lua `H.*` host API reference
 - /docs/H/core/subsystems/mcp/mcp.md - MCP Streamable HTTP subsystem
 - /docs/H/core/subsystems/nats/nats.md - NATS client, cache invalidation, relay, and presence
-- /docs/H/tests/TESTING.md - blackbox/integration tests tests
+- /docs/H/tests/TESTING.md - blackbox and integration tests
 - /docs/H/tests/TESTING_UNITY.md - Unity unit tests
 
 ## MARKDOWN CODING REQUIREMENTS
@@ -172,7 +197,7 @@ tests/          Test framework
   - MD032/blanks-around-lists: Lists should be surrounded by blank lines
   - Unique headings
   - Label code snippets
-- Resolve any problems reported by Visual Studo Code
+- Resolve any problems reported by Visual Studio Code
 - Run Test 04 after adding new documents
 
 ## C CODING REQUIREMENTS
@@ -184,10 +209,10 @@ tests/          Test framework
 - Grouped/commented include files at the top of every .c/.h file
 - DO NOT USE GOTO UNDER ANY CIRCUMSTANCES. Why? Because I said so.
 - src/config/config_defaults.c contains many useful subsystem defaults
-- Use `log_this` when outputing anything to the log
+- Use `log_this` when outputting anything to the log
 - cmake/CMakeLists.txt is used for all project builds including Unity
 - Run tests/test_91_cppcheck.sh whenever C code is changed
-- Unit test filenames must be unique - search beforee creating new files
+- Unit test filenames must be unique - search before creating new files
 - When using #include use <src/folder/...> instead of "../../.."
 - cmake files are in cmake/ folder, starting with cmake/CMakeLists.txt
 
@@ -197,26 +222,25 @@ tests/          Test framework
 > **cannot call `static` functions**, so `static` helpers are impossible to
 > test. This has bitten us repeatedly: the `mailrelay` and `scripting`
 > subsystems (new additions) shipped with ~200 `static` helpers that later had
-> to be de-`static`'d by hand just to enable unit tests (see
-> `elements/001-hydrogen/hydrogen/static_functions_mailrelay_scripting.md`).
+> to be de-`static`'d by hand just to enable unit tests.
 > **Rule:** every function that could conceivably be a Unity test target must
 > be non-`static` **and** have a visible declaration in a header (a `static`
 > function whose only caller is in the same file is a red flag). The only
 > acceptable `static` usage is for file-scope *state* (globals, string
-> literals, test-seam callbacks) — never for callable functions.
+> literals, test-seam callbacks) — never for callable functions. `static` in
+> a Unity test file is fine. The gate covers `src/` only.
 >
 > **This rule is enforced automatically.** `mkq`/`mkt` (the trial build) runs a
 > *static-function gate* in its Dependency Check: any **new** `static`
 > function definition added to `src/` fails the build immediately, with a
 > message telling you to remove `static` and add a header declaration. The set
-> of pre-existing (intentional) `static` functions is grandfathered in
-> `tests/.static-baseline.txt`. If you genuinely need a new module-private
-> `static` (file-scope state only), regenerate the baseline:
-> `rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' src | rg -o 'static\s+[\w\s\*]*?(\w+)\s*\(' -r '$1' | sort -u > tests/.static-baseline.txt`
-> Adding a callable `static` function is not acceptable — it is simply not
-> testable, and the build will stop you.
+> of pre-existing `static` names is grandfathered in
+> `tests/.static-baseline.txt`. Do not regenerate that file from a sweep of
+> `src/`. A sweep would grandfather the callable statics the gate exists to
+> stop. When the new static is file-scope state, add that one name to the
+> baseline by hand.
 
-- Don't use static functions if possible as we can't test those
+- Do not add callable `static` functions in `src/`. Unity cannot call them, and the trial build rejects a new one
 
 IMPORTANT: The alias `mkp` can be used to run cppcheck against all project sources.
 
@@ -234,7 +258,7 @@ IMPORTANT: The alias `mkp` can be used to run cppcheck against all project sourc
 - SC2250: Braces around variable preferences even when not strictly required
 - SC2312: Invoke commands separately to avoid masking return values (or use `|| true` to ignore)
 - SC2248: Add double quotes even when variables don't contain special characters
-- Run tests/test_92_cppcheck.sh whenever Bash code is changed
+- Run tests/test_92_shellcheck.sh whenever Bash code is changed
 
 IMPORTANT: The alias `mks` can be used to run shellcheck against all project scripts.
 
@@ -311,7 +335,7 @@ log.
 ## LAUNCH / LANDING
 
 - Launch Phases: Readiness > Plan > Launch <subsystem> > Review
-- Landing PHases: Readiness > Plan > Landing <subsystem> > Review
+- Landing Phases: Readiness > Plan > Landing <subsystem> > Review
 
 ## RESOURCES
 
@@ -336,10 +360,11 @@ When returning to a multi-phase subsystem such as Mail Relay, use this quick-sta
 7. Review uncommitted changes with `git status`.
 8. Build aliases are defined in `~/.zshrc`; in non-interactive shells invoke them as `zsh -ic '<alias>'`. The common aliases are:
     - `mkq` — quick trial build (no clean, no cmake reconfigure)
-    - `mkt` — full trial build (clean + cmake)
+    - `mkt` — full trial build (clean + cmake). Required after adding or removing a `src/` or `tests/unity/src/` file
     - `mka` — build all targets
-    - `mku <base>` — build and run a Unity test  
-    - `mkp` — C lint (cppcheck)
-    - `mks` — shell script lint (shellcheck)
+    - `mku <base>` — build and run one Unity test. The argument is the basename without `.c`, for example `mutex_test_stats`
+    - `mkp` — C lint (cppcheck, `tests/test_91_cppcheck.sh`)
+    - `mks` — shell script lint (shellcheck, `tests/test_92_shellcheck.sh`)
+    - `mkl` — markdown link check (Test 04)
 
 Use this baseline before asking qualifying questions and presenting the next implementation chunk.

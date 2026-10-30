@@ -133,7 +133,7 @@ across the fanout are aggregated into the sub's token budget. See
 
 ## Testing
 
-- **Test 59** — exercises broadcast alongside the single-engine path.
+- **[Test 59](/docs/H/tests/test_59_auth_chat.md)** — exercises broadcast alongside the single-engine path.
 - **Unity** — `auth_chats_test_helpers.c` (parameter resolution).
 
 ## Related Documentation

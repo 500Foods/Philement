@@ -134,7 +134,7 @@ All Cap verification errors return HTTP 400 with the standard conduit error shap
 
 ### Blackbox
 
-The blackbox script `tests/test_56_cap_query.sh` exercises both negative and positive paths using the unified 7-engine config:
+The blackbox page is [`test_56_cap_query.md`](/docs/H/tests/test_56_cap_query.md). The script [`test_56_cap_query.sh`](/elements/001-hydrogen/hydrogen/tests/test_56_cap_query.sh) posts against `Demo_PG` on WebServer port 5560:
 
 ```bash
 ./tests/test_56_cap_query.sh

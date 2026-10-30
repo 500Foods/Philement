@@ -1,6 +1,27 @@
 # AGENTS.md — Philement repo guide for automated agents
 
-This is the first file an automated coding agent should read when dropped onto a fresh clone of `500Foods/Philement`. It points you at the elements that actually do work, the docs that matter, the build/test workflow, and the conventions the project enforces. If a pointer below conflicts with a more specific per-element `AGENTS.md` or guide, the specific document wins (Hydrogen's AI guide is [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md); Helium's is [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md); Lithium's is [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md)).
+This is the first file an automated coding agent should read when dropped onto a fresh clone of `500Foods/Philement`. It points you at the elements that actually do work, the docs that matter, the build/test workflow, and the conventions the project enforces. If a pointer below conflicts with a more specific per-element `AGENTS.md` or guide, the specific document wins (Hydrogen's map is [`elements/001-hydrogen/AGENTS.md`](/elements/001-hydrogen/AGENTS.md) and its contract is [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md); Helium's is [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md); Lithium's is [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md)).
+
+## When the user names an element
+
+Open the session at the Philement root unless the note below says otherwise. A session started there loads this file. Grok also loads every `AGENTS.md` on the path from the repo root to the working directory, and the deeper file wins on a conflict. Naming an element does not move the working directory.
+
+When the user says they are working on an element, read that row before any other project file. Do not wait for them to name the documents.
+
+| They say | Read first |
+| --- | --- |
+| hydrogen, H, 001 | [`elements/001-hydrogen/AGENTS.md`](/elements/001-hydrogen/AGENTS.md), then the docs it names |
+| helium, He, 002, a migration | [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md) |
+| lithium, Li, 003 | [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md), then the file it names for the task |
+| any other element | that element's `README.md`. Stop if the status line says the element is still an idea |
+
+A task that crosses elements stays at the repo root and reads each named guide. Also read [`docs/PLANNING.md`](/docs/PLANNING.md) when the task is a phase of a plan.
+
+Start inside an element directory only when that session stays there and its `AGENTS.md` should be in the prompt from the first message:
+
+- Lithium-only work: `elements/003-lithium`. The guide is the session map.
+- A migration with no other tree: `elements/002-helium`.
+- Hydrogen, including its contract docs: `elements/001-hydrogen/hydrogen` (`cdh`, then launch Grok). That loads this file, [`elements/001-hydrogen/AGENTS.md`](/elements/001-hydrogen/AGENTS.md), and the symlinks in `elements/001-hydrogen/hydrogen/.grok/rules/` (`INSTRUCTIONS.md`, `TESTING.md`, `TESTING_UNITY.md`). Launching from the Philement root does not load those three.
 
 ## What is Philement, in 30 seconds
 
@@ -27,7 +48,7 @@ Philement/
 │   ├── Li/                  # Lithium (JS SPA)
 │   └── V/                   # Vanadium (fonts)
 └── elements/                # source trees, named 001-…-name
-    ├── 001-hydrogen/        # C server + its own AGENTS-like AI guide
+    ├── 001-hydrogen/        # C server; agent map is AGENTS.md, contract is docs/H/INSTRUCTIONS.md
     │   └── hydrogen/        # the actual project (src/, tests/, extras/, payloads/)
     ├── 002-helium/          # Lua migrations + SchemaTool/SchemaHelper (has its OWN AGENTS.md)
     ├── 003-lithium/         # JS SPA (has its OWN AGENTS.md — start there)
@@ -43,7 +64,7 @@ Elements are grouped by readiness. **Check each element's `README.md`** before t
 
 | Element | Path | Maturity | Docs root | Notes |
 |---|---|---|---|---|
-| **001 Hydrogen** | `elements/001-hydrogen/hydrogen/` | active / primary | [`docs/H/README.md`](/docs/H/README.md) | C server; AI guide: [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) |
+| **001 Hydrogen** | `elements/001-hydrogen/hydrogen/` | active / primary | [`docs/H/README.md`](/docs/H/README.md) | C server; map: [`elements/001-hydrogen/AGENTS.md`](/elements/001-hydrogen/AGENTS.md); contract: [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) |
 | **002 Helium** | `elements/002-helium/` | active (data layer) | [`docs/He/README.md`](/docs/He/README.md) | Lua migrations; **[`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md) is authoritative for migration numbers, packs, and lookup ids** |
 | **003 Lithium** | `elements/003-lithium/` | active (UI) | [`docs/Li/README.md`](/docs/Li/README.md) | Vanilla JS SPA; **[`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md) is element-specific and authoritative for UI work** |
 | 004 Beryllium | `elements/004-beryllium/` | 🏆 usable | [`elements/004-beryllium/README.md`](/elements/004-beryllium/README.md) | gcode handling |
@@ -93,7 +114,7 @@ All Hydrogen build scripts require `HYDROGEN_ROOT` and `HELIUM_ROOT` to be set. 
 
 ## Hydrogen (001) — the workhorse
 
-If you are asked to change the project, it is almost certainly Hydrogen. The build/test conventions below — the `mkt`/`mkp`/`mks`/`mku`/`mka` aliases, the Unity + blackbox test suite, and the no-`static`-in-`src/` rule — are **Hydrogen-specific**; other elements (notably Lithium) use their own toolchains.
+Session map: [`elements/001-hydrogen/AGENTS.md`](/elements/001-hydrogen/AGENTS.md). If you are asked to change the project, it is almost certainly Hydrogen. The build/test conventions below — the `mkt`/`mkp`/`mks`/`mku`/`mka` aliases, the Unity + blackbox test suite, and the no-`static`-in-`src/` rule — are **Hydrogen-specific**; other elements (notably Lithium) use their own toolchains.
 
 - **Source:** [`elements/001-hydrogen/hydrogen/src/`](/elements/001-hydrogen/hydrogen/src) — subsystems (`api/`, `config/`, `database/`, `launch/`, `logging/`, `mcp/`, `network/`, `oidc/`, `print/`, `queue/`, `scripting/`, `state/`, `threads/`, `utils/`, `webserver/`, `websocket/`, `mailrelay/`, …) and `src/hydrogen.h` (included first in every `.c`).
 - **CMake:** `elements/001-hydrogen/hydrogen/cmake/` (`CMakeLists.txt` for all builds including Unity).

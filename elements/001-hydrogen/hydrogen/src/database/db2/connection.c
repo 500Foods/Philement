@@ -110,6 +110,20 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
         return true; // Another thread loaded it
     }
 
+    // SQL_C_CHAR is converted to the application code page. LANG=C with
+    // DB2CODEPAGE unset selects 819, and any UTF-8 byte that does not fit
+    // (en dash, é, CJK in the migrations) comes back as 0x1A. Bootstrap then
+    // fails in json_loads. 1208 is UTF-8, which is what the JSON layer emits.
+    // Leave an explicit setting alone. IBM reads this at the first CLI call,
+    // so it has to be in place before dlopen.
+    if (!getenv("DB2CODEPAGE")) {
+        if (setenv("DB2CODEPAGE", "1208", 0) == 0) {
+            log_this(log_subsystem, "DB2CODEPAGE unset; using 1208 so UTF-8 characters are not replaced with 0x1A", LOG_LEVEL_TRACE, 0);
+        } else {
+            log_this(log_subsystem, "Failed to set DB2CODEPAGE=1208; UTF-8 may be replaced with 0x1A", LOG_LEVEL_ERROR, 0);
+        }
+    }
+
     // Try to load libdb2
     libdb2_handle = dlopen("libdb2.so", RTLD_LAZY);
     if (!libdb2_handle) {

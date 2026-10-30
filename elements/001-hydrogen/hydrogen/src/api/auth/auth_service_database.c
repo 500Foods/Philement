@@ -1,7 +1,4 @@
-/*
- * Auth Service Database Functions
- * Query wrappers, account/JWT ops, login audit, IP block.
- */
+/* Auth service database: query wrappers, account and JWT operations, login audit, and IP block. */
 
 #include <src/hydrogen.h>
 #include <string.h>
@@ -284,12 +281,8 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
     return NULL;
 }
 
-/*
- * Verify password AND account status in one secure database query.
- * Uses QueryRef #012 which checks password_hash AND status_a16=1.
- * Returns true only if BOTH password correct AND account active.
- * More secure: never exposes hash, does not reveal if account exists but disabled.
- */
+/* Verify password and account status in one query (QueryRef #012: password_hash and status_a16=1).
+ * Returns 1 only when both match. The hash is never returned, and a disabled account looks the same as a wrong password. */
 int verify_password_and_status_code(const char* password, int account_id, const char* database, account_info_t* account) {
     if (!password || account_id <= 0 || !database || !account) return -1;
 
@@ -404,9 +397,6 @@ bool check_username_availability(const char* username, const char* database) {
     return available;
 }
 
-/**
- * Create new account record
- */
 int create_account_record(const char* username, const char* email,
                           const char* hashed_password, const char* full_name, const char* database) {
     if (!username || !email || !hashed_password || !database) return -1;
@@ -486,20 +476,15 @@ int create_account_record(const char* username, const char* email,
     // Cleanup
     free_query_result(result);
 
-    // Email is accepted for the register API surface but is not persisted here:
-    // QueryRef #052 is password-hash storage (used by register after create).
-    // account_contacts insert has no dedicated QueryRef yet; login still uses
-    // existing contact lookup QueryRefs when contacts are seeded by migrations.
+    // Email is accepted for the register API but is not stored here. QueryRef #052 stores the password hash after create.
+    // account_contacts has no QueryRef yet; login still uses the contact lookups when migrations have seeded contacts.
     (void)email;
 
     return account_id;
 }
 
-/**
- * Add GEOCITY / GEOREGION / GEOCOUNTRY (QueryRef #004, #013 after 1410).
- * Values come from trusted-proxy X-GeoIP2-* headers captured by
- * api_get_client_ip() on this thread; empty string when absent.
- */
+/* Add GEOCITY, GEOREGION, and GEOCOUNTRY (QueryRef #004, and #013 after migration 1410).
+ * Values are the trusted-proxy X-GeoIP2-* headers captured by api_get_client_ip() on this thread, or empty when absent. */
 void add_request_geo_params(json_t* string_params) {
     const char *city = "", *region = "", *country = "";
     api_get_request_geo(&city, &region, &country);
@@ -508,9 +493,6 @@ void add_request_geo_params(json_t* string_params) {
     json_object_set_new(string_params, "GEOCOUNTRY", json_string(country));
 }
 
-/**
- * Store JWT in database
- */
 bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
     bool stored = false;
 
@@ -552,9 +534,6 @@ bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int syst
     return stored;
 }
 
-/**
- * Update JWT storage (for renewal)
- */
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
                         const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database, const char* client_ip) {
     if (!old_jwt_hash || !new_jwt_hash || account_id <= 0 || !database) return;
@@ -570,10 +549,8 @@ void update_jwt_storage(int account_id, const char* old_jwt_hash,
     delete_jwt_from_storage(old_jwt_hash, database);
 }
 
-/**
- * End JWT session in storage (QueryRef #019 soft-expires valid_until;
- * row kept for Login History). Name retained for call sites.
- */
+/* End the JWT session in storage. QueryRef #019 soft-expires valid_until and keeps the row for Login History.
+ * The function name stays so existing call sites do not change. */
 void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
     if (!jwt_hash || !database) return;
 
@@ -599,13 +576,8 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
     free_query_result(result);
 }
 
-/**
- * Check if token is revoked (database lookup)
- *
- * QueryRef #018 "Validate JWT" returns a row when the token hash is still
- * present and valid. A matching row means the token is active; no row means
- * it has been deleted/revoked (or never stored).
- */
+/* QueryRef #018 (Validate JWT) returns a row while the token hash is present and still valid.
+ * A row means the token is active; no row means it was deleted, revoked, or never stored. */
 int jwt_token_store_status(const char* token_hash, const char* ip_address, const char* database) {
     if (!token_hash || !database) return -1;
 
@@ -650,9 +622,6 @@ bool is_token_revoked(const char* token_hash, const char* ip_address, const char
     return status != 1;
 }
 
-/**
- * Check failed login attempts for rate limiting
- */
 int check_failed_attempts(const char* login_id, const char* client_ip,
                            time_t window_start, const char* database) {
     (void)window_start; // Unused - LOGINRETRYWINDOW comes from database config Parameters
@@ -714,9 +683,6 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
     return count;
 }
 
-/**
- * Block IP address temporarily
- */
 void block_ip_address(const char* client_ip, int duration_minutes, const char* database) {
     if (!client_ip || !database) return;
 
@@ -749,12 +715,8 @@ void block_ip_address(const char* client_ip, int duration_minutes, const char* d
     free_query_result(result);
 }
 
-/*
- * Fire-and-forget auth query submit (no pending waiter).
- * Used for audit inserts that must not block the login critical path under
- * concurrent multi-process load on shared demo databases (e.g. Test 40 + 41/44).
- * Submit serializes the query; caller may free buffers after return.
- */
+/* Submit an auth query and return without waiting. Audit inserts use this so login does not stall when several Hydrogen processes share a demo database (Test 40 with 41 and 44).
+ * The queue copies the query, so the caller may free its buffers on return. */
 bool submit_auth_query_async(int query_ref, const char* database, json_t* params) {
     if (!database || query_ref <= 0) {
         return false;
@@ -821,15 +783,8 @@ bool submit_auth_query_async(int query_ref, const char* database, json_t* params
     return ok;
 }
 
-/**
- * Log login attempt to database (async / best-effort).
- *
- * Must not block authentication. Under suite-parallel load, multiple Hydrogen
- * processes share the same demo schemas and contend on actions.action_id
- * (MAX+1 inserts). A synchronous wait here was causing 30s watchdog timeouts
- * and cascading Test 40 login failures (especially DB2) while standalone
- * runs stayed green.
- */
+/* Record a login attempt without blocking authentication.
+ * Under suite-parallel load, processes share demo schemas and contend on actions.action_id (MAX+1 inserts). Waiting on that insert caused 30-second watchdog timeouts and cascading Test 40 login failures, especially on DB2. */
 void log_login_attempt(const char* login_id, const char* client_ip,
                        const char* user_agent, time_t timestamp, const char* database) {
     if (!login_id || !client_ip || !database) return;
@@ -859,9 +814,7 @@ void log_login_attempt(const char* login_id, const char* client_ip,
 }
 
 
-/**
- * Log logout / session end (async). QueryRef #161 inserts actions type 5.
- */
+/* Record logout or session end without waiting. QueryRef #161 inserts an actions row of type 5. */
 void log_logout_attempt(const char* login_id, const char* client_ip,
                         const char* database) {
     if (!login_id || !client_ip || !database) return;
@@ -884,9 +837,6 @@ void log_logout_attempt(const char* login_id, const char* client_ip,
     json_decref(params);
 }
 
-/**
- * Verify API key and retrieve system information
- */
 int verify_api_key_code(const char* api_key, const char* database, system_info_t* sys_info) {
     if (!api_key || !database || !sys_info) {
         log_this(SR_AUTH, "Invalid parameters for API key verification", LOG_LEVEL_ERROR, 0);
@@ -984,37 +934,25 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
     return verify_api_key_code(api_key, database, sys_info) == 1;
 }
 
-/**
- * Check if license has expired
- * Returns true if license is valid (not expired)
- * Returns false if license has expired or if expiry is 0 (invalid)
- */
+/* True when license_expiry is still in the future. False when it has passed, or when the timestamp is 0. */
 bool check_license_expiry(time_t license_expiry) {
-    // If expiry is 0, license is invalid
     if (license_expiry == 0) {
         log_this(SR_AUTH, "Invalid license expiry: timestamp is 0", LOG_LEVEL_ERROR, 0);
         return false;
     }
-    
-    // Get current time
+
     time_t current_time = time(NULL);
-    
-    // Check if license has expired
     if (current_time > license_expiry) {
         log_this(SR_AUTH, "License has expired: current=%ld, expiry=%ld",
                  LOG_LEVEL_ALERT, 2, current_time, license_expiry);
         return false;
     }
-    
-    // License is still valid
+
     log_this(SR_AUTH, "License is valid: expiry=%ld, remaining=%ld seconds",
              LOG_LEVEL_DEBUG, 2, license_expiry, license_expiry - current_time);
     return true;
 }
 
-/**
- * Free account info
- */
 void free_account_info(account_info_t* account) {
     if (account) {
         free(account->username);

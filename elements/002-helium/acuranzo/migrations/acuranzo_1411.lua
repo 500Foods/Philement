@@ -6,6 +6,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-10-29 - DB2: QR 161 seed drops WHERE NOT EXISTS (SQL1585N)
 -- 1.0.0 - 2026-10-28 - Soft revoke; logout audit; Login History merge/summary
 
 return function(engine, design_name, schema_name, cfg)
@@ -54,6 +55,10 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
+            -- No WHERE NOT EXISTS. That anti-join temps a queries row, and
+            -- code/summary/collection are CLOB(100K), which is wider than a
+            -- 32K page (SQL1585N). The id lookup below projects one integer.
+            -- UNIQUE(query_ref, query_type_a28) rejects a second QR 161.
             INSERT INTO ${SCHEMA}${QUERIES} (
                 ${QUERIES_INSERT}
             )
@@ -111,10 +116,7 @@ table.insert(queries,{sql=[[
                 ]==]                                                                AS summary,
                 '{}'                                                                AS collection,
                 ${COMMON_INSERT}
-            FROM next_query_id
-            WHERE NOT EXISTS (
-                SELECT 1 FROM ${SCHEMA}${QUERIES} WHERE query_ref = 161
-            );
+            FROM next_query_id;
 
             ${SUBQUERY_DELIMITER}
 

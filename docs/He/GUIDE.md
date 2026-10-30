@@ -602,7 +602,8 @@ VALUES
 |--------------|--------------|
 | `FROM (VALUES (…), (…)) AS v(col1, col2, …)` | PostgreSQL-style column list on a `VALUES` derived table — **SQLite** errors with `near "(": syntax error` |
 | `FROM (SELECT … UNION ALL SELECT …) AS v` inside `INSERT…SELECT` | **DB2** often rejects `UNION` in that context (`SQL0104N … UNION … Expected … <table_expr>`) |
-| Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua` and `acuranzo_1289` / `courses_4007` notes |
+| Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua`. This fixes a missing `FROM`. It does not fix SQL1585N |
+| `INSERT … SELECT` from `${QUERIES}` with `WHERE NOT EXISTS` against `${QUERIES}` | DB2 SQL1585N (`SQLSTATE` 54048). `code`, `summary`, and `collection` are `CLOB(100K)`. The anti-join builds a temporary row wider than 32677 bytes, and 32K is the largest page, so another system temporary tablespace does not help. Project only `MAX(query_id)` (`acuranzo_1411.lua` 1.0.1), use `VALUES` (`acuranzo_1289.lua` 1.0.2), or update the existing row (`courses_4007.lua` 1.0.2) |
 | `WITH RECURSIVE` on DB2 or SQL Server | DB2 returns SQL0104N (unexpected token after `WITH RECURSIVE`). Both engines use `WITH`. PostgreSQL, SQLite, MySQL, MariaDB, and Firebird keep `WITH RECURSIVE`. See **Recursive common table expressions**. |
 | `JOIN ... ON` inside a DB2 recursive CTE | SQL0345N (`SQLSTATE` 42836). The recursive fullselect cannot use an explicit join. Use a comma join and put the condition in `WHERE`. See **Recursive common table expressions**. |
 | `CAST(x AS int)` or `CAST(x AS varchar(n))` on MySQL | MySQL rejects both. Use `signed` and `char(n)`. MariaDB accepts `int` and `varchar(n)`. See **Portable named parameters**. |
@@ -613,12 +614,15 @@ VALUES
 **Idempotency:** APPLY runs each forward migration once. Prefer a simple
 multi-row `VALUES` seed (unique keys will fail loudly if re-applied incorrectly)
 over clever `WHERE NOT EXISTS` wrappers unless you have tested the wrapper on
-**all four** engines. If you need skip-if-exists, prefer patterns already proven
+every engine. An anti-join against `${QUERIES}` is the SQL1585N row above.
+`UNIQUE(query_ref, query_type_a28)` is what rejects a second QueryRef row.
+If you need skip-if-exists, prefer patterns already proven
 in Acuranzo (and still validate on SQLite + DB2).
 
-**After editing seeds:** rebuild Hydrogen payload (`mkt` / `mka` or
-`payload-generate.sh`) so tests 32–38 see the new embedded SQL. Stale payload
-or LOADed-but-not-APPLIED rows keep the old broken `code` until LOAD refreshes.
+**After editing seeds:** rebuild the Hydrogen payload (`mka` or
+`payloads/payload-generate.sh`) so tests 32–38 see the new embedded SQL.
+`mkt` does not refresh the archive. Stale payload
+or LOADed-but-not-APPLIED rows keep the old `code` until LOAD refreshes.
 
 **Study order for seeds:**
 

@@ -103,7 +103,10 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_53_conduit_auth_queries.sh](/docs/H/tests/test_53_conduit_auth_queries.md)**: Authenticated batch query endpoint
 - **[test_54_conduit_alt_query.sh](/docs/H/tests/test_54_conduit_alt_query.md)**: Cross-database single query with override
 - **[test_55_conduit_alt_queries.sh](/docs/H/tests/test_55_conduit_alt_queries.md)**: Cross-database batch query with override
+- **[test_56_cap_query.sh](/docs/H/tests/test_56_cap_query.md)**: Conduit `/api/conduit/cap_query` (WebServer port 5560)
+- **[test_59_auth_chat.sh](/docs/H/tests/test_59_auth_chat.md)**: Authenticated chat REST and WebSocket against a local mock LLM
 - **[test_60_performance.sh](/docs/H/tests/test_60_performance.md)**: Performance benchmarking across databases
+- **[test_61_mailrelay_inbound.sh](/docs/H/tests/test_61_mailrelay_inbound.md)**: Mail Relay inbound SMTP listener (sink 5580, inbound 5581)
 - **[test_70_installer.sh](/docs/H/tests/test_70_installer.md)**: Standalone installer building test
 - **[test_73_argent_mcp.sh](/docs/H/tests/test_73_argent_mcp.md)**: Argent MCP tools and validation variants (8 engines, ports 1573x / 1574x)
 

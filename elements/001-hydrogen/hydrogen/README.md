@@ -2,6 +2,7 @@
 
 The main TOC for the Hydrogen project can be found in [**/docs/H/README.md**](/docs/H/README.md). But since you're here, these might be of interest to you.
 
+- [**Agent guide**](/elements/001-hydrogen/AGENTS.md) - What to read before editing Hydrogen
 - [**cmake**](/elements/001-hydrogen/hydrogen/cmake/README.md) - Describes the collection of cmake includes
 - [**examples**](/elements/001-hydrogen/hydrogen/examples/README.md) - Sample apps for interacting with a Hydrogen instance
 - [**extras**](/elements/001-hydrogen/hydrogen/extras/README.md) - Utilities, UDFs, and other odds and ends

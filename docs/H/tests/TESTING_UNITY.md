@@ -1,22 +1,22 @@
 # Unity Unit Tests
 
 Unity tests provide comprehensive unit testing for individual functions and modules within the Hydrogen codebase. The Unity testing framework enables thorough validation of core logic, edge cases, and boundary conditions at the function level. Of particular note, the testing framework is constructed in such a way as to create individual executable tests that link directly to object files of the project. We're not adding
-any code at all to our release build that has any kind of intsrumentation in it, really. But by linking to our object code directly, we can get coverage information that can be compared between our blackbox and unity tests to give an overall coverage report in great detail.
+any code at all to our release build that has any kind of instrumentation in it. Linking the object code directly produces coverage that can be compared with the blackbox run. The combined report is what the coverage gate uses.
 
-IMPORTANT: The main purpose of the Unity Framework Testing in this project is to improve overall code quality. This means sometimes that when adding new tests in particular, bugs or shortcomings in the codebase will be uncovered and need to be addressed. This is an expected and normal outcome of building tests. Sometimes the tests themselves make incorrect assumptions or aggressive assumptions that don't match the code and will need to be adjusted. In other instances they make perfectly valid assumptions and the code is just not dealing with it the way it should so the code will neeed to be adjusted.
+IMPORTANT: The main purpose of the Unity Framework Testing in this project is to improve overall code quality. Adding tests often uncovers bugs or shortcomings in the codebase, and those get fixed. Sometimes the test's assumptions do not match the code, and the test gets adjusted. Sometimes the assumptions are valid and the code gets adjusted.
 
 ## IMPROVING COVERAGE TASK
 
-A frequent task we preform involves ipmroving coverage for a single source file. When performing this specific task, we've got some things we can do to improve coverage. Normally, we'll start by reviewing existing coverage across both Unity unit tests and our blackbox tests by using the add_coverage.sh script to show us what intrumented lines are reporting no coverage. Sometimes this is the entire source file. From here, we have some things we can do.
+A frequent task is improving coverage for a single source file. Start with `extras/add_coverage.sh`, which lists instrumented lines covered by neither Unity nor the blackbox run. Sometimes that is the whole file. From there:
 
 1) Write tests to cover larger functions that have no coverage currently
 2) Refactor larger functions to use helpers that are more easily tested
 3) Refactor larger source code files into smaller files that can be reused or made small enough to fall under a lower threshold if fewer than 100 lines
-4) Check that all functions are not static as we can't test static functions.
+4) Check that callable functions in `src/` are not `static`. Unity links the object files and cannot call a `static` function. `static` inside a test file is allowed. The trial build rejects a new `static` function in `src/` that is not already named in `tests/.static-baseline.txt`.
 
-When performing this task, we're primarily concerned with improving coverage for instrumented lines that have no coverage currently, regardless of whether existing coverage is from unit or blackbox tests. New tests can be added to existing test sources, or new source tests created. If adding a new source test, we have to run `mkt` first to ensure that the new code compiles properly and without any errors or warnings. If the source test file exists already, and we're just making corrections, we can run `mku <testname>` to onfirm that all the tests pass. Run this from a zsh that references .zshrc to get these commands.
+The lines that matter are the ones neither suite has covered. A line already hit by a blackbox run counts toward the combined gate. New tests can go in an existing test file, or in a new file. A new or renamed file under `tests/unity/src/` needs `mkt` first, because CMake globs `*_test*.c` at configure time. `mkq` will not see it. Once the file is in the build, `mku <basename without .c>` rebuilds and runs that one test. Run the aliases from a zsh that loads `~/.zshrc` (`zsh -ic 'mku mutex_test_stats'`).
 
-Once the tests are passing, stop the task and ask for confirmation of the new coverage result as well as an updated list of source lines if the coverage target is not yet achieved.
+The combined gates are in [`/docs/H/CURIOSITIES.md`](/docs/H/CURIOSITIES.md). A file with fewer than 100 instrumented lines needs more than 50 percent combined coverage. A file with 100 or more needs more than 75 percent. Once the tests pass, stop and ask for confirmation of the new coverage and of the lines that are still uncovered when the gate is not met.
 
 ## MOCKS
 
@@ -88,15 +88,20 @@ Each Unity test file should follow this structure:
  * This file contains unit tests for <module> functionality
  */
 
-/ Standard project header plus Unity Framework header
+// Standard project header plus Unity Framework header.
+// hydrogen.h is included first. -Wmissing-prototypes is -Werror, so every
+// test function has one prototype before setUp().
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Include necessary headers for the module being tested
 #include <src/path/to/module.h>
 
-// Forward declarations for functions being tested
+// Prototype of the function under test, when the header does not already
+// declare it. Do not #include the .c file.
 bool function_to_test(const SomeType* input);
+
+static void test_function_name_basic_functionality(void);
+static void test_function_name_null_parameter(void);
 
 void setUp(void) {
     // Set up test fixtures, if any
@@ -106,32 +111,24 @@ void tearDown(void) {
     // Clean up test fixtures, if any
 }
 
-// Test functions
-void test_function_name_basic_functionality(void) {
-    // Test basic functionality
+static void test_function_name_basic_functionality(void) {
+    SomeType valid_input = {0};
     TEST_ASSERT_TRUE(function_to_test(&valid_input));
 }
 
-void test_function_name_null_parameter(void) {
-    // Test null parameter handling
+static void test_function_name_null_parameter(void) {
     TEST_ASSERT_FALSE(function_to_test(NULL));
-}
-
-void test_function_name_edge_cases(void) {
-    // Test edge cases and boundary conditions
-    // ...
 }
 
 int main(void) {
     UNITY_BEGIN();
-
     RUN_TEST(test_function_name_basic_functionality);
     RUN_TEST(test_function_name_null_parameter);
-    RUN_TEST(test_function_name_edge_cases);
-
     return UNITY_END();
 }
 ```
+
+`static` on the test functions themselves is optional. The ban on `static` applies to callable functions in `src/`, not to helpers in the test file. Do not `freopen` stdout. `mku` and Test 89 read Unity's summary from stdout. See Performance and Timing below.
 
 ### 🔠 **Critical: Test File Naming Conventions**
 
@@ -207,22 +204,22 @@ During MSSQL coverage improvement work, two naming issues were hit and resolved:
 
 ## CMake Build Integration
 
-Unity tests are **automatically discovered and integrated** with the CMake build system. The system uses dynamic discovery to find all Unity test files and build them with coverage instrumentation.
+Unity tests are discovered by a CMake glob and built with coverage instrumentation. Discovery happens at configure time.
 
 **Build Commands**:
 
-To build and test a Unity test function, use the 'mku' alias. It can be run from any folder and will find the test, compile it, and then run it. Just provide the base name of the test, without the foloder or extension.
+`mku` builds and runs one Unity test from any directory. Pass the basename with no directory and no `.c`. A new or renamed test file needs `mkt` first. `mkq` does not reconfigure, so it keeps the old glob.
 
 ```bash
-mku payload_test_cleanup
+zsh -ic 'mku payload_test_cleanup_openssl'
 ```
 
 **Key Integration Features**:
 
-- **No Manual Configuration**: New Unity tests are automatically discovered and built
+- **Configure-time discovery**: `cmake/CMakeLists-unity.cmake` globs `tests/unity/src/*_test*.c`. No hand-written source list. The glob runs at configure time, which is what `mkt` does.
 - **Parallel Building**: Multiple Unity tests can be built simultaneously
-- **Coverage Instrumentation**: All tests include gcov coverage by default
-- **Dependency Management**: Tests are properly linked with required libraries and source objects
+- **Coverage Instrumentation**: Unity objects are compiled with gcov
+- **Dependency Management**: Tests link the required libraries and the project objects. Link the objects. Do not `#include` a `.c` file.
 
 ## Coverage-Driven Workflow
 
@@ -231,11 +228,12 @@ The most efficient way to check Unity coverage is to use the `add_coverage.sh` t
 ### Step-by-Step Coverage Improvement Process
 
 ```bash
-# 1. Run the full Unity test suite to ensure gcov data is fresh ONLY if NEW source files are created
-mkt
+# 1. Reconfigure when a src/ or tests/unity/src/ file was added or renamed.
+#    mkq is enough when every file involved is already in the build.
+zsh -ic 'mkt'
 
-# 2. Identify lines missing from both coverage sets for a specific source file
-cd $HYDROGEN_ROOT
+# 2. Lines missing from both coverage sets. The path is relative to src/.
+cd "$HYDROGEN_ROOT"
 extras/add_coverage.sh utils/utils_crypto.c
 
 # Output: Lines not covered in both files:
@@ -389,12 +387,13 @@ Systematically test all parameter combinations:
 
 ### 📋 **Step-by-Step Instructions**
 
-To add a new Unity test, follow these steps:
+To add a new Unity test:
 
-1. **📁 Choose Location**: Place test files in `tests/unity/src/` mirroring the source directory structure
-
-2. **📝 Create Test File**: **CRITICAL** - Follow the naming convention exactly:
-   - **`<source>_test_<function>.c`** for function-specific testing
+1. Put the file in `tests/unity/src/` so the directory mirrors `src/`.
+2. Name it `<source>_test_<function>.c`. The text before `_test` is the source basename. The basename must be unique across `tests/unity/src/`. Search before creating the file.
+3. Include `<src/hydrogen.h>` first, then `<unity.h>`, then the module header. Give every test function one prototype before `setUp()`. Do not `#include` a `.c` file.
+4. Do not `#define` a `USE_MOCK_*` macro that CMake already passes for that path. See Mocking Framework below.
+5. Run `zsh -ic 'mkt'` for a new or renamed file, then `zsh -ic 'mku <basename>'`.
 
 ### Unity Framework Features
 
@@ -643,8 +642,8 @@ This is preferable to `TEST_FAIL_MESSAGE` when the skip reason is an environment
 
 #### Coverage Maximization Strategies
 
-1. Ensure that there are NO static functions as those cannot be tested
-2. Split larger source files (particuarly > 300 instrumented lines) into smaller files
+1. Ensure callable functions in `src/` are not `static`. `static` in the test file is allowed
+2. Split larger source files (particularly those over 300 instrumented lines) into smaller files
 3. Consider using helper functions to make large complex functions easier to test
 4. Target high-value functions that provide maximum coverage gain
 5. Test all public functions in the module
@@ -730,63 +729,19 @@ void tearDown(void) {
 
 **Key Lesson**: Not all code needs or benefits from unit tests. System-dependent code is often better validated through integration testing that exercises the complete system in realistic conditions.
 
-## GCOV Regeneration Issues
+## Do Not Include a .c File
 
-### The Problem: Test 80 Causes Source File GCOV Regeneration
-
-**Symptom**: When Test 80 (Code Size Analysis) runs after Test 10 (Unity), it caused `rc/launch/launch_database.c.gcov` to be regenerated with a different (smaller) coverage result, even though the underlying `.gcda` and `.gcno` files hadn't changed.
-
-**Symptom**: Test 00 reports a count discrepancy between coverage_table.sh and Test 99 (ultimately Test 10) when the instrumented unity lines in coverage_table.sh don't match the extended CLOC coverage lines reported in the extended table, even when the total blackbox and unity instrumented lines match the total instrumented lines in coverage_table.sh, which is normally the cause of this meessage.
-
-**Root Cause**: The `calculate_test_instrumented_lines` function processes test files (like `launch_database_test_enhanced_coverage.gcno`) to count test instrumentation. When gcov processes these test files, it analyzes **all linked source files** (including `launch_database.c`), causing their `.gcov` files to be regenerated.
-
-**Why Only launch_database.c?**: This file was unique because it had multiple dedicated test files that directly link against it. Other source files don't have corresponding test files, so they aren't affected. This meant that when gcov processed the test files, they triggered a regen of the source C file based on whatever gcov coverage came from the tests, invalidating the original Test 10 coverage, so ironically *lowering* the actual coverage reported.
-
-### The Fix: Proper Header-Only Includes
-
-**Solution Applied**: Removed improper `#include "launch_database.c"` includes from test files and added missing declarations to `src/launch/launch.h`.
-
-**Before (Problematic)**:
+A Unity test includes headers and links the project objects. `#include` of a `.c` file makes gcov regenerate that source's `.gcov` from the test link, which replaces the coverage Test 10 already recorded. Code size is Test 99. There is no Test 80.
 
 ```c
-#include "launch_database.c"  // ❌ Direct .c include creates gcov dependency
+// Wrong: pulls the implementation into the test and refreshes its .gcov
+#include "launch_database.c"
+
+// Right: the prototype lives in the header, and the test links the object
+#include <src/launch/launch.h>
 ```
 
-**After (Correct)**:
-
-```c
-#include "launch.h"  // ✅ Header-only include, no gcov dependency
-```
-
-### Prevention: Dependency Check in make-trial.sh
-
-**Added Dependency Check**: The trial build now includes a "Dependency Check" section that validates no `.c` files are included in Unity tests or mocks:
-
-```bash
-# Check for improper .c includes in Unity tests
-UNITY_C_INCLUDES=$(grep -r "\.c" tests/unity/src 2>/dev/null | grep -i include || true)
-MOCKS_C_INCLUDES=$(grep -r "\.c" tests/unity/mocks 2>/dev/null | grep -i include || true)
-
-if [[ -n "${UNITY_C_INCLUDES}" ]]; then
-    echo "❌ Found improper .c includes in Unity tests:"
-    echo "${UNITY_C_INCLUDES}"
-    exit 1
-fi
-```
-
-**Benefits**:
-
-- **Early Detection**: Catches improper includes during trial builds (`mkt`)
-- **Prevents GCOV Issues**: Stops the root cause before it affects coverage calculations
-- **Maintains Coverage Integrity**: Ensures test coverage data remains consistent between Test 10 and Test 80
-
-### Why This Matters
-
-**Coverage Data Integrity**: GCOV regeneration "resets" coverage data, causing inconsistent results between test runs. This makes coverage analysis unreliable and debugging difficult.
-
-**Test Isolation**: Unity tests should only depend on header files, not implementation files. Direct `.c` includes violate this principle and create unintended side effects.
-
-**Build Consistency**: Trial builds should catch architectural issues before they affect the full test suite.
+`extras/make-trial.sh` rejects an include of a `.c` under `tests/unity/src/` and `tests/unity/mocks/`. `mkt` runs that check. The trial build fails before the suite if one is present.
 
 ## Performance and Timing Best Practices
 
@@ -898,80 +853,32 @@ void test_calculate_startup_time_before_ready(void) {
 
 The Hydrogen project includes a comprehensive mocking framework that enables testing of system-dependent code and error conditions. This framework allows you to achieve high test coverage (75%+) by simulating failures and edge cases that are difficult or impossible to trigger in real system environments.
 
-### Available Mocks
+### Where the mocks are
 
-The project currently provides the following mock libraries:
+The mock sources are [`/elements/001-hydrogen/hydrogen/tests/unity/mocks/`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/). The files CMake compiles are `UNITY_MOCK_SOURCES` in [`/elements/001-hydrogen/hydrogen/cmake/CMakeLists-unity.cmake`](/elements/001-hydrogen/hydrogen/cmake/CMakeLists-unity.cmake). That list is longer than the eight mocks this page used to name. It includes the database client mocks (PostgreSQL, MySQL, MariaDB, DB2, ODBC for MSSQL, Firebird, SQLite), pthread, crypto, threads, terminal WebSocket, database engine, migrations, dbqueue, API utils, auth, chat, conduit, and the webserver core. Read the CMake list or [`mocks/README.md`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/README.md) before assuming a mock does not exist. The README lags the CMake list.
 
-#### 1. **mock_libwebsockets** (`tests/unity/mocks/mock_libwebsockets.c/h`)
+### Which USE_MOCK macros CMake already passes
 
-- **Purpose**: Mock WebSocket library functions for testing WebSocket-related code
-- **Functions**: `lws_create_context`, `lws_write`, `lws_service`, `lws_get_context`, etc.
-- **Usage**: Enable with `#define USE_MOCK_LIBWEBSOCKETS` in test files
+Do not `#define` a macro CMake already passes. `-Werror` treats the redefinition as a failure.
 
-#### 2. **mock_libmicrohttpd** (`tests/unity/mocks/mock_libmicrohttpd.c/h`)
+Source objects are always compiled with `-DUSE_MOCK_LOGGING` and `-Dlog_this=mock_log_this`. Include `mock_logging.h` only when the test inspects captured lines (`mock_logging_reset_all()`, `mock_logging_message_contains()`). Logging is already redirected, so a test does not include that header just to silence `log_this`.
 
-- **Purpose**: Mock HTTP server functions for testing HTTP-related code
-- **Functions**: MHD connection and response handling functions
-- **Usage**: Enable with `#define USE_MOCK_LIBMICROHTTPD` in test files
+The per-test switch in `CMakeLists-unity.cmake` is path-based, and the first matching branch wins. The default `else` branch passes `USE_MOCK_LOGGING`, `USE_MOCK_LIBMICROHTTPD`, and `USE_MOCK_SYSTEM`. These paths replace that set. The engine-name checks sit above the generic `database` check, so `tests/unity/src/database/postgresql/` takes the PostgreSQL branch:
 
-#### 3. **mock_launch** (`tests/unity/mocks/mock_launch.c/h`)
-
-- **Purpose**: Mock launch system functions for testing subsystem initialization
-- **Functions**: Launch phase management and subsystem coordination
-- **Usage**: Enable with `#define USE_MOCK_LAUNCH` in test files
-
-#### 4. **mock_landing** (`tests/unity/mocks/mock_landing.c/h`)
-
-- **Purpose**: Mock landing system functions for testing subsystem shutdown
-- **Functions**: Landing phase management and graceful shutdown
-- **Usage**: Enable with `#define USE_MOCK_LANDING` in test files
-
-#### 5. **mock_status** (`tests/unity/mocks/mock_status.c/h`)
-
-- **Purpose**: Mock status reporting functions for testing system monitoring
-- **Functions**: Status collection and reporting functions
-- **Usage**: Enable with `#define USE_MOCK_STATUS` in test files
-
-#### 6. **mock_info** (`tests/unity/mocks/mock_info.c/h`)
-
-- **Purpose**: Mock info extraction functions for testing system information
-- **Functions**: WebSocket metrics and system info extraction
-- **Usage**: Enable with `#define USE_MOCK_INFO` in test files
-
-#### 7. **mock_network** (`tests/unity/mocks/mock_network.c/h`) - *New*
-
-- **Purpose**: Mock network functions for testing network-dependent code
-- **Functions**: `get_network_info`, `filter_enabled_interfaces`, `create_multicast_socket`
-- **Usage**: Enable with `#define USE_MOCK_NETWORK` in test files
-
-#### 8. **mock_system** (`tests/unity/mocks/mock_system.c/h`) - *New*
-
-- **Purpose**: Mock system functions for testing error conditions
-- **Functions**: `malloc`, `free`, `strdup`, `gethostname`
-- **Usage**: Enable with `#define USE_MOCK_SYSTEM` in test files
-
-### Globally Pre-Defined Mocks
-
-The CMake build system passes several `USE_MOCK_*` defines to **every** Unity test compilation unit. Do **not** re-define these in your test files — the compiler will emit a `-Werror` redefinition error.
-
-Mocks that are always active (defined globally in CMakeLists.txt):
-
-- `USE_MOCK_LOGGING` — `log_this` is remapped to `mock_log_this` for all Unity tests
-- `USE_MOCK_LIBMICROHTTPD` — MHD functions mocked globally
-- `USE_MOCK_SYSTEM` — `malloc`/`free`/`strdup`/`gethostname` mocked globally
-
-Because `USE_MOCK_LOGGING` is always active, you never need to `#include <unity/mocks/mock_logging.h>` or call `mock_logging_reset_all()` just to silence log output — logging is already redirected. Include the mock header only if you need to **inspect** what was logged (e.g., asserting the log message content via `mock_logging_get_last_message()`).
+- A path containing `postgresql`, `mysql`, `mariadb`, `db2`, `mssql`, or `sqlite` gets that engine's client mock (`USE_MOCK_LIBPQ`, `USE_MOCK_LIBMYSQLCLIENT`, `USE_MOCK_LIBMARIADB`, `USE_MOCK_LIBDB2`, `USE_MOCK_LIBODBC`, `USE_MOCK_LIBSQLITE3`). It does not get the three default macros.
+- A path containing `websocket` gets `USE_MOCK_LIBWEBSOCKETS`, `USE_MOCK_STATUS`, and `USE_MOCK_TERMINAL_WEBSOCKET`.
+- `database`, `conduit`, `launch`, `webserver`, `auth`, and `oidc` paths add their own sets. Read the `elseif` for that directory before adding a `#define`.
 
 ```c
-// ❌ WRONG - causes -Werror redefinition compile failure
+// Wrong when CMake already passed -DUSE_MOCK_LOGGING. -Werror stops the build.
 #define USE_MOCK_LOGGING
 #include <unity/mocks/mock_logging.h>
 
-// ✅ CORRECT - already active globally, no action needed
-// log_this() calls in the code under test are silently captured
+// Right when the test only needs the redirected log_this.
+// Include the header when the test asserts on a captured line.
 ```
 
-For mocks that are **not** globally pre-defined, the normal `#define USE_MOCK_X` / `#include` pattern applies.
+A mock that CMake did not pass for this test still uses `#define USE_MOCK_<NAME>` before the mock header.
 
 ### How to Use Mocks in Test Files
 
@@ -982,16 +889,15 @@ For mocks that are **not** globally pre-defined, the normal `#define USE_MOCK_X`
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Enable mocks BEFORE including source headers
-// NOTE: USE_MOCK_LOGGING, USE_MOCK_LIBMICROHTTPD, USE_MOCK_SYSTEM are
-// already defined globally by CMake - do not redefine them here.
+// Default-path tests already receive USE_MOCK_LOGGING, USE_MOCK_LIBMICROHTTPD,
+// and USE_MOCK_SYSTEM. Do not #define those three there.
+// USE_MOCK_NETWORK is not in the default set. The mdns branch already passes
+// it, so this #define belongs in a test that is not under tests/unity/src/mdns/.
 #define USE_MOCK_NETWORK
 #include <unity/mocks/mock_network.h>
 #include <unity/mocks/mock_system.h>
 
-// Include source headers (functions will be mocked)
 #include <src/network/network.h>
-#include <src/mdns/mdns_server.h>
 
 // Test setup
 void setUp(void) {
@@ -1099,7 +1005,9 @@ void mock_newfeature_reset_all(void) {
 }
 ```
 
-#### 3. Update CMakeLists.txt
+#### 3. Add the mock to UNITY_MOCK_SOURCES
+
+The list is in `cmake/CMakeLists-unity.cmake`, not a hand-maintained entry in `cmake/CMakeLists.txt`.
 
 ```cmake
 set(UNITY_MOCK_SOURCES
@@ -1107,6 +1015,8 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_newfeature.c
 )
 ```
+
+A new file is picked up on the next `mkt`. If the test path needs the macro, add it to that path's branch in the same file. The default `else` branch does not see a new macro until that branch passes it.
 
 #### 4. Update Test Files
 

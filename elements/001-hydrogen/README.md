@@ -1,5 +1,7 @@
 # hydrogen
 
+Agents start at [`/elements/001-hydrogen/AGENTS.md`](/elements/001-hydrogen/AGENTS.md).
+
 The innermost core of the Philement project is hydrogen. This is roughly analogous to the combination of Klipper and Moonraker, which are soon to be merged as well. The basic purpose is to have a service running as close to the hardware as possible. This might mean that it is running on a Raspberry Pi located physically inside a printer. Or wired up via CAN bus to a series of printers in an external enclosure. Or just running on a PC in the same network. But, like Klipper, this is the module that takes in G-code (or potentially other alternatives) and then directs one or more 3D printers or related hardware based on those instructions.
 
 ## Brainstorming

@@ -169,17 +169,29 @@ void test_database_json_escape_string_unicode_passthrough(void) {
 
 void test_database_json_escape_string_control_chars(void) {
     char output[100];
-    // Test control characters (should be escaped if needed, but our function only escapes specific ones)
-    char input[10];
+    // Remaining C0 controls become \u00XX. Newline, CR, and tab stay short escapes.
+    char input[4];
     input[0] = 'a';
-    input[1] = 0x01; // SOH control character
+    input[1] = 0x01; // SOH
     input[2] = 'b';
     input[3] = '\0';
 
     int result = database_json_escape_string(input, output, sizeof(output));
-    TEST_ASSERT_EQUAL(3, result); // Control chars should pass through unchanged in our implementation
+    TEST_ASSERT_EQUAL(8, result);
+    TEST_ASSERT_EQUAL_STRING("a\\u0001b", output);
+
+    // 0x1A is the byte DB2 substitutes for an unmappable character.
+    input[1] = 0x1a;
+    result = database_json_escape_string(input, output, sizeof(output));
+    TEST_ASSERT_EQUAL(8, result);
+    TEST_ASSERT_EQUAL_STRING("a\\u001ab", output);
+
+    // DEL is not a C0 control and stays as itself.
+    input[1] = 0x7f;
+    result = database_json_escape_string(input, output, sizeof(output));
+    TEST_ASSERT_EQUAL(3, result);
     TEST_ASSERT_EQUAL_UINT8('a', output[0]);
-    TEST_ASSERT_EQUAL_UINT8(0x01, output[1]);
+    TEST_ASSERT_EQUAL_UINT8(0x7f, output[1]);
     TEST_ASSERT_EQUAL_UINT8('b', output[2]);
     TEST_ASSERT_EQUAL_UINT8('\0', output[3]);
 }

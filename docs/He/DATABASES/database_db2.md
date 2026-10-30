@@ -17,7 +17,7 @@
 | `PRIMARY` | `PRIMARY KEY` | Primary key constraint |
 | `SERIAL` | `INTEGER GENERATED ALWAYS AS IDENTITY` | Auto-incrementing integer |
 | `TEXT` | `VARCHAR(250)` | Variable-length text (small) |
-| `TEXT_BIG` | `CLOB(1M)` | Large text (1MB CLOB) |
+| `TEXT_BIG` | `CLOB(100K)` | Large text (100KB CLOB) |
 | `TIMESTAMP_TZ` | `TIMESTAMP` | Timestamp (timezone handling varies) |
 | `UNIQUE` | `UNIQUE` | Unique constraint |
 | `VARCHAR_20` | `VARCHAR(20)` | Variable 20-char string |
@@ -53,7 +53,7 @@ Requires both Base64 decode and Brotli decompress UDFs.
 ## JSON Support
 
 ```lua
-JSON = "CLOB(1M)"  -- DB2 stores JSON as CLOB
+JSON = "CLOB(100K)"  -- DB2 stores JSON as CLOB
 ```
 
 JSON ingestion functions:
@@ -95,7 +95,7 @@ Defines the SQL to create the `BROTLI_DECOMPRESS` function using DB2's C extensi
 ## Notes
 
 - DB2 uses uppercase for data types and keywords
-- Large objects handled with CLOB/BLOB types
+- Large objects handled with CLOB/BLOB types. `TEXT_BIG` and `JSON` are `CLOB(100K)`, and `BROTLI_DECOMPRESS` returns `CLOB(100K)`. A temporary row that includes those columns is wider than a 32K page (SQL1585N). See [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md) → **Portable Multi-Row Data Seeds**
 - Identity columns for auto-increment
 - Comprehensive JSON validation using built-in functions
 - Custom UDFs required for advanced features
