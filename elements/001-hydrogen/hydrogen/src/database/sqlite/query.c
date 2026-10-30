@@ -29,9 +29,16 @@ bool sqlite_is_numeric_value(const char* value);
  * error message ("(no error message)") and could drive the single SQLite
  * worker thread into retry sleeps under load. See Test 41 SQLite JWT bug.
  *
- * Classification: only SQLITE_BUSY / SQLITE_LOCKED are transient
- * (DB_ERR_TRANSPORT, retryable). Everything else - constraint violations,
- * syntax errors, etc. - is DB_ERR_OTHER (permanent, not retried).
+ * Classification:
+ *   SQLITE_BUSY / SQLITE_LOCKED -> DB_ERR_TRANSPORT (retryable)
+ *   SQLITE_INTERRUPT            -> DB_ERR_TIMEOUT (retryable). The
+ *     watchdog calls sqlite3_interrupt when a statement exceeds its
+ *     budget. MySQL classifies "Query execution was interrupted" the
+ *     same way, and PostgreSQL classifies query_canceled the same way.
+ *     A slow bootstrap under suite load must get the retry, not an
+ *     empty query cache.
+ *   everything else             -> DB_ERR_OTHER (not retried). Constraint
+ *     violations and syntax errors stay in this class.
  *
  * Returns a heap-allocated QueryResult (caller owns it via *result), or NULL
  * only on allocation failure.
@@ -44,9 +51,13 @@ QueryResult* sqlite_build_error_result(int step_result, const char* error_msg) {
 
     const int primary_code = step_result & SQLITE_PRIMARY_CODE_MASK;
     error_result->success = false;
-    error_result->error_class = (primary_code == SQLITE_BUSY || primary_code == SQLITE_LOCKED)
-                                    ? DB_ERR_TRANSPORT
-                                    : DB_ERR_OTHER;
+    if (primary_code == SQLITE_BUSY || primary_code == SQLITE_LOCKED) {
+        error_result->error_class = DB_ERR_TRANSPORT;
+    } else if (primary_code == SQLITE_INTERRUPT) {
+        error_result->error_class = DB_ERR_TIMEOUT;
+    } else {
+        error_result->error_class = DB_ERR_OTHER;
+    }
     error_result->error_message = strdup((error_msg && error_msg[0] != '\0')
                                              ? error_msg
                                              : "SQLite query execution failed (no error details)");

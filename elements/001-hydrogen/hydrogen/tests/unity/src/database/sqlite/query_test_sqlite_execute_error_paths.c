@@ -3,7 +3,7 @@
  * This file contains unit tests for sqlite_execute_query error branches
  * that are not exercised by the existing parameter-binding tests.
  * Tests: prepare unavailable, execution functions unavailable,
- *        prepare failure, and step failure error paths.
+ *        prepare failure, step failure, and watchdog-interrupt paths.
  */
 
 // Standard project header plus Unity Framework header
@@ -28,6 +28,7 @@ void test_sqlite_execute_query_prepare_unavailable(void);
 void test_sqlite_execute_query_exec_functions_unavailable(void);
 void test_sqlite_execute_query_prepare_failed(void);
 void test_sqlite_execute_query_step_failed(void);
+void test_sqlite_execute_query_step_interrupted(void);
 
 // External function pointers that need to be initialized
 extern sqlite3_exec_t sqlite3_exec_ptr;
@@ -206,6 +207,43 @@ void test_sqlite_execute_query_step_failed(void) {
     free(result);
 }
 
+// Watchdog cancel: sqlite3_step returns SQLITE_INTERRUPT (9). That must
+// be DB_ERR_TIMEOUT so database_engine_execute retries it. Classifying
+// it as DB_ERR_OTHER left Test 47's SQLite bootstrap with an empty cache.
+void test_sqlite_execute_query_step_interrupted(void) {
+    DatabaseHandle connection = {0};
+    connection.engine_type = DB_ENGINE_SQLITE;
+    connection.designator = (char*)"test_db";
+
+    SQLiteConnection sqlite_conn = {0};
+    sqlite_conn.db = (void*)0x12345678;
+    connection.connection_handle = &sqlite_conn;
+
+    QueryRequest request = {0};
+    request.sql_template = (char*)"SELECT query_id FROM queries";
+    QueryResult* result = NULL;
+
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(0);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(SQLITE_INTERRUPT);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
+    mock_libsqlite3_set_sqlite3_errmsg_result("interrupted");
+
+    bool query_result = sqlite_execute_query(&connection, &request, &result);
+
+    TEST_ASSERT_FALSE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_TIMEOUT, result->error_class);
+    TEST_ASSERT_NOT_NULL(result->error_message);
+    TEST_ASSERT_EQUAL_STRING("interrupted", result->error_message);
+
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -213,6 +251,7 @@ int main(void) {
     RUN_TEST(test_sqlite_execute_query_exec_functions_unavailable);
     RUN_TEST(test_sqlite_execute_query_prepare_failed);
     RUN_TEST(test_sqlite_execute_query_step_failed);
+    RUN_TEST(test_sqlite_execute_query_step_interrupted);
 
     return UNITY_END();
 }

@@ -48,11 +48,14 @@ typedef void (*sqlite3_interrupt_t)(void*);
 
 // Primary result codes used for error classification. SQLite extended
 // result codes carry the primary code in the low 8 bits, so callers
-// mask with 0xFF before comparing. SQLITE_BUSY/SQLITE_LOCKED are the
-// only transient (retryable) failures; everything else is permanent.
+// mask with 0xFF before comparing. SQLITE_BUSY and SQLITE_LOCKED are
+// lock contention. SQLITE_INTERRUPT is sqlite3_interrupt, which the
+// query watchdog uses to cancel a statement that exceeded its budget.
+// Constraint, syntax, and schema errors stay permanent.
 #define SQLITE_PRIMARY_CODE_MASK 0xFF
 #define SQLITE_BUSY 5
 #define SQLITE_LOCKED 6
+#define SQLITE_INTERRUPT 9
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {

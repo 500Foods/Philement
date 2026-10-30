@@ -12,6 +12,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.2.4 - 2026-10-30 - Score a conduit server startup failure as a FAIL
 # 1.2.3 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.2.2 - 2026-09-04 - Drop extra print_result after validate_config_file
 # 1.2.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
@@ -47,7 +48,7 @@ TEST_NAME="Conduit Alt Queries"
 TEST_ABBR="CFM"
 TEST_NUMBER="55"
 TEST_COUNTER=0
-TEST_VERSION="1.2.3"
+TEST_VERSION="1.2.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -463,7 +464,8 @@ run_conduit_test_unified() {
     server_info=$(run_conduit_server "${config_file}" "${log_suffix}" "${description}" "${result_file}")
 
     # Check if server startup failed
-    if [[ "${server_info}" == "FAILED:0" ]]; then
+    # shellcheck disable=SC2310 # Score startup failure, then return before using the URL
+    if ! conduit_fail_startup "${server_info}" "${result_file}" "Start conduit server"; then
         return 1
     fi
 
@@ -566,7 +568,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting unified conduit test server (${CONDUIT_DESCRIPTION})"
 
     # Run the conduit test on the single unified server
-    run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"
+    # shellcheck disable=SC2310 # Startup failure is a scored FAIL; still print the log path
+    if ! run_conduit_test_unified "${CONDUIT_CONFIG_FILE}" "${CONDUIT_LOG_SUFFIX}" "${CONDUIT_DESCRIPTION}"; then
+        EXIT_CODE=1
+    fi
 
     # Process results
     print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"

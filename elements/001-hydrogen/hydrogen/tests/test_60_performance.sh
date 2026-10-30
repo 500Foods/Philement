@@ -15,6 +15,7 @@
 # format_seconds()
 
 # CHANGELOG
+# 1.0.5 - 2026-10-30 - Score a performance server startup failure as a FAIL
 # 1.0.4 - 2026-10-01 - Score the median of warm catalog scans, not the fastest sample
 #                    - QueryRef 25 (Get Queries List) repeated, plus QueryRef 30
 #                    - Sign-in time is reported and left out of the comparison
@@ -40,7 +41,7 @@ TEST_NAME="Performance Test"
 TEST_ABBR="PRF"
 TEST_NUMBER="60"
 TEST_COUNTER=0
-TEST_VERSION="1.0.4"
+TEST_VERSION="1.0.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -593,9 +594,8 @@ run_performance_tests() {
     local server_info
     server_info=$(run_conduit_server "${config_file}" "${log_suffix}" "${description}" "${result_file}")
 
-    # Check if server startup failed
-    if [[ "${server_info}" == "FAILED:0" ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server startup failed"
+    # shellcheck disable=SC2310 # Score startup failure, then return before using the URL
+    if ! conduit_fail_startup "${server_info}" "${result_file}" "Start performance server"; then
         return 1
     fi
 

@@ -10,8 +10,12 @@
 # test_conduit_endpoint()
 # test_conduit_single_queries()
 # test_conduit_multiple_queries_endpoint()
+# conduit_fail_startup()
 
 # CHANGELOG
+# 1.8.1 - 2026-10-30 - Score a conduit server startup failure as a FAIL
+#                    - Record process exit, startup timeout, and readiness timeout
+#                      on the result file so the FAIL line names the cause
 # 1.8.0 - 2026-10-16 - Course suggestion cap query is QueryRef 4000
 # 1.7.9 - 2026-10-01 - Eighth engine: MSSQL maps to Demo_MS (schema demoms)
 # 1.7.8 - 2026-09-04 - Pair JWT skip with print_result (not-ready engines)
@@ -550,6 +554,45 @@ hydrogen_process_crashed() {
     return 1
 }
 
+# Score a run_conduit_server failure. Call this from the test shell, after the
+# command substitution returns. A failure opens one subtest and one FAIL, and
+# sets EXIT_CODE. Success leaves the subtest counts unchanged.
+# Returns 1 when startup failed, 0 when server_info is a live server.
+# shellcheck disable=SC2154 # TEST_NUMBER, TEST_COUNTER, and GREP come from the test shell
+conduit_fail_startup() {
+    local server_info="$1"
+    local result_file="$2"
+    local label="${3:-Start conduit server}"
+
+    # Command substitution keeps every stdout line. The token is the last one.
+    local last_line="${server_info##*$'\n'}"
+    if [[ "${last_line}" != "FAILED:0" ]]; then
+        return 0
+    fi
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}"
+
+    local detail="Server startup failed"
+    if [[ -f "${result_file}" ]]; then
+        if "${GREP}" -q "PORT_IN_USE=true" "${result_file}" 2>/dev/null; then
+            detail="Server startup failed: port in use"
+        elif "${GREP}" -q "CRASH_DETECTED=true" "${result_file}" 2>/dev/null; then
+            detail="Server crashed (SEGV) during startup"
+        elif "${GREP}" -q "PROCESS_EXITED=true" "${result_file}" 2>/dev/null; then
+            detail="Server process exited during startup"
+        elif "${GREP}" -q "STARTUP_TIMEOUT=true" "${result_file}" 2>/dev/null; then
+            detail="Server did not finish startup"
+        elif "${GREP}" -q "READINESS_TIMEOUT=true" "${result_file}" 2>/dev/null; then
+            detail="Server did not become ready"
+        fi
+    fi
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${detail}"
+    # shellcheck disable=SC2034 # EXIT_CODE is read by the calling test script
+    EXIT_CODE=1
+    return 1
+}
+
 # Function to run conduit server lifecycle (startup, migration wait, shutdown)
 run_conduit_server() {
     local config_file="$1"
@@ -582,6 +625,8 @@ run_conduit_server() {
 
     # Wait for startup
     local startup_success=false
+    local startup_timed_out=false
+    local process_exited=false
     local start_time
     start_time=${SECONDS}
 
@@ -598,12 +643,16 @@ run_conduit_server() {
 
     while true; do
         if [[ $((SECONDS - start_time)) -ge ${startup_timeout} ]]; then
+            startup_timed_out=true
             break
         fi
 
         # shellcheck disable=SC2310 # Poll crash/alive status; non-zero means still running
         if hydrogen_process_crashed "${hydrogen_pid}" "${log_file}"; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen exited or crashed during startup (see log for Signal 11 / port bind)"
+            if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
+                process_exited=true
+            fi
             break
         fi
 
@@ -619,6 +668,9 @@ run_conduit_server() {
         # STARTUP COMPLETE can race with a worker-thread SEGV; do not wait 300s+
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server logged STARTUP COMPLETE but process crashed (SEGV/port) — aborting"
         startup_success=false
+        if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
+            process_exited=true
+        fi
     fi
 
     if [[ "${startup_success}" = true ]]; then
@@ -663,7 +715,15 @@ run_conduit_server() {
 
         if [[ "${crash_during_ready}" = true ]]; then
             echo "STARTUP_FAILED" >> "${result_file}"
-            echo "CRASH_DETECTED=true" >> "${result_file}"
+            if "${GREP}" -q "Signal 11 received" "${log_file}" 2>/dev/null; then
+                echo "CRASH_DETECTED=true" >> "${result_file}"
+            fi
+            if "${GREP}" -qE "Port [0-9]+ is already in use|Port [0-9]+ is not available|failed to bind to port" "${log_file}" 2>/dev/null; then
+                echo "PORT_IN_USE=true" >> "${result_file}"
+            fi
+            if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
+                echo "PROCESS_EXITED=true" >> "${result_file}"
+            fi
             kill -9 "${hydrogen_pid}" 2>/dev/null || true
             if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
                 unregister_hydrogen_pid "${hydrogen_pid}"
@@ -685,11 +745,15 @@ run_conduit_server() {
         while true; do
             if [[ $((SECONDS - server_ready_start)) -ge ${webserver_ready_timeout} ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Webserver readiness timeout"
+                echo "READINESS_TIMEOUT=true" >> "${result_file}"
                 break
             fi
             # shellcheck disable=SC2310 # Poll crash/alive status; non-zero means still running
             if hydrogen_process_crashed "${hydrogen_pid}" "${log_file}"; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen crashed while waiting for readiness endpoint"
+                if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
+                    echo "PROCESS_EXITED=true" >> "${result_file}"
+                fi
                 break
             fi
             local http_code
@@ -737,6 +801,12 @@ run_conduit_server() {
         if "${GREP}" -qE "Port [0-9]+ is already in use|Port [0-9]+ is not available|failed to bind to port" "${log_file}" 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Port unavailable — refuse startup instead of hanging"
             echo "PORT_IN_USE=true" >> "${result_file}"
+        fi
+        if [[ "${process_exited}" = true ]]; then
+            echo "PROCESS_EXITED=true" >> "${result_file}"
+        fi
+        if [[ "${startup_timed_out}" = true ]]; then
+            echo "STARTUP_TIMEOUT=true" >> "${result_file}"
         fi
         echo "STARTUP_FAILED" >> "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true

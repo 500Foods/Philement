@@ -7,6 +7,7 @@
 # required in CI.
 
 # CHANGELOG
+# 1.3.3 - 2026-10-30 - Score a conduit server startup failure as a FAIL
 # 1.3.2 - 2026-10-16 - Course suggestion positive path uses QueryRef 4000
 # 1.3.1 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.3.0 - 2026-07-15 - Use dedicated config (hydrogen_test_56_cap_query.json) on port 5560 to avoid colliding with test 50/51 on port 5500 in the 5x parallel batch
@@ -21,7 +22,7 @@ TEST_NAME="Conduit Cap Query"
 TEST_ABBR="CCQ"
 TEST_NUMBER="56"
 TEST_COUNTER=0
-TEST_VERSION="1.3.2"
+TEST_VERSION="1.3.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -171,8 +172,8 @@ run_cap_query_test_unified() {
     local server_info
     server_info=$(run_conduit_server "${config_file}" "${log_suffix}" "${description}" "${result_file}")
 
-    if [[ "${server_info}" == "FAILED:0" ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server startup failed"
+    # shellcheck disable=SC2310 # Score startup failure, then return before using the URL
+    if ! conduit_fail_startup "${server_info}" "${result_file}" "Start conduit server"; then
         return 1
     fi
 
@@ -215,8 +216,8 @@ run_cap_query_test_unified() {
     local positive_server_info
     positive_server_info=$(run_conduit_server "${config_file}" "${log_suffix}_fallback" "${description} Fallback" "${positive_result_file}")
 
-    if [[ "${positive_server_info}" == "FAILED:0" ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Fallback server startup failed"
+    # shellcheck disable=SC2310 # Score startup failure, then restore CHACHA_SERVER
+    if ! conduit_fail_startup "${positive_server_info}" "${positive_result_file}" "Start fallback conduit server"; then
         export CHACHA_SERVER="${original_chacha_server}"
         return 1
     fi
