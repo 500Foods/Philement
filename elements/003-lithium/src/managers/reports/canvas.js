@@ -1,9 +1,12 @@
 /**
  * Report page surface.
  * Unzoomed scale is 96 CSS pixels per inch. Margin guides are the
- * inset. Bands, the grid, and rulers are later phases.
+ * inset. Bands stack inside that inset. Each band body carries the
+ * section grid. Rulers are a later phase.
  */
 
+import { paintReportBands } from './bands.js';
+import { gridSpec } from './grid.js';
 import { pageBox } from './model/units.js';
 
 function pageObject(doc) {
@@ -70,9 +73,13 @@ export function paintReportPage(host, doc) {
   page.style.setProperty('--reports-margin-right', px(frame.rightPx));
   page.style.setProperty('--reports-margin-top', px(frame.topPx));
   page.style.setProperty('--reports-margin-bottom', px(frame.bottomPx));
+  const grid = gridSpec(doc);
+  paintReportBands(page, doc, grid);
+  if (grid.error) frame.gridError = grid.error;
   const guide = document.createElement('div');
   guide.className = 'reports-margin-guide';
   page.append(guide);
+  if (grid.error) host.append(note(grid.error));
   host.append(page);
   return frame;
 }

@@ -24,3 +24,5 @@ crimson/knowledge/*
 
 # OS
 .DS_Store
+dist-deploy-local
+.courses-link-parked

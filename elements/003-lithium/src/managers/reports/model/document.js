@@ -244,7 +244,13 @@ function findItem(band, itemId) {
   return item;
 }
 
-function effectiveBandHeight(band) {
+/**
+ * Stored height, or the Defaults table height when the key is omitted.
+ * Does not write the key.
+ * @param {object} band
+ * @returns {string}
+ */
+export function bandHeight(band) {
   if (typeof band.height === 'string' && band.height !== '') return band.height;
   if (Object.hasOwn(BAND_HEIGHT, band.typeKey)) return BAND_HEIGHT[band.typeKey];
   throw new Error(`Band "${band.id}" needs a height.`);
@@ -263,7 +269,7 @@ function centeredBox(doc, band) {
     margin: page.margin,
   });
   const contentWidthIn = parseLength(convertLength(content.width, 'in')).value;
-  const bandHeightIn = parseLength(convertLength(effectiveBandHeight(band), 'in')).value;
+  const bandHeightIn = parseLength(convertLength(bandHeight(band), 'in')).value;
   const itemWidthIn = parseLength(ITEM_WIDTH).value;
   const itemHeightIn = parseLength(ITEM_HEIGHT).value;
   const leftIn = Math.max(0, (contentWidthIn - itemWidthIn) / 2);

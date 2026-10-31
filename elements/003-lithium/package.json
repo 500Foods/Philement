@@ -37,7 +37,8 @@
     "deploy:brotli": "node scripts/generate-brotli.js",
     "deploy:brotli:fast": "BROTLI_JOBS=12 scripts/generate-brotli.sh",
     "deploy:brotli:timed": "npm run deploy:brotli 2>&1 | tee /tmp/brotli-timing.log",
-    "deploy:500courses": "bash scripts/deploy-500courses.sh"
+    "deploy:500courses": "bash scripts/deploy-500courses.sh",
+    "deploy:local": "bash scripts/deploy-local.sh"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.2",

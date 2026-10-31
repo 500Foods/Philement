@@ -2,7 +2,10 @@
  * Report Manager — Manager ID 24
  *
  * Starts a blank definition, imports a local JSON file, and downloads it.
- * The stage lists that definition and draws one page.
+ * The stage lists that definition and draws one page of bands.
+ * Each band body draws the section grid. Dragging a band edge
+ * commits through the model and pushes history. Undo and redo
+ * restore that snapshot.
  * destroy and cleanup release the same listeners.
  */
 
@@ -11,7 +14,12 @@ import './reports.css';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { toast } from '../../shared/toast.js';
+import { dragBandHeight } from './bands.js';
 import { paintReportPage } from './canvas.js';
+import { watchBandGrids } from './grid.js';
+import { bandHeight, resizeBand } from './model/document.js';
+import { createHistory } from './model/history.js';
+import { toCssPx } from './model/units.js';
 import {
   blankReport,
   definitionText,
@@ -110,9 +118,12 @@ export default class ReportsManager {
     this.container = container;
     this.elements = {};
     this.doc = null;
+    this.history = null;
     this.saveFile = saveReportFile;
     this._listening = false;
     this._closed = false;
+    this._drag = null;
+    this._gridWatch = null;
   }
 
   async init() {
@@ -147,6 +158,8 @@ export default class ReportsManager {
       newBtn: this.container.querySelector('#reports-new-btn'),
       importBtn: this.container.querySelector('#reports-import-btn'),
       exportBtn: this.container.querySelector('#reports-export-btn'),
+      undoBtn: this.container.querySelector('#reports-undo-btn'),
+      redoBtn: this.container.querySelector('#reports-redo-btn'),
       fileInput: this.container.querySelector('#reports-import-input'),
       stage: this.container.querySelector('#reports-stage'),
     };
@@ -154,8 +167,10 @@ export default class ReportsManager {
   }
 
   _bind() {
-    const { newBtn, importBtn, exportBtn, fileInput } = this.elements;
-    if (!newBtn || !importBtn || !exportBtn || !fileInput) {
+    const {
+      newBtn, importBtn, exportBtn, undoBtn, redoBtn, fileInput, stage,
+    } = this.elements;
+    if (!newBtn || !importBtn || !exportBtn || !undoBtn || !redoBtn || !fileInput || !stage) {
       log(Subsystems.MANAGER, Status.ERROR, '[Reports] Template is missing a control.');
       toast.error('Failed to load Report Manager', {
         description: 'Template is missing a control.',
@@ -169,21 +184,54 @@ export default class ReportsManager {
       this._importSelected();
     };
     this._onExport = () => this._exportReport();
+    this._onUndo = () => this._undo();
+    this._onRedo = () => this._redo();
+    this._onKey = (event) => this._onUndoKey(event);
+    this._onBandDown = (event) => this._beginBandDrag(event);
     newBtn.addEventListener('click', this._onNew);
     importBtn.addEventListener('click', this._onImportClick);
     fileInput.addEventListener('change', this._onFile);
     exportBtn.addEventListener('click', this._onExport);
+    undoBtn.addEventListener('click', this._onUndo);
+    redoBtn.addEventListener('click', this._onRedo);
+    document.addEventListener('keydown', this._onKey);
+    stage.addEventListener('pointerdown', this._onBandDown);
     this._listening = true;
+  }
+
+  _dropGrid() {
+    if (this._gridWatch) this._gridWatch.disconnect();
+    this._gridWatch = null;
+  }
+
+  _watchGrid(frame) {
+    this._dropGrid();
+    if (this._closed || !this.elements.stage) return;
+    if (!frame || frame.omitted || frame.error) return;
+    const watch = watchBandGrids(this.elements.stage);
+    if (watch.error) {
+      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${watch.error}`);
+      toast.error(watch.error, { subsystem: 'Manager' });
+    }
+    this._gridWatch = watch;
   }
 
   _release() {
     this._closed = true;
+    this._clearBandDrag();
+    this._dropGrid();
     if (!this._listening) return;
-    const { newBtn, importBtn, exportBtn, fileInput } = this.elements;
+    const {
+      newBtn, importBtn, exportBtn, undoBtn, redoBtn, fileInput, stage,
+    } = this.elements;
     newBtn.removeEventListener('click', this._onNew);
     importBtn.removeEventListener('click', this._onImportClick);
     fileInput.removeEventListener('change', this._onFile);
     exportBtn.removeEventListener('click', this._onExport);
+    undoBtn.removeEventListener('click', this._onUndo);
+    redoBtn.removeEventListener('click', this._onRedo);
+    document.removeEventListener('keydown', this._onKey);
+    stage.removeEventListener('pointerdown', this._onBandDown);
     this._listening = false;
   }
 
@@ -196,14 +244,146 @@ export default class ReportsManager {
   }
 
   _setDocument(doc) {
+    let history;
+    try {
+      history = createHistory(doc);
+    } catch (error) {
+      const message = error instanceof Error && error.message
+        ? error.message
+        : 'Report file could not be read.';
+      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
+      toast.error(message, { subsystem: 'Manager' });
+      return;
+    }
+    this.history = history;
+    this._showDocument(history.document);
+  }
+
+  _showDocument(doc) {
     this.doc = doc;
     if (this.elements.name) this.elements.name.textContent = reportDisplayName(doc);
-    if (!this.elements.stage) return;
-    const frame = paintReportStage(this.elements.stage, doc);
-    if (frame.error) {
-      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${frame.error}`);
-      toast.error(frame.error, { subsystem: 'Manager' });
+    if (this.elements.stage) {
+      const frame = paintReportStage(this.elements.stage, doc);
+      const message = frame.error || frame.gridError;
+      if (message) {
+        log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
+        toast.error(message, { subsystem: 'Manager' });
+      }
+      this._watchGrid(frame);
     }
+    this._syncHistory();
+  }
+
+  _commitDocument(next) {
+    if (!this.history) this.history = createHistory(this.doc);
+    this._showDocument(this.history.commit(next));
+  }
+
+  _syncHistory() {
+    const undoBtn = this.elements.undoBtn;
+    const redoBtn = this.elements.redoBtn;
+    if (undoBtn) undoBtn.disabled = !(this.history && this.history.canUndo());
+    if (redoBtn) redoBtn.disabled = !(this.history && this.history.canRedo());
+  }
+
+  _undo() {
+    if (this._drag || !this.history || !this.history.canUndo()) return;
+    this._showDocument(this.history.undo());
+    log(Subsystems.MANAGER, Status.INFO, '[Reports] Undo');
+  }
+
+  _redo() {
+    if (this._drag || !this.history || !this.history.canRedo()) return;
+    this._showDocument(this.history.redo());
+    log(Subsystems.MANAGER, Status.INFO, '[Reports] Redo');
+  }
+
+  _onUndoKey(event) {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+    const key = event.key;
+    const undo = (key === 'z' || key === 'Z') && !event.shiftKey;
+    const redo = ((key === 'z' || key === 'Z') && event.shiftKey)
+      || key === 'y' || key === 'Y';
+    if (!undo && !redo) return;
+    const target = event.target;
+    const editable = target && typeof target.closest === 'function'
+      && (target.closest('input, textarea, select') || target.isContentEditable);
+    if (editable) return;
+    event.preventDefault();
+    if (redo) this._redo();
+    else this._undo();
+  }
+
+  _clearBandDrag() {
+    if (this._onBandMove) {
+      document.removeEventListener('pointermove', this._onBandMove);
+      document.removeEventListener('pointerup', this._onBandUp);
+      document.removeEventListener('pointercancel', this._onBandUp);
+    }
+    this._onBandMove = null;
+    this._onBandUp = null;
+    this._drag = null;
+  }
+
+  _beginBandDrag(event) {
+    if (this._drag || !this.doc || !Array.isArray(this.doc.bands)) return;
+    if (event.button !== undefined && event.button !== 0) return;
+    const edge = event.target && event.target.closest && event.target.closest('.reports-band-edge');
+    if (!edge || !this.elements.stage || !this.elements.stage.contains(edge)) return;
+    const bandEl = edge.closest('.reports-band');
+    const id = bandEl && bandEl.dataset.bandId;
+    const body = bandEl && bandEl.querySelector('.reports-band-body');
+    const band = id && this.doc.bands.find((entry) => entry.id === id);
+    if (!band || !body) return;
+    let startPx;
+    try {
+      startPx = toCssPx(bandHeight(band));
+    } catch {
+      return;
+    }
+    event.preventDefault();
+    this._drag = {
+      id, startPx, startY: event.clientY, body,
+    };
+    this._onBandMove = (move) => this._moveBandDrag(move);
+    this._onBandUp = () => this._endBandDrag();
+    document.addEventListener('pointermove', this._onBandMove);
+    document.addEventListener('pointerup', this._onBandUp);
+    document.addEventListener('pointercancel', this._onBandUp);
+  }
+
+  _moveBandDrag(event) {
+    if (!this._drag) return;
+    const next = dragBandHeight(this._drag.startPx, event.clientY - this._drag.startY);
+    this._drag.previewPx = next;
+    this._drag.body.style.height = `${next}px`;
+  }
+
+  _endBandDrag() {
+    const drag = this._drag;
+    this._clearBandDrag();
+    if (!drag || this._closed || !this.doc) return;
+    if (drag.previewPx === undefined) return;
+    let next;
+    try {
+      next = resizeBand(this.doc, drag.id, `${drag.previewPx} px`);
+    } catch (error) {
+      const message = error instanceof Error && error.message
+        ? error.message
+        : 'Band could not be resized.';
+      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
+      toast.error(message, { subsystem: 'Manager' });
+      this._showDocument(this.doc);
+      return;
+    }
+    const before = this.doc.bands.find((entry) => entry.id === drag.id);
+    const after = next.bands.find((entry) => entry.id === drag.id);
+    if (before && after && before.height === after.height) {
+      this._showDocument(this.doc);
+      return;
+    }
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Resized ${drag.id} to ${after.height}`);
   }
 
   /** Replace the open definition and redraw the page. */

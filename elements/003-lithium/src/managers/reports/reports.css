@@ -2,7 +2,8 @@
  * Report Manager
  *
  * Shell for the definition file. The page is 96 CSS pixels per inch.
- * Bands, the grid, and rulers land in later phases.
+ * A band body uses its stored height. The label strip is chrome.
+ * The section grid is an SVG pattern on that body. Rulers land later.
  */
 
 @import url('../../core/lithium-toolbar.css');
@@ -58,6 +59,7 @@
 
 .reports-margin-guide {
   position: absolute;
+  z-index: 1;
   box-sizing: border-box;
   left: var(--reports-margin-left);
   right: var(--reports-margin-right);
@@ -65,6 +67,65 @@
   bottom: var(--reports-margin-bottom);
   border: var(--border-width) dashed #6a6a6a;
   pointer-events: none;
+}
+
+.reports-bands {
+  position: absolute;
+  z-index: 0;
+  left: var(--reports-margin-left);
+  top: var(--reports-margin-top);
+  right: var(--reports-margin-right);
+}
+
+.reports-band-strip {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 0 var(--space-2);
+  background-color: #ececec;
+  color: #2a2a2a;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  user-select: none;
+  border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-band-id,
+.reports-band-note {
+  color: #6a6a6a;
+}
+
+.reports-band-note {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+}
+
+.reports-band-body {
+  position: relative;
+  box-sizing: border-box;
+  height: var(--reports-band-height);
+  background-color: var(--reports-grid-background, #fff);
+  border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-band-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.reports-band-edge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 8px;
+  cursor: ns-resize;
+  touch-action: none;
 }
 
 .reports-page-note {

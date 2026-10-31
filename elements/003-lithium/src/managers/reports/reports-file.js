@@ -98,8 +98,19 @@ function fontText(font) {
   return parts.length ? parts.join(', ') : 'Omitted';
 }
 
+/**
+ * Canvas and outline label for a band type key.
+ * @param {number} typeKey
+ * @returns {string}
+ */
+export function bandRoleName(typeKey) {
+  if (Object.hasOwn(BAND_ROLE, typeKey)) return BAND_ROLE[typeKey];
+  if (Number.isInteger(typeKey)) return `Type ${typeKey}`;
+  return 'Band';
+}
+
 function bandLine(band) {
-  const role = BAND_ROLE[band.typeKey] || (Number.isInteger(band.typeKey) ? `Type ${band.typeKey}` : 'Band');
+  const role = bandRoleName(band.typeKey);
   const parts = [role];
   if (written(band.id)) parts.push(band.id);
   if (written(band.height)) parts.push(band.height);

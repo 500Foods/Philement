@@ -64,16 +64,16 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-10-30 23:45:48 UTC
+Last updated at 2026-10-31 07:28:16 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           598            487              0        2125679
+JSON                           608            487              0        2126191
 C                             1899          77564          62441         334978
 Text                           402            399              0         177976
-Lua                            618          16172          10596         141704
-Markdown                       799          41985            268         133189
-JavaScript                     270          11540          15077          60773
+Lua                            627          16479          10725         143389
+Markdown                       807          42103            275         133827
+JavaScript                     276          11627          15181          61614
 Bourne Shell                   239           9129         126830          54824
 SVG                             16             17             27          17460
 CSS                             87           2901           1585          14705
@@ -92,7 +92,7 @@ YAML                             2              8             13             37
 Pascal                           2             11              2             31
 MSBuild script                   1              3              0             11
 -------------------------------------------------------------------------------
-SUM:                          5421         165626         232747        3082888
+SUM:                          5454         166138         232987        3086564
 -------------------------------------------------------------------------------
 509 Files were skipped (duplicate, binary, or without source code):
   css: 167

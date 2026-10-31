@@ -5,10 +5,14 @@
 **Date:** 2026-10-10
 **Revised:** 2026-10-31
 **Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–5
-complete. Phase 5 closed 2026-10-31. Phase 6 is next and has not
-started, in
+complete. Phase 5 closed 2026-10-31. Phase 6 is in progress.
+Andrew reported drag, Undo, and New on the alternate database.
+The export sentence of 6.4 is still open. Phase 7 is in progress
+(2026-10-31), in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-The contract note is
+The first dot paint did not show. The painter now draws a full
+dot on each spacing point. Redo sits beside Undo. Do not start
+Phase 8. The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
 **Home:** Manager **24**, Report Manager, already registered.
 **Design:** Acuranzo (shared product database). Lookups 0–199. Migrations
@@ -44,8 +48,8 @@ Andrew reports the apply.
 | 3 | Document model and undo | JS + Vitest | Medium | Complete |
 | 4 | Manager shell, import, export | Lithium UI | Medium | Complete |
 | 5 | Page surface | Lithium UI | Easy | Complete |
-| 6 | Bands and resize | Lithium UI | Medium | Not started |
-| 7 | Section grid | Lithium UI | Easy | Not started |
+| 6 | Bands and resize | Lithium UI | Medium | In progress |
+| 7 | Section grid | Lithium UI | Easy | In progress |
 | 8 | Rulers and the mouse line | Lithium UI | Medium | Not started |
 | 9 | View scale | Lithium UI | Easy | Not started |
 | 10 | Static text | Lithium UI | Medium | Not started |
@@ -154,12 +158,15 @@ milestone file that holds the current phase.
 | [`06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) | 50–67 | Place images, barcodes, and charts, and export SVG and PNG. |
 | [`07-native-pdf.md`](/docs/Li/plans/reporting/07-native-pdf.md) | 68–71 | Get charts and barcodes as vectors in the PDF. |
 
-**Resume:** Phase 6 is next, in
+**Resume:** Phase 7 is in progress, in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-Phase 5 is complete (2026-10-31). Andrew confirmed the page on
-`https://lithium.500courses.com`. Letter is larger than a 4 in
-page. Fixture guides sit inset 0.25 in. Phase 6 paints the bands
-and has not started. Phases 1–5 are complete. The contract note is
+Each band body draws the section grid. The first dot paint did
+not show. A full dot is now drawn on each spacing point. Work
+item 7.4 is waiting on Andrew after he deploys. Phase 6 is also
+in progress. He reported drag, Undo, and New. The export
+sentence of 6.4 is still open. Redo sits beside Undo. Do not
+start Phase 8 until he reports those checks. Phases 1–5 are
+complete. The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is
 96 CSS pixels. Open this file for a lock. Open the milestone file
 for the phase body.
@@ -322,7 +329,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. Sidequests stay unnumbered. |
-| **Done** | Phases 0–5 of 72 complete (2026-10-31). Phase 6 has not started. |
+| **Done** | Phases 0–5 of 72 complete (2026-10-31). Phase 6 is in progress. Andrew reported drag, Undo, and New. The export sentence of 6.4 is still open. Phase 7 is in progress. The first dot paint did not show and has been repainted. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -350,7 +357,12 @@ the manager. Phase 4 is complete (2026-10-31). Andrew confirmed
 the shell on `https://lithium.500courses.com`. Phase 5 is complete
 (2026-10-31). Andrew confirmed the page on
 `https://lithium.500courses.com`. Letter is larger than a 4 in
-page. Fixture guides sit inset 0.25 in. Phase 6 has not started.
+page. Fixture guides sit inset 0.25 in. Phase 6 draws the bands.
+Andrew reported drag, Undo, and New on the alternate database.
+The export sentence of 6.4 is still open. Phase 7 draws the
+section grid. The first dots did not show. The painter now
+draws a full dot on each spacing point. Redo sits beside Undo.
+Do not start Phase 8.
 
 ## Goals
 
@@ -430,8 +442,10 @@ page. Fixture guides sit inset 0.25 in. Phase 6 has not started.
 
 Manager 24 is the designer shell. It shows the report name and
 New, Import, and Export. The stage lists the definition and draws
-one page at 96 CSS pixels per inch, with margin guides. Bands,
-the grid, and rulers are later phases.
+one page at 96 CSS pixels per inch, with margin guides. Each
+band is a label strip and a body of the stored height. The body
+draws the section grid. Undo and Redo sit on the toolbar.
+Rulers are a later phase.
 `conduit.js` can run QueryRefs.
 `invokeScript` is not in the client. Scripting Manager does not call
 `POST /api/conduit/script`. CATCHUP Phases 7–10 are the planned home
@@ -1960,3 +1974,48 @@ Letter portrait is larger than the 4 in card. The fixture guides
 sit inset 0.25 in. Work item 5.3 is checked. Phase 5 Status is
 complete. Phase 6 is next and has not started. The earlier gate
 stands: `npm test` exited 0 (63 files, 1261 passed).
+
+### 2026-10-31 — Phase 6 in progress
+
+Each band is a label strip and a body of the stored height, in
+array order, inside the margin guides. The strip is chrome. The
+resting body height is a CSS variable. `element.style.height` is
+the drag preview. Mouseup commits through `resizeBand` and
+history. The floor is `0.15 in`. Undo, the toolbar button or
+Ctrl+Z, restores the previous height. New and Import reset
+history. `npm test` exited 0 (64 files, 1270 passed).
+`npm run lint`, `npm run lint:css`, and `templates:copy` exited
+0. `npx eslint` on the band files exited 0. Work items 6.1–6.3
+are checked. Work item 6.4 is waiting on Andrew at
+`https://lithium.500courses.com`. Do not start Phase 7.
+
+### 2026-10-31 — Phase 7 in progress
+
+The test database was offline, so the Phase 6 browser check was
+not run. Andrew said to continue. Phase 6 stays in progress.
+Each band body draws an SVG pattern: dots, grid, dotted, dashed,
+or none. The tile origin is the band's top-left. Spacing follows
+the unit string. An omitted grid paints `dots` at `0.125 in`
+(12 CSS pixels) and the key stays omitted. A `ResizeObserver`
+redraws when the band size changes. `destroy` and `cleanup`
+disconnect it. `npm test` exited 0 (65 files, 1266 passed, 12
+skipped). The skipped cases are the auth integration file.
+`https://lithium.500courses.com` did not answer. `npm run lint`,
+`npm run lint:css`, and `templates:copy` exited 0. `npx eslint`
+on the grid files exited 0. Work items 7.1–7.3 are checked.
+Work item 7.4 is waiting on Andrew. Do not start Phase 8.
+
+### 2026-10-31 — Phase 7 still in progress
+
+The alternate database was up. Andrew reported that a drag, Undo,
+and New behave. The export sentence of 6.4 was not in that
+report, so Phase 6 stays in progress. He also reported that no
+dot pattern was showing. A circle of radius `0.5` centered on
+the tile corner is clipped away. The painter now draws a full
+dot on each spacing point. The painted radius is at least 1 CSS
+pixel. The stored weight stays `0.5`. Redo sits beside Undo.
+Ctrl+Shift+Z and Ctrl+Y redo. A new edit drops that tail.
+`npm test` exited 0 (65 files, 1266 passed, 12 skipped).
+`npm run lint` and `templates:copy` exited 0. `npx eslint` on
+the grid files exited 0. Work item 7.4 stays open until he sees
+the dots after the next deploy. Do not start Phase 8.

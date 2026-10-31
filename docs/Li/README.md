@@ -35,7 +35,7 @@ This directory contains the complete documentation for the Lithium PWA.
 | [LITHIUM-CHANGELOG.md](LITHIUM-CHANGELOG.md) | Migration notes |
 | [AGENTS.md](/elements/003-lithium/AGENTS.md) | Agent / session map |
 | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** (Phases 0–38). Pause 2026-10-22: Phases 9 and 10 complete. Phase 11 is next. The meta tab was declined. Phases 5a–5d and 6 stay deferred |
-| [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — locks and index. Phase bodies are in [plans/reporting/](/docs/Li/plans/reporting/). Phases 0–5 complete 2026-10-31. Next is Phase 6, in [01-designer.md](/docs/Li/plans/reporting/01-designer.md). Phase 6 has not started |
+| [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — locks and index. Phase bodies are in [plans/reporting/](/docs/Li/plans/reporting/). Phases 0–5 complete 2026-10-31. Phase 6 is in progress. Andrew reported drag, Undo, and New. The export sentence of 6.4 is still open. Phase 7 is in progress, in [01-designer.md](/docs/Li/plans/reporting/01-designer.md). The first dots did not show and have been repainted. Redo sits beside Undo. Do not start Phase 8 |
 | [LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md) | Report contract — format version 1. Accepted 2026-10-30 |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint |
 | [TODO.md](TODO.md) | Backlog pointer |

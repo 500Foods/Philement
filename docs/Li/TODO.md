@@ -10,11 +10,14 @@ The open Lithium implementation is the report writer. Start at
 [REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) Resume, then
 the milestone file it names. The Sitting section there is the
 operating model. Andrew starts each phase with `cdli && grok`.
-Phases 1–5 are complete. The contract note is
+Phases 1–5 are complete. Phase 6 is in progress. Andrew reported
+drag, Undo, and New. The export sentence of 6.4 is still open.
+Phase 7 is in progress. The first dots did not show and have
+been repainted. Redo sits beside Undo. Do not start Phase 8. The
+contract note is
 [LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md). One inch is 96 CSS pixels.
-Phase 6 is next in
-[01-designer.md](/docs/Li/plans/reporting/01-designer.md)
-and has not started.
+The phase body is
+[01-designer.md](/docs/Li/plans/reporting/01-designer.md).
 
 CATCHUP stays parked. Phase 19 stays in progress until he names
 Course Builder. Do not mark it complete. Do not start Phase 20.

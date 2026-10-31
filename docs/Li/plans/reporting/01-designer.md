@@ -523,12 +523,12 @@ Phase 5 Status complete.
 
 ### Work items
 
-- [ ] 6.1 Paint each band as a labeled strip and a body of the stored
+- [x] 6.1 Paint each band as a labeled strip and a body of the stored
       height. Order is the array order.
-- [ ] 6.2 Drag the bottom edge. Write the new height back in the
+- [x] 6.2 Drag the bottom edge. Write the new height back in the
       document unit. `element.style.height` is the drag preview;
       mouseup commits through the model and pushes history.
-- [ ] 6.3 Minimum height 0.15 in. Undo restores the previous height.
+- [x] 6.3 Minimum height 0.15 in. Undo restores the previous height.
 - [ ] 6.4 Browser: resize Detail, export, and confirm the file's
       height changed. Undo restores the canvas and a second export.
 
@@ -542,7 +542,78 @@ Lint, unit tests, and the browser check.
 
 ### Status
 
-**not started**
+**in progress — 2026-10-31.** The bands are drawn and a drag writes
+the height. `npm test` exited 0 (64 files, 1270 passed).
+`npm run lint` exited 0. `npm run lint:css` exited 0.
+`npm run templates:copy` copied `reports.html` and `reports.css`.
+`npx eslint` on `bands.js`, `canvas.js`, `reports.js`,
+`reports-file.js`, and `document.js` exited 0. Work item 6.4 is
+waiting on Andrew at `https://lithium.500courses.com`. The test
+database was offline later the same day, so that check was not
+run. Phase 7 started in the next sitting. Andrew later
+reported, on the alternate database, that a drag, Undo, and New
+behave. The export sentence of 6.4 was not in that report, so
+this phase stays in progress. Redo is the toolbar button beside
+Undo. Ctrl+Shift+Z and Ctrl+Y redo. A new edit drops that tail.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/bands.js`](/elements/003-lithium/src/managers/reports/bands.js)
+  paints each band, in array order, as a role strip and a body.
+  The body height is the stored length at 96 CSS pixels per inch.
+  An omitted height uses the Defaults table and is not written.
+  A length that cannot be measured shows that message and draws
+  no body.
+- [`/elements/003-lithium/src/managers/reports/reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  drags the bottom edge. `element.style.height` is the preview.
+  Mouseup calls `resizeBand` and `history.commit`. The stored
+  length uses the document unit. The floor is `0.15 in`. Undo,
+  from the toolbar or Ctrl+Z, restores the previous height.
+  New and Import start a fresh history. Redo, from the toolbar,
+  Ctrl+Shift+Z, or Ctrl+Y, restores the undone snapshot. A new
+  edit drops that tail.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-bands.test.js`](/elements/003-lithium/tests/unit/reports-bands.test.js)
+  (4) and
+  [`/elements/003-lithium/tests/unit/reports-shell.test.js`](/elements/003-lithium/tests/unit/reports-shell.test.js)
+  (27).
+
+### Lessons learned
+
+- The strip is chrome. The body is the stored height. Dragging
+  Detail down by one inch stores `1.25 in`. The strip is not added
+  to that length.
+- The resting height is a CSS variable. `element.style.height` is
+  only the drag preview. Mouseup repaints from the model, so the
+  inline height is gone.
+- Import does not clamp a short band. The drag and `resizeBand` do.
+- An omitted height is drawn from the Defaults table. The key stays
+  omitted until the drag writes it.
+- New and Import replace history. Undo restores the resize. It does
+  not restore the file that was open before New.
+- happy-dom checks the CSS variable and the exported JSON. That is
+  not the 500 Courses check.
+
+### Handoff
+
+Phase 6 stays in progress. Andrew deploys and opens Report Manager
+on `https://lithium.500courses.com`. New shows a Letter page with
+three bands inside the margin guides, top to bottom: Page header
+`ph` (`0.4 in`), Detail `detail` (`0.25 in`), Page footer `pf`
+(`0.4 in`). Each one is a gray strip and a white body. Drag the
+bottom edge of Detail. The body follows the pointer. Release, then
+Export. The file's Detail height is no longer `0.25 in`. A
+one-inch drag stores `1.25 in`. Undo, the toolbar button or
+Ctrl+Z, restores the body and a second export is `0.25 in` again.
+A drag shorter than `0.15 in` stays `0.15 in`. The page size stays
+Letter. The grid and the rulers were later when this handoff was
+written. Later the same day the test database was offline.
+Andrew said to continue, so Phase 7 started with this check
+still open. On the alternate database he reported that a drag,
+Undo, and New behave. The export sentence was not in that
+report. Redo now sits beside Undo. When he also confirms the
+exported height, mark 6.4 and this phase complete, then stop,
+unless the same message also reports the Phase 7 check.
 
 ---
 
@@ -558,11 +629,11 @@ Phase 6 Status complete.
 
 ### Work items
 
-- [ ] 7.1 `grid.js` draws an SVG pattern from the definition's grid
+- [x] 7.1 `grid.js` draws an SVG pattern from the definition's grid
       object: dots, grid, dotted, dashed, and none.
-- [ ] 7.2 A `ResizeObserver` redraws when the band size changes.
+- [x] 7.2 A `ResizeObserver` redraws when the band size changes.
       Disconnect it in `cleanup` / `destroy`.
-- [ ] 7.3 Spacing follows the unit string. The default is the
+- [x] 7.3 Spacing follows the unit string. The default is the
       Defaults table: `0.125 in`, style `dots`.
 - [ ] 7.4 Browser: switch the fixture grid style across the five
       values and resize a band. The pattern stays aligned to the
@@ -579,7 +650,76 @@ browser, and the browser check.
 
 ### Status
 
-**not started**
+**in progress — 2026-10-31.** The five grid styles are drawn.
+Andrew reported that the dot pattern was not visible. A circle
+of radius `0.5` centered on the tile corner is clipped away.
+The painter now draws a full dot on each spacing point. The
+painted radius is at least 1 CSS pixel. The stored weight stays
+`0.5`. `npm test` exited 0 (65 files, 1266 passed, 12 skipped).
+The 12 skipped cases are the auth integration file.
+`npm run lint` exited 0. `npm run templates:copy` copied
+`reports.html`. `npx eslint` on `grid.js`, `reports.js`, and the
+grid tests exited 0. Work item 7.4 is waiting until he sees the
+dots after the next deploy. Phase 6's export sentence is still
+open. Redo was added in this sitting. Do not start Phase 8.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/grid.js`](/elements/003-lithium/src/managers/reports/grid.js)
+  resolves the grid. An omitted key uses the Defaults table and
+  is not written. `dots`, `grid`, `dotted`, and `dashed` are SVG
+  patterns. `none` and `visible: false` draw no marks. The tile
+  origin is the band body's top-left. Spacing `0.125 in` is 12
+  CSS pixels. Each tile draws the dot on all four corners so the
+  mark sits on the spacing lattice. A stored weight below 1 CSS
+  pixel paints at radius 1.
+- [`/elements/003-lithium/src/managers/reports/reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  watches each band body with a `ResizeObserver`. A resize sets
+  the svg viewport and leaves the pattern at `0,0`. `destroy` and
+  `cleanup` disconnect that observer. A bad spacing toasts the
+  units message and draws no pattern.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-grid.test.js`](/elements/003-lithium/tests/unit/reports-grid.test.js)
+  (6) and
+  [`/elements/003-lithium/tests/unit/reports-shell.test.js`](/elements/003-lithium/tests/unit/reports-shell.test.js)
+  (29).
+
+### Lessons learned
+
+- The pattern origin is the band corner. A resize changes the svg
+  viewport. The pattern's `x` and `y` stay `0`, and the tile width
+  stays the spacing.
+- A dot of radius `0.5` centered on the tile corner does not
+  show. The pattern clips it to a quarter of a pixel. Lines at
+  stroke width `0.5` do show, because the stroke runs the length
+  of the cell. The painted dot radius is at least 1 CSS pixel,
+  and each tile draws all four corners so the dot sits on the
+  lattice. The stored weight stays `0.5`.
+- An omitted grid paints `dots` at `0.125 in` and the export still
+  has no `grid` key. A length with no unit toasts and draws no
+  pattern. The bands stay.
+- happy-dom checks the pattern attributes and that `disconnect`
+  ran. That is not the 500 Courses check.
+
+### Handoff
+
+Phase 7 stays in progress. Phase 6 stays in progress too.
+Andrew reported drag, Undo, and New on the alternate database.
+He also reported that no dot pattern was showing. Deploy this
+build. On a new report, each band body shows silver dots on a
+12px step, sitting on the band's top-left lattice. Import a
+file whose `grid.style` is `grid`, then `dotted`, then
+`dashed`, then `none`. The first three draw lines from the
+band's top-left corner. `none` draws no marks. Drag Detail's
+bottom edge. The pattern stays on that corner and does not
+slide. A spacing of `1 in` puts the step on 96 CSS pixels.
+Redo sits beside Undo. After Undo, Redo restores the height.
+Ctrl+Shift+Z and Ctrl+Y do the same. A new drag clears Redo.
+Phase 6's export sentence is still open: a one-inch drag of
+Detail stores `1.25 in`, and a second export after Undo is
+`0.25 in`. When both checks pass, mark 6.4 and 7.4 and both
+phases complete, then stop, unless the same message names
+Phase 8. Phase 8 paints the rulers. Do not start Phase 8.
 
 ---
 
