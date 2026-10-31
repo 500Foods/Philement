@@ -41,7 +41,8 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | [../elements/003-lithium/AGENTS.md](/elements/003-lithium/AGENTS.md) | **Agent map** — stack, IDs, Hydrogen/Helium/Keycloak, known defects |
 | [TODO.md](TODO.md) | Active backlog pointer |
 | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** — Phases 0–38. Pause 2026-10-22: Phases 9 and 10 complete. Phase 11 is next. The meta tab was declined. Phases 5a–5d and 6 stay deferred |
-| [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — Phases 0–71. Phase 0 approved 2026-10-10. Next is Phase 1 |
+| [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — locks and index. Phase bodies are in [plans/reporting/](/docs/Li/plans/reporting/). Phases 0–2 complete 2026-10-30. Next is Phase 3 in [01-designer.md](/docs/Li/plans/reporting/01-designer.md) |
+| [LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md) | Report contract — format version 1, fixtures, and the Defaults table. Accepted 2026-10-30 |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint (do not implement) |
 
 ### Core Architecture

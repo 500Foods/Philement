@@ -1,0 +1,6 @@
+{
+  "orders": [
+    { "region": "North", "customer": "Ada" },
+    { "region": "North", "customer": "Ben" }
+  ]
+}

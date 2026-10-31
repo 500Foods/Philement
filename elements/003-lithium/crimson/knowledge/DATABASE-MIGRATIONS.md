@@ -370,4 +370,13 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1410](/elements/002-helium/acuranzo/migrations/acuranzo_1410.lua) | queries | 1.0.0 | 2026-10-28 | 24 | ✗ | Login GeoIP: tokens/actions geo_city, geo_region, geo_country |
 | [1411](/elements/002-helium/acuranzo/migrations/acuranzo_1411.lua) | queries | 1.0.1 | 2026-10-29 | 8 | ✗ | Login History: soft-expire JWT (QR 019), logout audit (QR 161 type 5), |
 | [1412](/elements/002-helium/acuranzo/migrations/acuranzo_1412.lua) | lookups | 1.0.0 | 2026-10-28 | 4 | ✗ | UPDATE Lookup 059 key 17 (profile-manager/login-history): Duration as HH:MM:SS.zzz |
-| **337** | | | | **1780** | **337** | |
+| [1413](/elements/002-helium/acuranzo/migrations/acuranzo_1413.lua) | lookups | 1.0.0 | 2026-10-30 | 6 | ✗ | Lookup 069 - AEM Property |
+| [1414](/elements/002-helium/acuranzo/migrations/acuranzo_1414.lua) | lookups | 1.0.0 | 2026-10-30 | 9 | ✗ | Lookup 070 - AEM Channel |
+| [1415](/elements/002-helium/acuranzo/migrations/acuranzo_1415.lua) | lookups | 1.0.0 | 2026-10-30 | 8 | ✗ | Lookup 071 - AEM Kind |
+| [1416](/elements/002-helium/acuranzo/migrations/acuranzo_1416.lua) | lookups | 1.0.0 | 2026-10-30 | 26 | ✗ | Lookup 072 - AEM Metric |
+| [1417](/elements/002-helium/acuranzo/migrations/acuranzo_1417.lua) | lookups | 1.0.0 | 2026-10-30 | 12 | ✗ | Lookup 073 - AEM Source |
+| [1418](/elements/002-helium/acuranzo/migrations/acuranzo_1418.lua) | aem_observations | 1.0.0 | 2026-10-30 | 7 | ✓ | Creates the aem_observations table for Audience and Engagement Metrics |
+| [1419](/elements/002-helium/acuranzo/migrations/acuranzo_1419.lua) | queries | 1.0.0 | 2026-10-30 | 4 | ✗ | QueryRef #162 - AEM Insert Counter |
+| [1420](/elements/002-helium/acuranzo/migrations/acuranzo_1420.lua) | queries | 1.0.0 | 2026-10-30 | 4 | ✗ | QueryRef #163 - AEM Insert Gauge |
+| [1421](/elements/002-helium/acuranzo/migrations/acuranzo_1421.lua) | queries | 1.0.0 | 2026-10-30 | 4 | ✗ | QueryRef #164 - AEM Insert Event |
+| **346** | | | | **1860** | **346** | |

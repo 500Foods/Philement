@@ -3,11 +3,20 @@
 Read this file before changing Lithium. It is the session-start map so you do
 not re-derive architecture, IDs, APIs, or known defects. Coding rules live in
 [`/docs/Li/LITHIUM-INS.md`](/docs/Li/LITHIUM-INS.md) and **win** on style
-conflicts. Active plan:
-[`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
-(supersedes
-[`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete.
+conflicts. Open implementation, as of 2026-10-30: the report writer.
+Read Resume in
+[`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
+then the milestone file it names. The Sitting section there is the
+operating model. Andrew starts each phase with `cdli && grok`.
+CATCHUP
+([`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md))
+is parked. Its Phase 19 stays in progress until he names Course
+Builder. Do not mark that phase complete. Do not start Phase 20.
+Course Manager phases 16–18 and CATCHUP phases 5a–5d and 6 stay
+deferred. The sprint
+([`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md))
+is superseded.
+CATCHUP pause, 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete.
 Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `SCRIPT_TYPE`,
 `STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
@@ -76,14 +85,20 @@ file is **1402**, and Lookup 059 key **16** stays free. File
 numbers stay below 4500. Andrew parked Course Manager on
 2026-10-23. Phases 16–18 wait until he pulls them back. Do not
 mark Phase 19 complete. Do not start Phase 20.
-He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
-[`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
-Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
-phase is Phase 1, and only after Andrew pulls that plan in. PDF is
-the default export there. Phased work follows
+He does deploys and login checks. Do not apply migrations. The report writer (manager 24)
+is [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
+Phase 0 is approved. Phase bodies are in
+[`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/).
+Phases 1 and 2 are complete. Next is Phase 3 in `01-designer.md`.
+The contract note is
+[`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is 96
+CSS pixels. Andrew approved the file split on 2026-10-30. PDF is
+the default export. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-23 (CATCHUP Phase 19 in progress. Andrew applied 4097–4114 and Acuranzo 1399–1401. The receipt went out on the Hydrogen restart with a subject and no body. The working-title ledger write is still unproven. `courses_4115.lua`, `courses_4116.lua`, and `courses_4117.lua` are written and not applied. Suggested is a stage choice and clears the receipt mark. The receipt body uses the suggestion name and course title. Next file **4118**, next ref **4523**, next Acuranzo file **1402**, Lookup 059 key **16** stays free. Do not mark Phase 19 complete. Do not start Phase 20. Phases 16–18 and 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-30. Open implementation is the report writer. Phases 1 and 2 are complete. Next is Phase 3. Sitting rules are in [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
+
+CATCHUP pause record (2026-10-23): CATCHUP Phase 19 in progress. Andrew applied 4097–4114 and Acuranzo 1399–1401. The receipt went out on the Hydrogen restart with a subject and no body. The working-title ledger write is still unproven. `courses_4115.lua`, `courses_4116.lua`, and `courses_4117.lua` are written and not applied. Suggested is a stage choice and clears the receipt mark. The receipt body uses the suggestion name and course title. Next file **4118**, next ref **4523**, next Acuranzo file **1402**, Lookup 059 key **16** stays free. Do not mark Phase 19 complete. Do not start Phase 20. Phases 16–18 and 5a–5d and 6 stay deferred.
 
 ---
 
@@ -134,7 +149,7 @@ Live: https://lithium.philement.com — Coverage: https://lithium.philement.com/
 ```text
 elements/003-lithium/
 ├── AGENTS.md                 # This file
-├── CATCHUP.md                # Active gated plan (Phases 0–38)
+├── CATCHUP.md                # Parked. Phase 19 stays in progress until he names Course Builder
 ├── index.html                # First-stage boot (SW, version, splash)
 ├── package.json
 ├── vite.config.js / vitest.config.js / eslint.config.js
@@ -721,8 +736,8 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 | API (stale in parts) | `LITHIUM-API.md` |
 | JWT / OIDC | `LITHIUM-JWT.md`, `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md` |
 | Deploy | `LITHIUM-WEB.md` |
-| Catchup (active) | [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md) |
-| Report writer (Phases 0–71, Phase 0 approved) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md) |
+| Catchup (parked) | [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md). Open it when he names Course Builder, Course Manager, or Scripting |
+| Report writer (open implementation) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md). Sitting rules are in that file. Phase bodies: [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/). Phases 1 and 2 complete. Next is Phase 3. Contract: [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md) |
 | Sprint (superseded) | `docs/Li/plans/LITHIUM_SPRINT.md` |
 | Hydrogen script API | `docs/H/api/conduit/script.md` |
 | Course Builder pipeline | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` |
@@ -731,16 +746,24 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 
 ## Session checklist
 
-1. Read **CURRENT PAUSE POINT** in
-   [`CATCHUP.md`](/elements/003-lithium/CATCHUP.md).
+1. Read Resume in
+   [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md)
+   and follow the Sitting section. Open the milestone file Resume
+   names. Open CATCHUP only when he names Course Builder, Course
+   Manager, Scripting, or another parked phase.
 2. Re-read this file’s Known defects + ID map if touching managers or HTML.
 3. One phase at a time. Do not mark a gate green without the named command
    or check actually passing.
 4. After JS/CSS: `npm run lint` and `npm test` from `elements/003-lithium`.
+   When the phase changes a function a test can call, add or extend a
+   Vitest test under `tests/unit/`.
 5. After HTML templates: `npm run templates:copy`.
 6. After Helium Lua: rebuild Hydrogen payload (`mkt`/`mka`) — that is a
-   different tree.
-7. Close the phase the way [`/docs/PLANNING.md`](/docs/PLANNING.md) says:
-   Status, Accomplished, Lessons learned, Handoff, and the Working Log,
-   then stop. The next phase is a new conversation.
-8. Never commit secrets, JWTs, or `node_modules`. Do not commit unless asked.
+   different tree. Hand the packet over. He applies it.
+7. Close the phase the way [`/docs/PLANNING.md`](/docs/PLANNING.md) and
+   the reporting Sitting section say: Status, Accomplished, Lessons
+   learned, Handoff, and the Working Log, then stop. The next phase is
+   a new conversation.
+8. Never commit secrets, JWTs, or `node_modules`. Do not commit unless
+   asked. Do not deploy. Do not apply a migration. He checks
+   `https://lithium.500courses.com`.

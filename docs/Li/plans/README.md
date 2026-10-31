@@ -36,9 +36,18 @@ Report writer. Lithium manager 24 designs a JSON definition. Helium
 `Reports.Render` composes an intermediate document and emits a
 format. PDF is the default. The build order is the phase index.
 A datasource may be a QueryRef plus parameters. Values print
-through a mask. Phases 0–71. Phase 0 approved 2026-10-10. Next is
-Phase 1.
-CATCHUP stays the active plan until Andrew pulls this one in.
+through a mask. Phases 0–71. Phase 0 approved 2026-10-10. The
+locks and the index stay in this file. Phase bodies are in
+[`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/). Phases 1
+and 2 are complete. Next is Phase 3 in
+[`01-designer.md`](/docs/Li/plans/reporting/01-designer.md). The
+contract note is
+[`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is
+96 CSS pixels.
+The Sitting section in the parent is the operating model: one
+phase per `cdli && grok` chat, Lithium tests with the work,
+Andrew applies migrations and checks 500 Courses, then the
+session writes the close-out and stops.
 
 ### Superseded
 

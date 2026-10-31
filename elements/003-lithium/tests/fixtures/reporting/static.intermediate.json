@@ -1,0 +1,41 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "id": "ph",
+          "typeKey": 13,
+          "height": "0.4 in",
+          "items": []
+        },
+        {
+          "id": "detail",
+          "typeKey": 15,
+          "height": "0.25 in",
+          "items": [
+            {
+              "id": "title",
+              "typeKey": 0,
+              "text": "Static",
+              "align": "Left",
+              "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+              "box": {
+                "left": "0 in",
+                "top": "0 in",
+                "width": "2 in",
+                "height": "0.2 in"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pf",
+          "typeKey": 17,
+          "height": "0.4 in",
+          "items": []
+        }
+      ]
+    }
+  ],
+  "log": []
+}

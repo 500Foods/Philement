@@ -1,0 +1,5 @@
+{
+  "orders": [
+    { "customer": "North", "amount": 1234.5, "note": null }
+  ]
+}

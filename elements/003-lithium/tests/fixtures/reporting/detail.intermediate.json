@@ -1,0 +1,67 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "id": "ph",
+          "typeKey": 13,
+          "height": "0.4 in",
+          "items": []
+        },
+        {
+          "id": "detail",
+          "typeKey": 15,
+          "height": "0.25 in",
+          "items": [
+            {
+              "id": "customer",
+              "typeKey": 20,
+              "text": "North",
+              "align": "Left",
+              "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+              "box": {
+                "left": "0 in",
+                "top": "0 in",
+                "width": "2 in",
+                "height": "0.2 in"
+              }
+            },
+            {
+              "id": "amount",
+              "typeKey": 21,
+              "text": "1234.5",
+              "align": "Left",
+              "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+              "box": {
+                "left": "2.25 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "height": "0.2 in"
+              }
+            },
+            {
+              "id": "note",
+              "typeKey": 21,
+              "text": "",
+              "align": "Left",
+              "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+              "box": {
+                "left": "4 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "height": "0.2 in"
+              }
+            }
+          ]
+        },
+        {
+          "id": "pf",
+          "typeKey": 17,
+          "height": "0.4 in",
+          "items": []
+        }
+      ]
+    }
+  ],
+  "log": []
+}

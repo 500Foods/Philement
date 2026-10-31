@@ -1,0 +1,89 @@
+{
+  "format": 1,
+  "name": "Orders by region",
+  "title": "Orders by region",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+  "datasources": [
+    { "name": "orders", "kind": "json", "shape": "list" }
+  ],
+  "bands": [
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.4 in",
+      "items": []
+    },
+    {
+      "id": "gh",
+      "typeKey": 14,
+      "field": "region",
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "region",
+          "typeKey": 20,
+          "field": "region",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "datasource": "orders",
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "customer",
+          "typeKey": 20,
+          "field": "customer",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gf",
+      "typeKey": 16,
+      "height": "0.25 in",
+      "items": []
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.4 in",
+      "items": []
+    }
+  ],
+  "functions": []
+}

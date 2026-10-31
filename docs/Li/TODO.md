@@ -1,8 +1,24 @@
 # Lithium TODO
 
-Actionable incomplete work only. Active plan body:
-[`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md).
+Actionable incomplete work only. Open implementation:
+[`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
 Agent map: [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
+
+## Current work (2026-10-30)
+
+The open Lithium implementation is the report writer. Start at
+[REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) Resume, then
+the milestone file it names. The Sitting section there is the
+operating model. Andrew starts each phase with `cdli && grok`.
+Phases 1 and 2 are complete. The contract note is
+[LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md). One inch is 96 CSS pixels.
+Next is Phase 3 in
+[01-designer.md](/docs/Li/plans/reporting/01-designer.md).
+
+CATCHUP stays parked. Phase 19 stays in progress until he names
+Course Builder. Do not mark it complete. Do not start Phase 20.
+The P0 table below is the catchup ledger. Its "Next: Phase 11"
+line is stale. Do not treat it as the next sitting.
 
 ## How to use this file
 
@@ -28,20 +44,22 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 | **Remaining** | Phases 11–38. Band B (5a–5d, 6) when Andrew pulls it back |
 | **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
-## P2 — Report writer (do not start)
+## P2 — Report writer
 
-Gated plan for manager 24. Phase 0 approved 2026-10-10. Next is
-Phase 1, contracts and fixtures. PDF is the default export. The
-build order is the phase index. Author formulas are Lua stored in
-the definition. Do not pull this ahead of CATCHUP unless Andrew
-says so.
+Gated plan for manager 24. Phase 0 approved 2026-10-10. The phase
+bodies were split into milestone files on 2026-10-30. Next is
+Phase 1, contracts and fixtures, in
+[01-designer.md](/docs/Li/plans/reporting/01-designer.md). PDF is
+the default export. The locks stay in the parent plan. One phase
+per conversation.
 
 | | |
 | --- | --- |
 | **Plan** | [REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) |
-| **Next** | Phase 1 — contracts and fixtures |
+| **Phases** | [reporting/](/docs/Li/plans/reporting/) |
+| **Next** | Phase 1 — contracts and fixtures, in `01-designer.md` |
 | **Effort** | XL across Phases 0–71. Each phase is one behavior and one gate. |
-| **Done** | Phase 0 of 72 (2026-10-10) |
+| **Done** | Phase 0 of 72 (2026-10-10). File split 2026-10-30. |
 
 ## Parallel (other repos)
 
