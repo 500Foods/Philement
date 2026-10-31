@@ -1,0 +1,20 @@
+<div class="reports-manager">
+  <div class="lithium-toolbar" id="reports-toolbar">
+    <span class="lithium-toolbar-title" id="reports-name">Report</span>
+    <div class="lithium-toolbar-placeholder"></div>
+    <button type="button" class="lithium-toolbar-btn" id="reports-new-btn" title="New report">
+      <fa fa-file></fa>
+      <span>New</span>
+    </button>
+    <button type="button" class="lithium-toolbar-btn" id="reports-import-btn" title="Import a definition file">
+      <fa fa-upload></fa>
+      <span>Import</span>
+    </button>
+    <button type="button" class="lithium-toolbar-btn" id="reports-export-btn" title="Export the definition file">
+      <fa fa-download></fa>
+      <span>Export</span>
+    </button>
+  </div>
+  <input type="file" class="reports-file-input" id="reports-import-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+  <div class="reports-stage" id="reports-stage"></div>
+</div>

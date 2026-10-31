@@ -199,15 +199,15 @@ Phase 2 Status complete.
 
 ### Work items
 
-- [ ] 3.1 `model/document.js` loads a fixture, rejects `format` other
+- [x] 3.1 `model/document.js` loads a fixture, rejects `format` other
       than 1, and exports canonical JSON (stable key order is not
       required; semantic equality is).
-- [ ] 3.2 Add, move, resize, and delete a band and an item. Ids are
+- [x] 3.2 Add, move, resize, and delete a band and an item. Ids are
       stable across undo.
-- [ ] 3.3 `model/history.js` snapshots the document. Undo and redo
+- [x] 3.3 `model/history.js` snapshots the document. Undo and redo
       restore it. A new edit drops the redo tail.
-- [ ] 3.4 Vitest uses the Phase 1 fixtures.
-- [ ] 3.5 `createBlank()` returns the new-report document from the
+- [x] 3.4 Vitest uses the Phase 1 fixtures.
+- [x] 3.5 `createBlank()` returns the new-report document from the
       Defaults table: Letter portrait, the grid and font rows, and
       page header, detail, and page footer at the table heights.
       Vitest checks those written keys. Detail has no datasource.
@@ -223,7 +223,72 @@ and the export matches the fixture again.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** `npm test` exited 0 (62 files, 1238
+passed). `npm run lint` exited 0. No variance. The detail fixture's
+`customer` field moves to `1 in` and undo exports the fixture again,
+with id `customer`.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/model/document.js`](/elements/003-lithium/src/managers/reports/model/document.js)
+  exports `importDefinition`, `exportDefinition`, `createBlank`,
+  `addBand`, `moveBand`, `resizeBand`, `deleteBand`, `addItem`,
+  `moveItem`, `resizeItem`, and `deleteItem`. Each edit returns a
+  new document. Import and export are a JSON copy. `format` must be
+  the number 1. Omitted keys stay omitted.
+- `createBlank()` writes Letter portrait (`sizeKey` 0, `8.5 in` by
+  `11 in`), the fixture grid and font, and bands `ph` (0.4 in),
+  `detail` (0.25 in), and `pf` (0.4 in). Detail has no `datasource`.
+  A generated band id is `b1`, `b2`, and so on. A generated item id
+  is `i1`, `i2`, and so on.
+- A new item writes `align` `Left` and a `1.5 in` by `0.2 in` box
+  centered in the band. Static text writes `Text`. Number, datetime,
+  aggregate number, aggregate datetime, parameter, system datetime,
+  page number, and page count write `mask` `""`. Text omits `mask`.
+  Font stays omitted. Band height clamps to `0.15 in` on add and
+  resize, and the stored length uses the document unit.
+- [`/elements/003-lithium/src/managers/reports/model/history.js`](/elements/003-lithium/src/managers/reports/model/history.js)
+  exports `createHistory`. `commit` snapshots the current document.
+  Undo and redo restore that snapshot. A later `commit` drops the
+  redo tail. The caller commits. The document functions do not.
+- [`/elements/003-lithium/src/managers/reports/model/units.js`](/elements/003-lithium/src/managers/reports/model/units.js)
+  exports `convertLength`. `CSS_PX_PER_INCH` is still 96.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-document.test.js`](/elements/003-lithium/tests/unit/reports-document.test.js)
+  (9) and
+  [`/elements/003-lithium/tests/unit/reports-history.test.js`](/elements/003-lithium/tests/unit/reports-history.test.js)
+  (5). The units file gained one conversion case.
+  `npm test` and `npm run lint` from `elements/003-lithium` exited 0.
+  `npx eslint` on the three model files also exited 0.
+
+### Lessons learned
+
+- `npm run lint` still misses `src/managers/reports/model/*.js`.
+  Lint those files with `npx eslint`. `structuredClone` is not an
+  ESLint global. Copies go through `JSON.parse(JSON.stringify)`,
+  which is the canonical JSON form.
+- On a Letter page with `0.25 in` margins, a new item in the
+  `0.25 in` detail band is `left` `3.25 in`, `top` `0.025 in`,
+  `1.5 in` by `0.2 in`.
+- Import does not clamp a short band. Resize and add do.
+- `grid.weight` is the string `0.5`, matching the fixtures.
+- Image, chart, and barcode dpi are not written here. Those
+  objects arrive in later phases.
+
+### Handoff
+
+Phase 4 is next in this file. It calls `createBlank`,
+`importDefinition`, and `exportDefinition`. `exportDefinition`
+returns an object. Stringify it for the download. Key order is
+not significant. A bad file throws `Error`, and `message` is the
+toast text. Format other than 1 says `Report format must be 1.`
+An imported file that omits a key still omits it. The static
+fixture title has no `align`, `font`, or `mask`. `createBlank`
+writes `ph`, `detail`, and `pf`. Detail has no datasource.
+Undo is `createHistory(doc)` then `commit(next)`. `resizeBand`
+clamps to `0.15 in` and stores the document unit. `96 px` on an
+inch report becomes `1 in`. There is no DOM in this module.
+Manager 24 is still the placeholder.
 
 ---
 
@@ -240,25 +305,28 @@ Phase 3 Status complete.
 
 ### Work items
 
-- [ ] 4.1 `reports.html` / `reports.css` / `reports.js`. Fetch the
+- [x] 4.1 `reports.html` / `reports.css` / `reports.js`. Fetch the
       HTML template. `templates:copy`. Stay under 1000 lines.
-- [ ] 4.2 `init`, `destroy`, and `cleanup`. CATCHUP Phase 1
+- [x] 4.2 `init`, `destroy`, and `cleanup`. CATCHUP Phase 1
       (2026-10-16) calls `destroy`, otherwise `cleanup`, otherwise
       `teardown`. `destroy` releases the listeners. `cleanup`
       releases the same set when `destroy` is absent. Drop the
       "under development" copy.
-- [ ] 4.3 Import picks a local JSON file, runs it through the
+- [x] 4.3 Import picks a local JSON file, runs it through the
       document model, and shows the report name. A bad file toasts
       the model error and leaves the previous document in place.
-- [ ] 4.4 Export downloads the current definition as
+- [x] 4.4 Export downloads the current definition as
       `<name>.report.json`.
-- [ ] 4.5 Correct the Reports id sentence in
+- [x] 4.5 Correct the Reports id sentence in
       [`/docs/Li/LITHIUM-MGR-MAIN.md`](/docs/Li/LITHIUM-MGR-MAIN.md)
       from 12 to 24.
-- [ ] 4.6 Browser: import the detail fixture, export it, import the
+- [x] 4.6 Browser: import the detail fixture, export it, import the
       export, and confirm the name survived. Confirm a bad file
-      toasts and the name stays.
-- [ ] 4.7 New calls `createBlank()`. Export of that document contains
+      toasts and the name stays. Andrew confirmed this on
+      `https://lithium.500courses.com` on 2026-10-31. The stage
+      listed the blank definition, import showed `Orders`, and New
+      restored the blank lines.
+- [x] 4.7 New calls `createBlank()`. Export of that document contains
       the written defaults, including `page.sizeKey` 0,
       `font.style` `Normal`, `grid.style` `dots`, and the three
       bands. An imported file that omits a key still omits it on
@@ -276,7 +344,79 @@ the browser check in 4.6.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** `npm test` exited 0 (63 files, 1258
+passed). `npm run lint` exited 0. `npm run lint:css` exited 0.
+`npm run templates:copy` copied `reports.html` and `reports.css`.
+`npx eslint` on the shell files exited 0. Andrew confirmed the
+browser check on `https://lithium.500courses.com`: the stage
+lists the blank definition, import of the detail fixture shows
+`Orders`, New restores the blank lines, the export round-trips,
+and a bad file toasts while the name stays. No variance.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/reports.html`](/elements/003-lithium/src/managers/reports/reports.html),
+  [`reports.css`](/elements/003-lithium/src/managers/reports/reports.css),
+  and [`reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  replace the placeholder. The manager fetches
+  `/src/managers/reports/reports.html`. The toolbar shows the report
+  name and New, Import, and Export. `#reports-stage` lists the open
+  definition: name, download name, page, margins, grid, font, and
+  each band with its items. Omitted sections say `Omitted`. A file
+  with no bands says `No bands.` The page drawing is Phase 5.
+- `init` calls `createBlank()`. `destroy` and `cleanup` both release
+  the New, Import, Export, and file-input listeners. Close calls
+  `destroy` because that method exists.
+- Import reads a local JSON file through `importDefinition`. The
+  toolbar shows `name`, or `Report` when that key is omitted or
+  empty. A bad file toasts `error.message` and leaves the open
+  document in place.
+- Export downloads `<name>.report.json`. The text is pretty JSON
+  from `exportDefinition`, with a trailing newline. An omitted key
+  stays omitted. A name that cannot be a file name is adjusted only
+  on the download. The stored name is unchanged.
+- [`/elements/003-lithium/src/managers/reports/reports-file.js`](/elements/003-lithium/src/managers/reports/reports-file.js)
+  holds the name, the text, the stage lines, and the import result.
+  [`/elements/003-lithium/tests/unit/reports-shell.test.js`](/elements/003-lithium/tests/unit/reports-shell.test.js)
+  covers them (20). The stage paints those lines as text.
+- [`/docs/Li/LITHIUM-MGR-MAIN.md`](/docs/Li/LITHIUM-MGR-MAIN.md)
+  names Reports as id 24.
+
+### Lessons learned
+
+- `npm run lint` still misses `src/managers/reports/*.js`. Lint
+  those files with `npx eslint`. A regular expression that names
+  `\u0000` fails `no-control-regex`. The download name walks
+  characters instead.
+- The shell shows an omitted name as `Report` and downloads
+  `Report.report.json`. The file still omits `name`. `/`, `\`,
+  `:`, `*`, `?`, `"`, `<`, `>`, `|`, and control characters stay
+  in the shown name and become `_` in the file name. A name that
+  is only spaces or dots downloads as `Report.report.json`.
+- `lint:css` also failed on a rule that was already in
+  `page-login-history.css`: two declarations on one line. That
+  rule is now two lines, so the named command exits 0.
+- happy-dom clicked New, Import, and Export. That is not the
+  500 Courses check.
+- The first 500 Courses check loaded manager 24 and logged
+  `[Reports] New report` twice. The stage was empty, and the
+  toolbar was already `Report`, so New looked idle. The stage now
+  lists the definition. New on a blank report keeps those same
+  lines. New after an import restores them.
+
+### Handoff
+
+Phase 5 is next in this file. It paints one page into
+`#reports-stage` at 96 CSS pixels per inch. Margin guides sit
+inset from the page edge. Andrew confirmed the shell on
+2026-10-31. The stage already lists the open definition, so the
+page is drawn into that same element. A blank report is Letter
+portrait, `8.5 in` by `11 in`, margins `0.25 in`. Unzoomed Letter
+is larger than a 4 in custom page. `exportDefinition` returns an
+object. Stringify it for a download. Key order is not significant.
+Undo is `createHistory(doc)` then `commit(next)`. Undo is not
+wired in the shell. There is no DOM in the model. Phase 5 has
+not started.
 
 ---
 
@@ -292,11 +432,12 @@ Phase 4 Status complete.
 
 ### Work items
 
-- [ ] 5.1 Draw the page from the document model. Unzoomed scale is
+- [x] 5.1 Draw the page from the document model. Unzoomed scale is
       96 CSS pixels per inch. Margins are guides.
-- [ ] 5.2 Changing the page in the model (test hook or a temporary
+- [x] 5.2 Changing the page in the model (test hook or a temporary
       control that Phase 14 will replace) redraws the page.
-- [ ] 5.3 Browser: Letter portrait is larger than a 4 in custom page,
+      `loadReport` is that hook. Import and New use the same paint.
+- [x] 5.3 Browser: Letter portrait is larger than a 4 in custom page,
       and the margin guides sit inset by 0.25 in on the fixture.
 
 ### Done means
@@ -309,7 +450,64 @@ Phase 4 commands plus the browser check.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** Andrew confirmed the page on
+`https://lithium.500courses.com`. Letter portrait is larger than a
+4 in page. The fixture margin guides sit inset 0.25 in. `npm test`
+exited 0 (63 files, 1261 passed). `npm run lint` exited 0.
+`npm run lint:css` exited 0. `npm run templates:copy` copied
+`reports.css`. `npx eslint` on `canvas.js`, `reports.js`, and
+`units.js` exited 0. Work item 5.3 is checked. Phase 6 is next and
+has not started.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/model/units.js`](/elements/003-lithium/src/managers/reports/model/units.js)
+  exports `pageBox`. It is the full sheet in CSS pixels. An omitted
+  margin side is `0.25 in`. `contentBox` stays the area inside the
+  margins.
+- [`/elements/003-lithium/src/managers/reports/canvas.js`](/elements/003-lithium/src/managers/reports/canvas.js)
+  exports `pageFrame` and `paintReportPage`. A missing page says
+  `The file omits the page.` A length that cannot be measured
+  shows that message and does not draw a sheet.
+- [`/elements/003-lithium/src/managers/reports/reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  paints the page above the definition list. `loadReport` replaces
+  the document and redraws. A bad length toasts the model message.
+  Size and insets are CSS variables on `#reports-page`. Letter is
+  `816px` by `1056px`. A `4 in` page is `384px` by `384px`. The
+  fixture margins are `24px`.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-units.test.js`](/elements/003-lithium/tests/unit/reports-units.test.js)
+  (9) and
+  [`/elements/003-lithium/tests/unit/reports-shell.test.js`](/elements/003-lithium/tests/unit/reports-shell.test.js)
+  (22).
+
+### Lessons learned
+
+- The sheet and the content box are different pixel sizes. Letter
+  with `0.25 in` margins is `816` by `1056` on the sheet and `768`
+  by `1008` inside the guides.
+- The page size is a CSS variable set from the model. The guide
+  reads those variables and has no inline style. Bands, the grid,
+  and rulers are still later phases.
+- A file with no page is valid. It does not invent Letter. A width
+  with no unit toasts and leaves the sheet off the stage.
+- happy-dom reads the CSS variables. That is not the 500 Courses
+  check.
+
+### Handoff
+
+Phase 6 is next in this file. It has not started. Andrew confirmed
+the page on `https://lithium.500courses.com` on 2026-10-31. Letter
+portrait is larger than a 4 in page. The fixture guides sit inset
+0.25 in. The page stays `816px` by `1056px` with `24px` insets.
+The definition list stays under the page. Do not redraw the page.
+Phase 6 paints each band as a labeled strip and a body of the
+stored height, in array order. Drag uses `element.style.height` as
+the preview. Mouseup commits through the model and pushes history.
+The minimum height is `0.15 in`. Undo restores the previous height.
+The browser check resizes Detail, exports, and confirms the file
+height changed, then undo restores the canvas and a second export.
+The grid and the rulers are later phases. Undo is not wired.
 
 ---
 

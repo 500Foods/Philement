@@ -16,4 +16,7 @@
   max-width: 1010px;
 }
 
-.login-history-empty { padding: 8px; opacity: 0.7; }
+.login-history-empty {
+  padding: 8px;
+  opacity: 0.7;
+}

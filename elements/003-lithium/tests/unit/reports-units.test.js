@@ -6,6 +6,7 @@ import {
   contentBox,
   convertLength,
   formatLength,
+  pageBox,
   parseLength,
   toCssPx,
 } from '../../src/managers/reports/model/units.js';
@@ -98,5 +99,35 @@ describe('report lengths', () => {
       width: '8.5 in',
       height: '11 in',
     }).width).toBe('8 in');
+  });
+
+  it('measures the sheet in CSS pixels and insets an omitted margin', () => {
+    const letter = pageBox(loadPage('detail.definition.json'));
+    expect(letter).toEqual({
+      widthPx: 8.5 * 96,
+      heightPx: 11 * 96,
+      leftPx: 0.25 * 96,
+      rightPx: 0.25 * 96,
+      topPx: 0.25 * 96,
+      bottomPx: 0.25 * 96,
+    });
+    const card = pageBox({
+      width: '4 in',
+      height: '4 in',
+      margin: { left: '0.25 in', right: '0.25 in', top: '0.25 in', bottom: '0.25 in' },
+    });
+    expect(card.widthPx).toBe(4 * 96);
+    expect(card.heightPx).toBe(4 * 96);
+    expect(letter.widthPx).toBeGreaterThan(card.widthPx);
+    expect(letter.heightPx).toBeGreaterThan(card.heightPx);
+    expect(pageBox({
+      width: '8.5 in',
+      height: '11 in',
+    }).leftPx).toBe(0.25 * 96);
+    expect(pageBox({
+      width: '8.5 in',
+      height: '11 in',
+      margin: { left: '0 in', right: '0 in', top: '0 in', bottom: '0 in' },
+    }).leftPx).toBe(0);
   });
 });

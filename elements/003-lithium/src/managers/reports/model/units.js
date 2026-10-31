@@ -137,3 +137,25 @@ export function contentBox(page) {
     heightPx: toCssPxFromInches(heightIn),
   };
 }
+
+/**
+ * Full page in CSS pixels, plus each margin inset. An omitted margin
+ * side is 0.25 in. This is the sheet. contentBox is the area inside it.
+ * @param {{ width: string, height: string, margin?: object }} page
+ */
+export function pageBox(page) {
+  if (!page || typeof page !== 'object' || Array.isArray(page)) {
+    throw new Error('Page is missing.');
+  }
+  const margin = page.margin && typeof page.margin === 'object' && !Array.isArray(page.margin)
+    ? page.margin
+    : {};
+  return {
+    widthPx: toCssPx(page.width),
+    heightPx: toCssPx(page.height),
+    leftPx: toCssPx(marginSide(margin, 'left')),
+    rightPx: toCssPx(marginSide(margin, 'right')),
+    topPx: toCssPx(marginSide(margin, 'top')),
+    bottomPx: toCssPx(marginSide(margin, 'bottom')),
+  };
+}

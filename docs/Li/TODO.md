@@ -4,16 +4,17 @@ Actionable incomplete work only. Open implementation:
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
 Agent map: [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
 
-## Current work (2026-10-30)
+## Current work (2026-10-31)
 
 The open Lithium implementation is the report writer. Start at
 [REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) Resume, then
 the milestone file it names. The Sitting section there is the
 operating model. Andrew starts each phase with `cdli && grok`.
-Phases 1 and 2 are complete. The contract note is
+Phases 1–5 are complete. The contract note is
 [LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md). One inch is 96 CSS pixels.
-Next is Phase 3 in
-[01-designer.md](/docs/Li/plans/reporting/01-designer.md).
+Phase 6 is next in
+[01-designer.md](/docs/Li/plans/reporting/01-designer.md)
+and has not started.
 
 CATCHUP stays parked. Phase 19 stays in progress until he names
 Course Builder. Do not mark it complete. Do not start Phase 20.

@@ -3,9 +3,10 @@
 # Reporting Plan
 
 **Date:** 2026-10-10
-**Revised:** 2026-10-30
-**Status:** Phase 0 complete. Approved 2026-10-10. Phases 1 and 2
-complete 2026-10-30. Next is Phase 3 in
+**Revised:** 2026-10-31
+**Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–5
+complete. Phase 5 closed 2026-10-31. Phase 6 is next and has not
+started, in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
 The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
@@ -40,9 +41,9 @@ Andrew reports the apply.
 | 0 | Design lock | Decision | Easy | Complete |
 | 1 | Contracts and fixtures | Docs + fixtures | Medium | Complete |
 | 2 | Units and geometry | JS + Vitest | Easy | Complete |
-| 3 | Document model and undo | JS + Vitest | Medium | Not started |
-| 4 | Manager shell, import, export | Lithium UI | Medium | Not started |
-| 5 | Page surface | Lithium UI | Easy | Not started |
+| 3 | Document model and undo | JS + Vitest | Medium | Complete |
+| 4 | Manager shell, import, export | Lithium UI | Medium | Complete |
+| 5 | Page surface | Lithium UI | Easy | Complete |
 | 6 | Bands and resize | Lithium UI | Medium | Not started |
 | 7 | Section grid | Lithium UI | Easy | Not started |
 | 8 | Rulers and the mouse line | Lithium UI | Medium | Not started |
@@ -153,9 +154,12 @@ milestone file that holds the current phase.
 | [`06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) | 50–67 | Place images, barcodes, and charts, and export SVG and PNG. |
 | [`07-native-pdf.md`](/docs/Li/plans/reporting/07-native-pdf.md) | 68–71 | Get charts and barcodes as vectors in the PDF. |
 
-**Resume:** Phase 3 is next, in
+**Resume:** Phase 6 is next, in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-Phases 1 and 2 are complete. The contract note is
+Phase 5 is complete (2026-10-31). Andrew confirmed the page on
+`https://lithium.500courses.com`. Letter is larger than a 4 in
+page. Fixture guides sit inset 0.25 in. Phase 6 paints the bands
+and has not started. Phases 1–5 are complete. The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is
 96 CSS pixels. Open this file for a lock. Open the milestone file
 for the phase body.
@@ -318,7 +322,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. Sidequests stay unnumbered. |
-| **Done** | Phases 0–2 of 72 complete (2026-10-30). Phase 3 has not started. |
+| **Done** | Phases 0–5 of 72 complete (2026-10-31). Phase 6 has not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -336,10 +340,17 @@ the phase body.
 
 Runtime truth for the manager id is `manager-loader.js` and
 `config/lithium.json`: id **24**, key `024.Report Manager`, module
-`src/managers/reports/reports.js`. The placeholder implements
-`teardown()` only. [`/docs/Li/LITHIUM-MGR-MAIN.md`](/docs/Li/LITHIUM-MGR-MAIN.md)
-still says Reports is id 12. Id 12 is Calendar. Fix that sentence in
-Phase 4. Do not renumber the manager.
+`src/managers/reports/reports.js`. The shell fetches
+`reports.html`, starts from `createBlank()`, and imports and
+exports the definition file. `#reports-stage` lists that
+definition. `destroy` and `cleanup` release the same listeners.
+[`/docs/Li/LITHIUM-MGR-MAIN.md`](/docs/Li/LITHIUM-MGR-MAIN.md)
+names Report Manager as id 24. Id 12 is Calendar. Do not renumber
+the manager. Phase 4 is complete (2026-10-31). Andrew confirmed
+the shell on `https://lithium.500courses.com`. Phase 5 is complete
+(2026-10-31). Andrew confirmed the page on
+`https://lithium.500courses.com`. Letter is larger than a 4 in
+page. Fixture guides sit inset 0.25 in. Phase 6 has not started.
 
 ## Goals
 
@@ -417,17 +428,19 @@ Phase 4. Do not renumber the manager.
 
 ### Lithium
 
-Manager 24 is a 49-line placeholder. It tells the operator the module
-is under development. `conduit.js` can run QueryRefs.
+Manager 24 is the designer shell. It shows the report name and
+New, Import, and Export. The stage lists the definition and draws
+one page at 96 CSS pixels per inch, with margin guides. Bands,
+the grid, and rulers are later phases.
+`conduit.js` can run QueryRefs.
 `invokeScript` is not in the client. Scripting Manager does not call
 `POST /api/conduit/script`. CATCHUP Phases 7–10 are the planned home
 for that helper. Phase 25 of this plan adds it if those phases have
 not landed, and reuses it if they have.
 
-`closeManager` calls `destroy()` and ignores `cleanup()` and
-`teardown()`. The report manager implements `destroy()` and
-`cleanup()` as the same function so either lifecycle path releases
-the canvas listeners.
+`closeManager` calls `destroy`, otherwise `cleanup`, otherwise
+`teardown`. The report manager implements `destroy` and `cleanup`
+as the same release, so either path drops the shell listeners.
 
 ### Helium
 
@@ -1875,3 +1888,75 @@ One inch is 96 CSS pixels. The three fixture pages measure `8 in` by
 `10.5 in` (768 by 1008 CSS pixels). An omitted margin is `0.25 in`.
 `npm test` exited 0: 60 files, 1223 passed. `npm run lint` exited 0.
 `npx eslint` on `units.js` also exited 0. Phase 3 is next.
+
+### 2026-10-31 — Phase 3 complete
+
+Phase 3 landed
+[`/elements/003-lithium/src/managers/reports/model/document.js`](/elements/003-lithium/src/managers/reports/model/document.js)
+and
+[`/elements/003-lithium/src/managers/reports/model/history.js`](/elements/003-lithium/src/managers/reports/model/history.js).
+Import keeps omitted keys. `createBlank` writes Letter, the grid,
+the font, and bands `ph`, `detail`, and `pf`. Detail has no
+datasource. Generated ids are `b1` and `i1`. Undo restores the
+detail fixture after a field move, with the same item id. A new
+commit drops the redo tail. `convertLength` is on `units.js`.
+`npm test` exited 0: 62 files, 1238 passed. `npm run lint` exited 0.
+`npx eslint` on the three model files also exited 0. Phase 4 is next.
+
+### 2026-10-31 — Phase 4 in progress
+
+The Report Manager shell replaces the placeholder. New calls
+`createBlank()`. Import reads a local JSON file and shows the
+name. A bad file toasts the model message and leaves the open
+document. Export downloads `<name>.report.json`. An omitted key
+stays omitted. `destroy` and `cleanup` release the same listeners.
+[`/docs/Li/LITHIUM-MGR-MAIN.md`](/docs/Li/LITHIUM-MGR-MAIN.md)
+names Reports as id 24.
+`npm test` exited 0: 63 files, 1254 passed. `npm run lint`,
+`npm run lint:css`, and `templates:copy` exited 0. `npx eslint`
+on the shell files exited 0. Work item 4.6 is waiting on Andrew
+at `https://lithium.500courses.com`. Do not start Phase 5.
+
+### 2026-10-31 — Phase 4 stage list
+
+Andrew opened Report Manager. The log shows manager 24 loaded and
+`[Reports] New report` twice. The stage was empty, so New looked
+idle. `#reports-stage` now lists the open definition. A blank
+report shows Letter portrait size 0, margins `0.25 in`, grid
+`dots, 0.125 in`, font Vanadium Sans `10 pt` `Normal`, and bands
+`ph`, `detail`, and `pf`. Import of the detail fixture shows
+`Orders`, `orders`, and `customer`. New restores the blank lines.
+`npm test` exited 0: 63 files, 1258 passed. `npm run lint`,
+`npm run lint:css`, and `templates:copy` exited 0. `npx eslint`
+on the shell files exited 0. Work item 4.6 stays open until the
+next deploy. Phase 5 still paints the page. Do not start Phase 5.
+
+### 2026-10-31 — Phase 4 complete
+
+Andrew confirmed the shell on `https://lithium.500courses.com`.
+The stage lists the blank definition. Import of the detail
+fixture shows `Orders`. New restores the blank lines. Export and
+re-import keep the name. A bad file toasts the model message and
+the name stays. Work item 4.6 is checked. Phase 4 Status is
+complete. Phase 5 is next and has not started.
+
+### 2026-10-31 — Phase 5 in progress
+
+The stage draws one page from the open definition. Unzoomed scale
+is 96 CSS pixels per inch. Letter is `816px` by `1056px`. A `4 in`
+page is `384px` by `384px`. Fixture margins inset `24px`. An
+omitted page stays omitted. A length with no unit toasts and draws
+no sheet. `loadReport` is the redraw hook. Bands, the grid, and
+rulers are later phases.
+`npm test` exited 0: 63 files, 1261 passed. `npm run lint`,
+`npm run lint:css`, and `templates:copy` exited 0. `npx eslint`
+on the page files exited 0. Work item 5.3 is waiting on Andrew
+at `https://lithium.500courses.com`. Do not start Phase 6.
+
+### 2026-10-31 — Phase 5 complete
+
+Andrew said the page works on `https://lithium.500courses.com`.
+Letter portrait is larger than the 4 in card. The fixture guides
+sit inset 0.25 in. Work item 5.3 is checked. Phase 5 Status is
+complete. Phase 6 is next and has not started. The earlier gate
+stands: `npm test` exited 0 (63 files, 1261 passed).

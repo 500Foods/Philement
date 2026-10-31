@@ -1,46 +1,119 @@
 /**
- * Reports Manager Styles
+ * Report Manager
+ *
+ * Shell for the definition file. The page is 96 CSS pixels per inch.
+ * Bands, the grid, and rulers land in later phases.
  */
 
+@import url('../../core/lithium-toolbar.css');
+
 @layer managers {
-  .reports-container {
-    padding: var(--space-4);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
+.reports-manager {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
 
-  .placeholder-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
-    padding-bottom: var(--space-3);
-    border-bottom: var(--border-standard);
-  }
+.reports-manager .lithium-toolbar-title {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 50%;
+}
 
-  .placeholder-header h2 {
-    margin: 0;
-    font-size: var(--font-size-xl);
-    color: var(--text-primary);
-  }
+.reports-file-input {
+  display: none;
+}
 
-  .placeholder-content {
-    flex: 1;
-  }
+.reports-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background-color: var(--bg-secondary);
+}
 
-  .placeholder-content p {
-    color: var(--text-secondary);
-    margin-bottom: var(--space-4);
-  }
+.reports-stage-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
 
-  .placeholder-notice {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3);
-    background: var(--bg-tertiary);
-    border-radius: var(--border-radius-md);
-    color: var(--text-secondary);
-  }
+.reports-canvas {
+  flex-shrink: 0;
+}
+
+.reports-page {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--reports-page-width);
+  height: var(--reports-page-height);
+  background-color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.reports-margin-guide {
+  position: absolute;
+  box-sizing: border-box;
+  left: var(--reports-margin-left);
+  right: var(--reports-margin-right);
+  top: var(--reports-margin-top);
+  bottom: var(--reports-margin-bottom);
+  border: var(--border-width) dashed #6a6a6a;
+  pointer-events: none;
+}
+
+.reports-page-note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.reports-summary {
+  max-width: 40rem;
+}
+
+.reports-summary-name {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reports-summary-file,
+.reports-summary-note {
+  margin: 0 0 var(--space-3);
+  color: var(--text-secondary);
+}
+
+.reports-summary-facts {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.reports-summary-facts dt {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.reports-summary-facts dd {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.reports-summary-bands {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.reports-band-label {
+  color: var(--text-primary);
+}
+
 }

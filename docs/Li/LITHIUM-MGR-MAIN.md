@@ -561,7 +561,7 @@ expect(JSON.parse(stored)).toContain(1);
 | `src/managers/media-library/media-library.css` | Styles for Media Library manager |
 | `src/managers/diagram-library/diagram-library.js` | New manager - Diagram Library (ID: 11) |
 | `src/managers/diagram-library/diagram-library.css` | Styles for Diagram Library manager |
-| `src/managers/reports/reports.js` | New manager - Reports (ID: 12) |
+| `src/managers/reports/reports.js` | New manager - Reports (ID: 24) |
 | `src/managers/reports/reports.css` | Styles for Reports manager |
 | `src/managers/chats/chats.js` | New manager - Chats (ID: 6) |
 | `src/managers/chats/chats.css` | Styles for Chats manager |

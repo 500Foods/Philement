@@ -89,14 +89,14 @@ He does deploys and login checks. Do not apply migrations. The report writer (ma
 is [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
 Phase 0 is approved. Phase bodies are in
 [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/).
-Phases 1 and 2 are complete. Next is Phase 3 in `01-designer.md`.
+Phases 1–5 are complete. Phase 6 is next in `01-designer.md` and has not started.
 The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is 96
 CSS pixels. Andrew approved the file split on 2026-10-30. PDF is
 the default export. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-30. Open implementation is the report writer. Phases 1 and 2 are complete. Next is Phase 3. Sitting rules are in [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
+**Last reviewed:** 2026-10-31. Open implementation is the report writer. Phases 1–5 are complete. Phase 6 is next and has not started. Sitting rules are in [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
 
 CATCHUP pause record (2026-10-23): CATCHUP Phase 19 in progress. Andrew applied 4097–4114 and Acuranzo 1399–1401. The receipt went out on the Hydrogen restart with a subject and no body. The working-title ledger write is still unproven. `courses_4115.lua`, `courses_4116.lua`, and `courses_4117.lua` are written and not applied. Suggested is a stage choice and clears the receipt mark. The receipt body uses the suggestion name and course title. Next file **4118**, next ref **4523**, next Acuranzo file **1402**, Lookup 059 key **16** stays free. Do not mark Phase 19 complete. Do not start Phase 20. Phases 16–18 and 5a–5d and 6 stay deferred.
 
@@ -280,7 +280,8 @@ disagree in places.
 | 12–21 | Calendar…Ticketing | mostly 49-line placeholders |
 | 22 | Style | `style-manager/` |
 | 23 | Lookups | `lookups/` |
-| 24–28 | Report, Role, Security, AI Auditor, Job | placeholders |
+| 24 | Report | `reports/` — New, Import, and Export. The stage lists the definition and draws the page. Phase 5 is complete (2026-10-31). Phase 6 has not started |
+| 25–28 | Role, Security, AI Auditor, Job | placeholders |
 | 29 | Queries | `queries/` — canonical LithiumTable consumer |
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
@@ -298,13 +299,13 @@ Theme keyboard `loadManager(1)` is still dead (1 is not in the menu registry).
 
 **Real UI:** Login, Main, Queries, Lookups, Style (Apply and Copy write the
 CSS editor text into `#style-manager-preview`; Undo and Redo stay disabled),
-Version History, Scripting (list, Lua editor, save, duplicate, delete, and a Run tab; Andrew confirmed `Api.Echo` 2026-10-22), Profile (language,
+Version History, Scripting (list, Lua editor, save, duplicate, delete, and a Run tab; Andrew confirmed `Api.Echo` 2026-10-22), Report Manager (New, Import, and Export; the stage lists the definition and draws the page; bands are the next phase and have not started), Profile (language,
 date formats, photo, and Lookups settings persist; other pages refuse save),
 Session Log, Terminal, Crimson, Tour.
 
 **~22 placeholders** share the same 49-line “under development” shell
 (Dashboard, Mail, Calendar, Contacts, Files, Document, Media, Diagram, Chats,
-Notifications, Annotation, Ticketing, Reports, Role, Security, AI Auditor,
+Notifications, Annotation, Ticketing, Role, Security, AI Auditor,
 Job, Sync, Camera, …). `LITHIUM-MGR.md` marks several as Implemented — it is
 wrong. Collapse to one `PlaceholderManager` rather than copy-paste.
 
@@ -737,7 +738,7 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 | JWT / OIDC | `LITHIUM-JWT.md`, `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md` |
 | Deploy | `LITHIUM-WEB.md` |
 | Catchup (parked) | [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md). Open it when he names Course Builder, Course Manager, or Scripting |
-| Report writer (open implementation) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md). Sitting rules are in that file. Phase bodies: [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/). Phases 1 and 2 complete. Next is Phase 3. Contract: [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md) |
+| Report writer (open implementation) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md). Sitting rules are in that file. Phase bodies: [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/). Phases 0–5 complete 2026-10-31. Next is Phase 6 in `01-designer.md`. Phase 6 has not started. Contract: [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md) |
 | Sprint (superseded) | `docs/Li/plans/LITHIUM_SPRINT.md` |
 | Hydrogen script API | `docs/H/api/conduit/script.md` |
 | Course Builder pipeline | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` |

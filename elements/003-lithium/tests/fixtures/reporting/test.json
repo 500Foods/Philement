@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "name": "Card",
+  "page": {
+    "units": "in",
+    "width": "4 in",
+    "height": "4 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  }
+}
