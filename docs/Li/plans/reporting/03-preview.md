@@ -42,7 +42,8 @@ written before Phase 17. Re-check the next file number.
        The result includes `log`. A query datasource with no
        array adds a warn entry and contributes no rows. The fixture calls
        pass `stage=compose`. Phase 31 switches the default stage to
-       `pdf`.
+       `pdf`. The script skips top-level `history`. The intermediate
+       and `log` leave that key out.
 - [ ] 19.3 A missing datasource, an unknown `typeKey`, and an empty
        `field` become warn entries on `log`. The script still returns a document.
        A `format` other than 1 returns an error through

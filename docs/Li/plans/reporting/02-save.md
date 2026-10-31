@@ -352,6 +352,10 @@ Phase 16 and Phase 17 Status complete.
        document dirty.
 - [ ] 18.4 Browser: save, reload the manager, open the row, and see
        the same items. Save again and see `rev_id` increase.
+- [ ] 18.5 Save writes the open definition. A non-empty trail is
+       stored in `reports.report`, and opening that revision
+       restores Undo and Redo. Clear before the save stores the
+       current report with `history` omitted.
 
 ### Done means
 

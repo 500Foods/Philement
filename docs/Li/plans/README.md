@@ -39,12 +39,14 @@ A datasource may be a QueryRef plus parameters. Values print
 through a mask. Phases 0–71. Phase 0 approved 2026-10-10. The
 locks and the index stay in this file. Phase bodies are in
 [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/). Phases 1–5
-are complete. Phase 6 is in progress. Andrew reported drag,
-Undo, and New. The export sentence of 6.4 is still open.
-Phase 7 is in progress in
+are complete. Phases 6 and 7 closed 2026-10-31. Andrew
+confirmed drag, Undo, Redo, export, import, and the dots.
+Phase 8 is complete (2026-10-31). Andrew accepted the
+rulers, the corner cycle, and the unit name. Right and
+bottom rulers stay later. Phase 9 has not started.
+The body is in
 [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-The first dots did not show and have been repainted. Redo sits
-beside Undo. Do not start Phase 8. The
+The
 contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is
 96 CSS pixels.

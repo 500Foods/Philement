@@ -274,6 +274,10 @@ with id `customer`.
 - `grid.weight` is the string `0.5`, matching the fixtures.
 - Image, chart, and barcode dpi are not written here. Those
   objects arrive in later phases.
+- The snapshot sentences above are this phase's close-out. The
+  live trail is diffs on `history`. The rule is the definition
+  lock in [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md)
+  and [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
 
 ### Handoff
 
@@ -529,7 +533,7 @@ Phase 5 Status complete.
       document unit. `element.style.height` is the drag preview;
       mouseup commits through the model and pushes history.
 - [x] 6.3 Minimum height 0.15 in. Undo restores the previous height.
-- [ ] 6.4 Browser: resize Detail, export, and confirm the file's
+- [x] 6.4 Browser: resize Detail, export, and confirm the file's
       height changed. Undo restores the canvas and a second export.
 
 ### Done means
@@ -542,19 +546,15 @@ Lint, unit tests, and the browser check.
 
 ### Status
 
-**in progress — 2026-10-31.** The bands are drawn and a drag writes
-the height. `npm test` exited 0 (64 files, 1270 passed).
-`npm run lint` exited 0. `npm run lint:css` exited 0.
-`npm run templates:copy` copied `reports.html` and `reports.css`.
-`npx eslint` on `bands.js`, `canvas.js`, `reports.js`,
-`reports-file.js`, and `document.js` exited 0. Work item 6.4 is
-waiting on Andrew at `https://lithium.500courses.com`. The test
-database was offline later the same day, so that check was not
-run. Phase 7 started in the next sitting. Andrew later
-reported, on the alternate database, that a drag, Undo, and New
-behave. The export sentence of 6.4 was not in that report, so
-this phase stays in progress. Redo is the toolbar button beside
-Undo. Ctrl+Shift+Z and Ctrl+Y redo. A new edit drops that tail.
+**complete — 2026-10-31.** Andrew confirmed drag, Undo, Redo,
+export, and import on the alternate database. Redo is the
+toolbar button beside Undo. Ctrl+Z undoes and Ctrl+Y redoes.
+Both are registered with the shortcut list under Report
+Manager, and they run only while that slot is visible.
+Ctrl+Shift+Z stays Toggle zoom. `npm test` exited 0 (66 files,
+1269 passed, 12 skipped). The 12 skipped cases are the auth
+integration file. `npm run lint` exited 0. `npm run templates:copy`
+copied `reports.html`. Phase 7 closed in the same report.
 
 ### Accomplished
 
@@ -569,9 +569,9 @@ Undo. Ctrl+Shift+Z and Ctrl+Y redo. A new edit drops that tail.
   Mouseup calls `resizeBand` and `history.commit`. The stored
   length uses the document unit. The floor is `0.15 in`. Undo,
   from the toolbar or Ctrl+Z, restores the previous height.
-  New and Import start a fresh history. Redo, from the toolbar,
-  Ctrl+Shift+Z, or Ctrl+Y, restores the undone snapshot. A new
-  edit drops that tail.
+  New and Import start a fresh history. Redo, from the toolbar
+  or Ctrl+Y, restores the undone snapshot. A new edit drops
+  that tail. Ctrl+Z and Ctrl+Y are registered for manager 24.
 - Tests:
   [`/elements/003-lithium/tests/unit/reports-bands.test.js`](/elements/003-lithium/tests/unit/reports-bands.test.js)
   (4) and
@@ -593,6 +593,13 @@ Undo. Ctrl+Shift+Z and Ctrl+Y redo. A new edit drops that tail.
   not restore the file that was open before New.
 - happy-dom checks the CSS variable and the exported JSON. That is
   not the 500 Courses check.
+- Ctrl+Shift+Z is already Toggle zoom. Redo is Ctrl+Y. The
+  shortcut list owns both keys, and a manager shortcut runs only
+  while that manager's slot is visible.
+- The "fresh history" and "snapshot" sentences above are this
+  phase's close-out. Later the same day, Import restores
+  `history` from the file. New still omits the key. The live
+  rule is the definition lock.
 
 ### Handoff
 
@@ -608,12 +615,10 @@ Ctrl+Z, restores the body and a second export is `0.25 in` again.
 A drag shorter than `0.15 in` stays `0.15 in`. The page size stays
 Letter. The grid and the rulers were later when this handoff was
 written. Later the same day the test database was offline.
-Andrew said to continue, so Phase 7 started with this check
-still open. On the alternate database he reported that a drag,
-Undo, and New behave. The export sentence was not in that
-report. Redo now sits beside Undo. When he also confirms the
-exported height, mark 6.4 and this phase complete, then stop,
-unless the same message also reports the Phase 7 check.
+Andrew confirmed the export and import on the alternate
+database on 2026-10-31, along with Undo and Redo. Phase 7
+closed in that same report. Phase 8 paints the rulers. It
+has not started.
 
 ---
 
@@ -635,7 +640,7 @@ Phase 6 Status complete.
       Disconnect it in `cleanup` / `destroy`.
 - [x] 7.3 Spacing follows the unit string. The default is the
       Defaults table: `0.125 in`, style `dots`.
-- [ ] 7.4 Browser: switch the fixture grid style across the five
+- [x] 7.4 Browser: switch the fixture grid style across the five
       values and resize a band. The pattern stays aligned to the
       band origin.
 
@@ -650,18 +655,14 @@ browser, and the browser check.
 
 ### Status
 
-**in progress — 2026-10-31.** The five grid styles are drawn.
-Andrew reported that the dot pattern was not visible. A circle
-of radius `0.5` centered on the tile corner is clipped away.
-The painter now draws a full dot on each spacing point. The
-painted radius is at least 1 CSS pixel. The stored weight stays
-`0.5`. `npm test` exited 0 (65 files, 1266 passed, 12 skipped).
-The 12 skipped cases are the auth integration file.
-`npm run lint` exited 0. `npm run templates:copy` copied
-`reports.html`. `npx eslint` on `grid.js`, `reports.js`, and the
-grid tests exited 0. Work item 7.4 is waiting until he sees the
-dots after the next deploy. Phase 6's export sentence is still
-open. Redo was added in this sitting. Do not start Phase 8.
+**complete — 2026-10-31.** Andrew saw the dots and said this
+slice is done. The first paint used a radius of `0.5` on the
+tile corner and did not show. The painter now draws a full dot
+on each spacing point, at least 1 CSS pixel in radius. The
+stored weight stays `0.5`. `npm test` exited 0 (66 files,
+1269 passed, 12 skipped). `npm run lint` exited 0.
+`npm run templates:copy` copied `reports.html`. Phase 6 closed
+in the same report.
 
 ### Accomplished
 
@@ -703,23 +704,12 @@ open. Redo was added in this sitting. Do not start Phase 8.
 
 ### Handoff
 
-Phase 7 stays in progress. Phase 6 stays in progress too.
-Andrew reported drag, Undo, and New on the alternate database.
-He also reported that no dot pattern was showing. Deploy this
-build. On a new report, each band body shows silver dots on a
-12px step, sitting on the band's top-left lattice. Import a
-file whose `grid.style` is `grid`, then `dotted`, then
-`dashed`, then `none`. The first three draw lines from the
-band's top-left corner. `none` draws no marks. Drag Detail's
-bottom edge. The pattern stays on that corner and does not
-slide. A spacing of `1 in` puts the step on 96 CSS pixels.
-Redo sits beside Undo. After Undo, Redo restores the height.
-Ctrl+Shift+Z and Ctrl+Y do the same. A new drag clears Redo.
-Phase 6's export sentence is still open: a one-inch drag of
-Detail stores `1.25 in`, and a second export after Undo is
-`0.25 in`. When both checks pass, mark 6.4 and 7.4 and both
-phases complete, then stop, unless the same message names
-Phase 8. Phase 8 paints the rulers. Do not start Phase 8.
+Phase 7 is complete. Phase 6 is complete. Andrew confirmed
+Undo, Redo, export, import, and the dots on the alternate
+database on 2026-10-31. Ctrl+Z undoes and Ctrl+Y redoes.
+Both are in the shortcut list while Report Manager is the
+visible slot. Ctrl+Shift+Z remains Toggle zoom. Phase 8
+paints the rulers and the mouse line. It has not started.
 
 ---
 
@@ -736,14 +726,14 @@ Phase 7 Status complete.
 
 ### Work items
 
-- [ ] 8.1 `rulers.js` builds an SVG ruler for `in` and `cm`. Major
+- [x] 8.1 `rulers.js` builds an SVG ruler for `in` and `cm`. Major
       ticks labeled, minor ticks at eighths of an inch or millimetres
       of a centimetre. Match the retired ruler's density closely
       enough that a 1 in mark lands on 96 CSS pixels when zoom is 1.
-- [ ] 8.2 `mousemove` moves a horizontal and a vertical cursor line.
+- [x] 8.2 `mousemove` moves a horizontal and a vertical cursor line.
       `mouseleave` hides them. Listeners disconnect on cleanup.
-- [ ] 8.3 The ruler is chrome. Export does not gain a Ruler band.
-- [ ] 8.4 Browser: the 1 inch tick aligns with a band edge placed at
+- [x] 8.3 The ruler is chrome. Export does not gain a Ruler band.
+- [x] 8.4 Browser: the 1 inch tick aligns with a band edge placed at
       `1 in`. The hairline tracks and disappears outside the page.
 
 ### Done means
@@ -756,7 +746,128 @@ Lint, unit tests, and the browser check.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** Andrew accepted the rulers on
+`https://lithium.500courses.com`. He said the first rulers
+work, accepted the 28 CSS pixel bar, said the corner cycles,
+and said he likes the unit name. He asked if the phase is
+wrapped up. Work items 8.1–8.4 are checked. `npm test`
+exited 0 (68 files, 1292 passed, 12 skipped). The skipped
+cases are the auth integration file. That host did not
+answer. `npm run lint` exited 0. `npm run lint:css` exited
+0. `npx eslint` on the report files exited 0. `npm run
+templates:copy` copied `reports.css`. Phase 9 has not
+started.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/rulers.js`](/elements/003-lithium/src/managers/reports/rulers.js)
+  builds the top and left SVG rulers. The origin is the top-left
+  of the white page. Inches tick at eighths and label each inch.
+  The major tick at 1 inch is 96 CSS pixels from that corner.
+  The label sits 2 pixels to the left of that tick, and its top
+  aligns with the top of the tick. On the left ruler the label
+  sits 2 pixels above the tick, and its left edge aligns with
+  the outer end of the tick. Major ticks are 21 pixels, the
+  half step is 13.5, and minor ticks are 7.5. Seven pixels
+  remain outside the major tick. Centimetres tick at millimetres
+  and label each centimetre. Millimetres label every 10. Points
+  label every 72, which is the same 96 CSS pixels. Pixels label
+  every 96. A half step is a longer tick. The origin stays
+  unlabeled. The corner is a button labeled with the unit
+  name. Each click advances inches, then centimetres, then
+  points, then inches. Both rulers relabel in that unit at
+  the same physical scale. A centimetre mark lands on
+  `toCssPx('1 cm')`, about 37.8 CSS pixels. The point mark
+  `72` lands on 96 CSS pixels. The file keeps `page.units`.
+  New and Import show the file unit again. A millimetre or
+  pixel file stays in that unit until the first click, which
+  starts at inches. The choice lasts for this open document.
+  Undo and redo of a band edit keep it. The trail records
+  the band edit. An omitted unit paints inches. An unknown
+  unit toasts
+  and draws the page with no rulers. The definition gains no
+  ruler key. `mousemove` places a vertical line and a horizontal
+  line. `mouseleave`, and a point outside the page, hide both.
+- [`/elements/003-lithium/src/managers/reports/canvas.js`](/elements/003-lithium/src/managers/reports/canvas.js)
+  wraps the page in `#reports-sheet`. The sheet and the page
+  both carry the page width and height. The ruler thickness is
+  `--reports-ruler-size` (28 CSS pixels). A ruler error notes
+  the message and appends the page without the sheet.
+- [`/elements/003-lithium/src/managers/reports/reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  binds the mouse line to `#reports-page` after each paint.
+  The line is offset by the ruler thickness, so it also crosses
+  the ruler bars. A band drag inverts the vertical ruler from
+  the edge's old page position to its new one. Releasing the
+  edge clears that span. A click on the corner advances the
+  cycle and repaints. `destroy` and `cleanup` disconnect the
+  mouse listener, the corner listener, and the grid observer.
+  A reload of the document binds the listeners again.
+- Export still matches `createBlank` for a new report. The file
+  has bands `ph`, `detail`, and `pf`. It has no Ruler band.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-rulers.test.js`](/elements/003-lithium/tests/unit/reports-rulers.test.js)
+  (9) and
+  [`/elements/003-lithium/tests/unit/reports-shell.test.js`](/elements/003-lithium/tests/unit/reports-shell.test.js)
+  (34).
+
+### Lessons learned
+
+- A custom property set on the page does not feed the sheet's
+  grid tracks. The sheet carries the same width and height.
+  The page keeps them because the existing tests read them
+  from `#reports-page`.
+- The zero tick is unlabeled. The corner is a button labeled
+  with the unit name.
+- Stylelint wants a blank line between a custom property and
+  the next declaration.
+- The ESLint test environment does not define `MouseEvent`.
+  The tests dispatch `CustomEvent` with `clientX` and
+  `clientY`, and they stub `getBoundingClientRect`. happy-dom
+  returns a zero box, which would hide every point.
+- `npm run lint` does not expand into `src/managers/reports`.
+  `npx eslint` on those files is the extra gate. It exited 0.
+- `templates:copy` copies every manager HTML and CSS file.
+  `reports.css` is the file this phase changed.
+- The work item names inch eighths and centimetre millimetres.
+  Millimetres, points, and pixels were unnamed. They are view
+  chrome on the same physical inch. The definition does not
+  store them. Andrew can reject that density on the browser
+  check.
+- The first bar was 56 pixels so the labels could sit in the
+  outer half. With the labels on the ticks, three quarters of
+  that outer band is gone. The bar is 28.
+- A dark span alone hides the dark ticks. The invert is a
+  second copy of the marks, clipped to the span, drawn in the
+  ruler background color.
+- The corner cycles inches, centimetres, and points for this
+  view. The file keeps `page.units`. New and Import show the
+  file unit again. A millimetre or pixel file stays in that
+  unit until the first click, which starts at inches. The
+  choice lasts for the open document. It stays out of the
+  definition and out of settings. Right and bottom rulers
+  stay later. Andrew left those for a later pass on
+  2026-10-31.
+- The corner first used `color: inherit`. The manager text
+  is `--text-primary` (`#E0E0E0`) and the ruler face is
+  `#ececec`, so the unit name disappeared. The letters are
+  `#2a2a2a`, the same ink as the ticks.
+- happy-dom checks tick positions and that the listener
+  disconnected. That is not the 500 Courses check.
+
+### Handoff
+
+Phase 8 is complete. Andrew accepted the rulers on
+`https://lithium.500courses.com` on 2026-10-31. He said the
+first rulers work, accepted the 28 CSS pixel bar, said the
+corner cycles, and said he likes the unit name. The 1 inch
+mark is 96 CSS pixels from the page edge. The hairline
+follows the pointer and hides on leave. The corner cycles
+inches, centimetres, and points and leaves `page.units`
+alone. The letters are `#2a2a2a`. Right and bottom rulers
+stay later. Phase 9 has not started. It scales the page,
+the grid, and the rulers together. 100% stays 96 CSS pixels
+per inch. The 28 pixel bar and the corner button scale with
+that variable.
 
 ---
 

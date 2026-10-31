@@ -8,7 +8,8 @@ import {
   moveItem,
   resizeBand,
 } from '../../src/managers/reports/model/document.js';
-import { createHistory } from '../../src/managers/reports/model/history.js';
+import { applyPatch, diffValues } from '../../src/managers/reports/model/history-diff.js';
+import { createHistory, reportBody } from '../../src/managers/reports/model/history.js';
 
 function loadDetail() {
   const path = resolve(process.cwd(), 'tests/fixtures/reporting/detail.definition.json');
@@ -31,7 +32,8 @@ describe('report history', () => {
     history.undo();
     expect(history.canRedo()).toBe(true);
     expect(customer(history.document).id).toBe('customer');
-    expect(exportDefinition(history.document)).toEqual(fixture);
+    expect(reportBody(history.document)).toEqual(fixture);
+    expect(history.document.history.redo).toHaveLength(1);
   });
 
   it('drops the redo tail when a new edit is committed', () => {
@@ -44,7 +46,8 @@ describe('report history', () => {
     history.redo();
     expect(customer(history.document).box.left).toBe('2 in');
     history.undo();
-    expect(exportDefinition(history.document)).toEqual(fixture);
+    expect(reportBody(history.document)).toEqual(fixture);
+    expect(history.document.history.undo).toEqual([]);
   });
 
   it('restores the same item id across undo and redo', () => {
@@ -74,7 +77,7 @@ describe('report history', () => {
     expect(history.document.bands[1].height).toBe('0.5 in');
     history.undo();
     expect(history.document.bands[1].height).toBe('0.25 in');
-    expect(exportDefinition(history.document)).toEqual(fixture);
+    expect(reportBody(history.document)).toEqual(fixture);
   });
 
   it('does nothing when there is no snapshot to restore', () => {
@@ -86,5 +89,79 @@ describe('report history', () => {
     expect(history.canUndo()).toBe(false);
     expect(() => history.commit({ format: 2 })).toThrow(/Report format must be 1/);
     expect(history.canUndo()).toBe(false);
+  });
+
+  it('keeps a height diff on the document and drops it on clear', () => {
+    const fixture = loadDetail();
+    const history = createHistory(fixture);
+    history.commit(history.document);
+    expect(history.canUndo()).toBe(false);
+    expect(history.document.history).toBeUndefined();
+    history.commit(resizeBand(history.document, 'detail', '0.5 in'));
+    const saved = exportDefinition(history.document);
+    expect(saved.history.undo).toEqual([
+      [{ op: 'set', path: '/bands/1/height', value: '0.25 in' }],
+    ]);
+    expect(JSON.stringify(saved.history).length).toBeLessThan(JSON.stringify(fixture).length);
+    const reopened = createHistory(saved);
+    expect(reopened.canUndo()).toBe(true);
+    reopened.undo();
+    expect(reportBody(reopened.document)).toEqual(fixture);
+    expect(reopened.document.history.redo).toEqual([
+      [{ op: 'set', path: '/bands/1/height', value: '0.5 in' }],
+    ]);
+    reopened.clear();
+    expect(reopened.canUndo()).toBe(false);
+    expect(reopened.canRedo()).toBe(false);
+    expect(exportDefinition(reopened.document)).toEqual(fixture);
+    expect(() => createHistory({ ...fixture, history: { undo: [{}], redo: [] } }))
+      .toThrow(/Report history could not be read/);
+  });
+
+  it('diffs an object key that contains a slash', () => {
+    const from = { format: 1, note: { 'a/b': 1, keep: true } };
+    const to = { format: 1, note: { 'a/b': 2 } };
+    const patch = diffValues(from, to);
+    expect(patch).toEqual([
+      { op: 'set', path: '/note/a~1b', value: 2 },
+      { op: 'del', path: '/note/keep' },
+    ]);
+    expect(applyPatch(from, patch)).toEqual(to);
+    expect(applyPatch(to, diffValues(to, from))).toEqual(from);
+  });
+
+  it('records an added list entry and leaves the other pictures out', () => {
+    const picture = 'B'.repeat(8000);
+    const from = {
+      format: 1,
+      bands: [{ id: 'a', picture }, { id: 'c', picture }],
+    };
+    const to = {
+      format: 1,
+      bands: [{ id: 'a', picture }, { id: 'b', picture: 'new' }, { id: 'c', picture }],
+    };
+    const patch = diffValues(from, to);
+    expect(patch).toEqual([
+      { op: 'ins', path: '/bands/1', value: { id: 'b', picture: 'new' } },
+    ]);
+    expect(JSON.stringify(patch)).not.toContain(picture);
+    expect(applyPatch(from, patch)).toEqual(to);
+    const removed = diffValues(to, from);
+    expect(removed).toEqual([{ op: 'del', path: '/bands/1' }]);
+    expect(applyPatch(to, removed)).toEqual(from);
+    const changed = {
+      format: 1,
+      bands: [{ id: 'a', picture, caption: 'Now' }, { id: 'c', picture }],
+    };
+    expect(diffValues(from, changed)).toEqual([
+      { op: 'set', path: '/bands/0/caption', value: 'Now' },
+    ]);
+    const replaced = {
+      format: 1,
+      bands: [{ id: 'a', picture: 'other' }, { id: 'c', picture }],
+    };
+    expect(diffValues(replaced, from)).toEqual([
+      { op: 'set', path: '/bands/0/picture', value: picture },
+    ]);
   });
 });

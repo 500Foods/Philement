@@ -10,10 +10,14 @@ The open Lithium implementation is the report writer. Start at
 [REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) Resume, then
 the milestone file it names. The Sitting section there is the
 operating model. Andrew starts each phase with `cdli && grok`.
-Phases 1–5 are complete. Phase 6 is in progress. Andrew reported
-drag, Undo, and New. The export sentence of 6.4 is still open.
-Phase 7 is in progress. The first dots did not show and have
-been repainted. Redo sits beside Undo. Do not start Phase 8. The
+Phases 1–7 are complete. Phases 6 and 7 closed 2026-10-31.
+Andrew confirmed drag, Undo, Redo, export, import, and the
+dots. Phase 8 is complete (2026-10-31). Andrew accepted
+the rulers, the corner cycle, and the unit name. The 1 inch
+mark is 96 CSS pixels from the page origin. The corner
+cycles inches, centimetres, and points and leaves the file
+unit alone. Right and bottom rulers stay later. Phase 9
+has not started. The
 contract note is
 [LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md). One inch is 96 CSS pixels.
 The phase body is

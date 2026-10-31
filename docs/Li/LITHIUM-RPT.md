@@ -112,6 +112,38 @@ A static text item stores `text`. A group header stores `field`, one
 field name. A detail band stores `datasource`, one datasource name.
 `functions` is `[]` until a later phase stores author Lua.
 
+`history` stores the undo and redo diffs on the definition. It is
+omitted when both lists are empty. Each list is a series of changes,
+oldest first, and the last entry is the next step. A change is a list
+of edits. An edit is `{ "op": "set", "path": "/bands/0/height",
+"value": "0.25 in" }`, `{ "op": "del", "path": "/bands/0/items/1" }`,
+or `{ "op": "ins", "path": "/bands/0/items/1", "value": {} }`.
+`ins` is one added list entry. `del` removes one list entry or one
+object field. A changed picture stores that picture's previous
+bytes, and the other pictures stay out of the step.
+`path` is a JSON Pointer. The other keys are the current report.
+Undo applies the last `undo` change. Redo applies the last `redo`
+change. A new edit drops `redo`. Clear removes `history` and leaves
+the current report. Compose ignores `history`.
+
+The open report is one definition. `history` is the trail. There
+is no cap. Replacing a large value stores that value's previous
+bytes in the step until Clear, or until a later edit drops the
+redo tail. Export and import keep the trail. Andrew confirmed
+that round trip on 2026-10-31. A file with no `history` opens
+with an empty trail. A file whose `history` cannot be read does
+not open. Save writes this same object into `reports.report`, so
+a revision keeps the trail that was open, and opening it restores
+Undo and Redo. Clear before that save is how a production report
+drops the trail.
+
+Compose, preview, and the emitters read the other keys. The
+intermediate and the emitted file leave `history` out. Later
+edits use this same trail: a property change, a drag, an image
+replace, and a formula save on blur each commit one diff.
+`exportDefinition` keeps `history`. `format` stays 1. The formula
+editor keeps its own keystroke undo while that buffer is focused.
+
 `kind` `json` takes an array in `sources`, or the session sample while
 designing. That array is not stored in the definition. `kind` `query`
 names a QueryRef and binds. Sample rows still design the canvas.

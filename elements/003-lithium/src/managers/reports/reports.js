@@ -3,21 +3,37 @@
  *
  * Starts a blank definition, imports a local JSON file, and downloads it.
  * The stage lists that definition and draws one page of bands.
- * Each band body draws the section grid. Dragging a band edge
- * commits through the model and pushes history. Undo and redo
- * restore that snapshot.
- * destroy and cleanup release the same listeners.
+ * Each band body draws the section grid. Rulers sit on the sheet.
+ * The mouse line follows the pointer and hides when it leaves
+ * the page. Dragging a band edge inverts that span on the vertical
+ * ruler, then commits through the model and pushes history. The
+ * corner cycles the ruler through inches, centimetres, and points
+ * and leaves the file unit alone. The view scale fits the sheet
+ * to the canvas width, or sits at 100%, which is 96 CSS pixels
+ * per inch. Zoom steps by a tenth. The scale is not stored on
+ * the definition. Undo
+ * and redo apply the stored diff. Clear
+ * removes that trail. destroy and cleanup release the same
+ * listeners, including the mouse line.
  */
 
 import './reports.css';
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import { registerShortcut, unregisterShortcut } from '../../core/manager-ui.js';
+import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
 import { dragBandHeight } from './bands.js';
-import { paintReportPage } from './canvas.js';
+import { pageFrame, paintReportPage } from './canvas.js';
 import { watchBandGrids } from './grid.js';
 import { bandHeight, resizeBand } from './model/document.js';
+import {
+  bindReportCursor, hideRulerSpan, nextRulerUnit, RULER_SIZE, rulerUnit, showRulerSpan,
+} from './rulers.js';
+import {
+  fitWidthScale, formatViewScale, readViewScale, stepViewScale, viewScaleLabel,
+} from './scale.js';
 import { createHistory } from './model/history.js';
 import { toCssPx } from './model/units.js';
 import {
@@ -31,6 +47,7 @@ import {
 } from './reports-file.js';
 
 const TEMPLATE = '/src/managers/reports/reports.html';
+const REPORTS_MANAGER_ID = '24';
 
 function appendFact(list, label, value) {
   const term = document.createElement('dt');
@@ -41,14 +58,17 @@ function appendFact(list, label, value) {
 }
 
 /** Paint the open definition and its page into the stage. */
-export function paintReportStage(stage, doc) {
+export function paintReportStage(stage, doc, rulerUnit, scale) {
   const outline = reportOutline(doc);
   const body = document.createElement('div');
   body.className = 'reports-stage-body';
   const canvas = document.createElement('div');
   canvas.className = 'reports-canvas';
-  const frame = paintReportPage(canvas, doc);
-  body.append(canvas);
+  const frame = paintReportPage(canvas, doc, rulerUnit, scale);
+  const notes = [...canvas.querySelectorAll('.reports-page-note')];
+  for (const entry of notes) entry.remove();
+  if (canvas.childElementCount > 0) body.append(...notes, canvas);
+  else body.append(...notes);
 
   const root = document.createElement('div');
   root.className = 'reports-summary';
@@ -124,6 +144,12 @@ export default class ReportsManager {
     this._closed = false;
     this._drag = null;
     this._gridWatch = null;
+    this._cursor = null;
+    this._rulerDisplay = null;
+    this._rulerCorner = null;
+    this._scale = null;
+    this._scaleChosen = false;
+    this._paneWatch = null;
   }
 
   async init() {
@@ -160,6 +186,12 @@ export default class ReportsManager {
       exportBtn: this.container.querySelector('#reports-export-btn'),
       undoBtn: this.container.querySelector('#reports-undo-btn'),
       redoBtn: this.container.querySelector('#reports-redo-btn'),
+      clearBtn: this.container.querySelector('#reports-clear-btn'),
+      fitBtn: this.container.querySelector('#reports-fit-btn'),
+      zoomOutBtn: this.container.querySelector('#reports-zoom-out-btn'),
+      zoomLabel: this.container.querySelector('#reports-zoom-label'),
+      zoom100Btn: this.container.querySelector('#reports-zoom-100-btn'),
+      zoomInBtn: this.container.querySelector('#reports-zoom-in-btn'),
       fileInput: this.container.querySelector('#reports-import-input'),
       stage: this.container.querySelector('#reports-stage'),
     };
@@ -168,9 +200,12 @@ export default class ReportsManager {
 
   _bind() {
     const {
-      newBtn, importBtn, exportBtn, undoBtn, redoBtn, fileInput, stage,
+      newBtn, importBtn, exportBtn, undoBtn, redoBtn, clearBtn,
+      fitBtn, zoomOutBtn, zoomLabel, zoom100Btn, zoomInBtn, fileInput, stage,
     } = this.elements;
-    if (!newBtn || !importBtn || !exportBtn || !undoBtn || !redoBtn || !fileInput || !stage) {
+    if (!newBtn || !importBtn || !exportBtn || !undoBtn || !redoBtn || !clearBtn
+      || !fitBtn || !zoomOutBtn || !zoomLabel || !zoom100Btn || !zoomInBtn
+      || !fileInput || !stage) {
       log(Subsystems.MANAGER, Status.ERROR, '[Reports] Template is missing a control.');
       toast.error('Failed to load Report Manager', {
         description: 'Template is missing a control.',
@@ -186,7 +221,13 @@ export default class ReportsManager {
     this._onExport = () => this._exportReport();
     this._onUndo = () => this._undo();
     this._onRedo = () => this._redo();
-    this._onKey = (event) => this._onUndoKey(event);
+    this._onClear = () => {
+      this._clearHistory();
+    };
+    this._onFit = () => this._fitWidth();
+    this._onZoomOut = () => this._zoomBy(-1);
+    this._onZoom100 = () => this._zoom100();
+    this._onZoomIn = () => this._zoomBy(1);
     this._onBandDown = (event) => this._beginBandDrag(event);
     newBtn.addEventListener('click', this._onNew);
     importBtn.addEventListener('click', this._onImportClick);
@@ -194,14 +235,60 @@ export default class ReportsManager {
     exportBtn.addEventListener('click', this._onExport);
     undoBtn.addEventListener('click', this._onUndo);
     redoBtn.addEventListener('click', this._onRedo);
-    document.addEventListener('keydown', this._onKey);
+    clearBtn.addEventListener('click', this._onClear);
+    fitBtn.addEventListener('click', this._onFit);
+    zoomOutBtn.addEventListener('click', this._onZoomOut);
+    zoom100Btn.addEventListener('click', this._onZoom100);
+    zoomInBtn.addEventListener('click', this._onZoomIn);
     stage.addEventListener('pointerdown', this._onBandDown);
+    this._registerKeys();
+    this._watchPane();
     this._listening = true;
   }
 
   _dropGrid() {
     if (this._gridWatch) this._gridWatch.disconnect();
     this._gridWatch = null;
+  }
+
+  _dropCursor() {
+    if (this._cursor) this._cursor.disconnect();
+    this._cursor = null;
+  }
+
+  _dropRulerUnit() {
+    if (this._rulerCorner && this._onRulerUnit) {
+      this._rulerCorner.removeEventListener('click', this._onRulerUnit);
+    }
+    this._rulerCorner = null;
+    this._onRulerUnit = null;
+  }
+
+  _watchRulerUnit() {
+    this._dropRulerUnit();
+    if (this._closed || !this.elements.stage) return;
+    const corner = this.elements.stage.querySelector('.reports-ruler-corner');
+    if (!corner) return;
+    this._onRulerUnit = () => this._cycleRulerUnit();
+    this._rulerCorner = corner;
+    corner.addEventListener('click', this._onRulerUnit);
+  }
+
+  _cycleRulerUnit() {
+    if (this._closed || !this.doc) return;
+    const stored = rulerUnit(this.doc.page);
+    const current = this._rulerDisplay || (typeof stored === 'string' ? stored : 'in');
+    this._rulerDisplay = nextRulerUnit(current);
+    this._showDocument(this.doc);
+  }
+
+  _watchCursor() {
+    this._dropCursor();
+    if (this._closed || !this.elements.stage) return;
+    const page = this.elements.stage.querySelector('#reports-page');
+    const sheet = page && page.closest('.reports-sheet');
+    if (!page || !sheet) return;
+    this._cursor = bindReportCursor(page);
   }
 
   _watchGrid(frame) {
@@ -216,13 +303,107 @@ export default class ReportsManager {
     this._gridWatch = watch;
   }
 
+  _paneWidth() {
+    const stage = this.elements.stage;
+    if (!stage) return 0;
+    const body = stage.querySelector('.reports-stage-body');
+    const style = body ? getComputedStyle(body) : null;
+    const pad = style
+      ? (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0)
+      : 0;
+    return Math.max(0, stage.clientWidth - pad);
+  }
+
+  _fitScale(doc) {
+    const frame = pageFrame(doc);
+    if (!frame || frame.omitted || frame.error || !(frame.widthPx > 0)) return 1;
+    return fitWidthScale(this._paneWidth(), frame.widthPx + RULER_SIZE);
+  }
+
+  _currentScale(doc) {
+    if (this._scale > 0) return this._scale;
+    if (!(this._paneWidth() > 0)) return 1;
+    this._scale = this._fitScale(doc);
+    return this._scale;
+  }
+
+  _setScale(scale, chosen) {
+    const text = formatViewScale(scale);
+    const next = Number(text);
+    if (!(next > 0)) return;
+    this._scale = next;
+    if (chosen) this._scaleChosen = true;
+    const canvas = this.elements.stage && this.elements.stage.querySelector('.reports-canvas');
+    if (canvas) canvas.style.setProperty('--reports-scale', text);
+    this._syncZoom();
+  }
+
+  _syncZoom() {
+    const canvas = this.elements.stage && this.elements.stage.querySelector('.reports-canvas');
+    const hasSheet = Boolean(canvas && canvas.querySelector('.reports-sheet'));
+    const scale = this._scale > 0 ? this._scale : readViewScale(canvas);
+    if (this.elements.zoomLabel) this.elements.zoomLabel.textContent = viewScaleLabel(scale);
+    if (this.elements.zoomOutBtn) {
+      this.elements.zoomOutBtn.disabled = !hasSheet || stepViewScale(scale, -1) === scale;
+    }
+    if (this.elements.zoomInBtn) {
+      this.elements.zoomInBtn.disabled = !hasSheet || stepViewScale(scale, 1) === scale;
+    }
+    if (this.elements.fitBtn) this.elements.fitBtn.disabled = !hasSheet;
+    if (this.elements.zoom100Btn) this.elements.zoom100Btn.disabled = !hasSheet;
+  }
+
+  _fitWidth() {
+    if (this._closed || !this.doc) return;
+    this._scaleChosen = false;
+    const scale = this._fitScale(this.doc);
+    this._setScale(scale);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] View scale ${viewScaleLabel(scale)}`);
+  }
+
+  _zoom100() {
+    if (this._closed || !this.doc) return;
+    this._setScale(1, true);
+    log(Subsystems.MANAGER, Status.INFO, '[Reports] View scale 100%');
+  }
+
+  _zoomBy(direction) {
+    if (this._closed || !this.doc) return;
+    const canvas = this.elements.stage && this.elements.stage.querySelector('.reports-canvas');
+    const current = this._scale > 0 ? this._scale : readViewScale(canvas);
+    const next = stepViewScale(current, direction);
+    if (next === current) return;
+    this._setScale(next, true);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] View scale ${viewScaleLabel(next)}`);
+  }
+
+  _dropPane() {
+    if (this._paneWatch) this._paneWatch.disconnect();
+    this._paneWatch = null;
+  }
+
+  _watchPane() {
+    this._dropPane();
+    if (this._closed || !this.elements.stage || typeof ResizeObserver !== 'function') return;
+    this._paneWatch = new ResizeObserver(() => {
+      if (this._closed || this._scaleChosen || !this.doc) return;
+      if (!(this._paneWidth() > 0)) return;
+      this._setScale(this._fitScale(this.doc));
+    });
+    this._paneWatch.observe(this.elements.stage);
+  }
+
   _release() {
     this._closed = true;
     this._clearBandDrag();
     this._dropGrid();
+    this._dropCursor();
+    this._dropRulerUnit();
+    this._dropPane();
     if (!this._listening) return;
     const {
-      newBtn, importBtn, exportBtn, undoBtn, redoBtn, fileInput, stage,
+      newBtn, importBtn, exportBtn, undoBtn, redoBtn, clearBtn,
+      fitBtn, zoomOutBtn, zoom100Btn, zoomInBtn, fileInput, stage,
     } = this.elements;
     newBtn.removeEventListener('click', this._onNew);
     importBtn.removeEventListener('click', this._onImportClick);
@@ -230,8 +411,14 @@ export default class ReportsManager {
     exportBtn.removeEventListener('click', this._onExport);
     undoBtn.removeEventListener('click', this._onUndo);
     redoBtn.removeEventListener('click', this._onRedo);
-    document.removeEventListener('keydown', this._onKey);
+    clearBtn.removeEventListener('click', this._onClear);
+    fitBtn.removeEventListener('click', this._onFit);
+    zoomOutBtn.removeEventListener('click', this._onZoomOut);
+    zoom100Btn.removeEventListener('click', this._onZoom100);
+    zoomInBtn.removeEventListener('click', this._onZoomIn);
     stage.removeEventListener('pointerdown', this._onBandDown);
+    unregisterShortcut('reports-undo');
+    unregisterShortcut('reports-redo');
     this._listening = false;
   }
 
@@ -255,23 +442,36 @@ export default class ReportsManager {
       toast.error(message, { subsystem: 'Manager' });
       return;
     }
+    this._rulerDisplay = null;
+    this._scale = null;
+    this._scaleChosen = false;
     this.history = history;
     this._showDocument(history.document);
   }
 
   _showDocument(doc) {
+    this._dropCursor();
+    this._dropRulerUnit();
     this.doc = doc;
     if (this.elements.name) this.elements.name.textContent = reportDisplayName(doc);
     if (this.elements.stage) {
-      const frame = paintReportStage(this.elements.stage, doc);
-      const message = frame.error || frame.gridError;
+      const frame = paintReportStage(
+        this.elements.stage,
+        doc,
+        this._rulerDisplay,
+        this._currentScale(doc),
+      );
+      const message = frame.error || frame.gridError || frame.rulerError;
       if (message) {
         log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
         toast.error(message, { subsystem: 'Manager' });
       }
       this._watchGrid(frame);
+      this._watchCursor();
+      this._watchRulerUnit();
     }
     this._syncHistory();
+    this._syncZoom();
   }
 
   _commitDocument(next) {
@@ -282,39 +482,59 @@ export default class ReportsManager {
   _syncHistory() {
     const undoBtn = this.elements.undoBtn;
     const redoBtn = this.elements.redoBtn;
-    if (undoBtn) undoBtn.disabled = !(this.history && this.history.canUndo());
-    if (redoBtn) redoBtn.disabled = !(this.history && this.history.canRedo());
+    const hasUndo = Boolean(this.history && this.history.canUndo());
+    const hasRedo = Boolean(this.history && this.history.canRedo());
+    if (undoBtn) undoBtn.disabled = !hasUndo;
+    if (redoBtn) redoBtn.disabled = !hasRedo;
+    if (this.elements.clearBtn) this.elements.clearBtn.disabled = !(hasUndo || hasRedo);
+  }
+
+  async _clearHistory() {
+    if (this._drag || this._closed || !this.history) return;
+    if (!this.history.canUndo() && !this.history.canRedo()) return;
+    const accepted = await confirmDialog({
+      title: 'Clear history?',
+      message: 'The current report stays. Undo and redo for this report are removed.',
+      confirmLabel: 'Clear',
+      cancelLabel: 'Cancel',
+    });
+    if (!accepted || this._closed || !this.history) return;
+    this._showDocument(this.history.clear());
+    log(Subsystems.MANAGER, Status.INFO, '[Reports] Cleared history');
+  }
+
+  _restore(step, label) {
+    try {
+      this._showDocument(step());
+    } catch (error) {
+      const message = error instanceof Error && error.message
+        ? error.message
+        : 'Report history could not be applied.';
+      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
+      toast.error(message, { subsystem: 'Manager' });
+      return;
+    }
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] ${label}`);
   }
 
   _undo() {
     if (this._drag || !this.history || !this.history.canUndo()) return;
-    this._showDocument(this.history.undo());
-    log(Subsystems.MANAGER, Status.INFO, '[Reports] Undo');
+    this._restore(() => this.history.undo(), 'Undo');
   }
 
   _redo() {
     if (this._drag || !this.history || !this.history.canRedo()) return;
-    this._showDocument(this.history.redo());
-    log(Subsystems.MANAGER, Status.INFO, '[Reports] Redo');
+    this._restore(() => this.history.redo(), 'Redo');
   }
 
-  _onUndoKey(event) {
-    if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
-    const key = event.key;
-    const undo = (key === 'z' || key === 'Z') && !event.shiftKey;
-    const redo = ((key === 'z' || key === 'Z') && event.shiftKey)
-      || key === 'y' || key === 'Y';
-    if (!undo && !redo) return;
-    const target = event.target;
-    const editable = target && typeof target.closest === 'function'
-      && (target.closest('input, textarea, select') || target.isContentEditable);
-    if (editable) return;
-    event.preventDefault();
-    if (redo) this._redo();
-    else this._undo();
+  _registerKeys() {
+    const options = { managerId: REPORTS_MANAGER_ID, category: 'Report Manager' };
+    registerShortcut('reports-undo', 'Ctrl+Z', 'Undo', () => this._undo(), options);
+    registerShortcut('reports-redo', 'Ctrl+Y', 'Redo', () => this._redo(), options);
   }
 
   _clearBandDrag() {
+    if (this._drag && this._drag.page) hideRulerSpan(this._drag.page, 'y');
     if (this._onBandMove) {
       document.removeEventListener('pointermove', this._onBandMove);
       document.removeEventListener('pointerup', this._onBandUp);
@@ -342,8 +562,12 @@ export default class ReportsManager {
       return;
     }
     event.preventDefault();
+    const page = body.closest('#reports-page');
+    const scale = readViewScale(page || body);
+    const pageTop = page ? page.getBoundingClientRect().top : 0;
+    const edgeY = (body.getBoundingClientRect().bottom - pageTop) / scale;
     this._drag = {
-      id, startPx, startY: event.clientY, body,
+      id, startPx, startY: event.clientY, body, page, edgeY, scale,
     };
     this._onBandMove = (move) => this._moveBandDrag(move);
     this._onBandUp = () => this._endBandDrag();
@@ -354,9 +578,13 @@ export default class ReportsManager {
 
   _moveBandDrag(event) {
     if (!this._drag) return;
-    const next = dragBandHeight(this._drag.startPx, event.clientY - this._drag.startY);
+    const scale = this._drag.scale > 0 ? this._drag.scale : 1;
+    const next = dragBandHeight(this._drag.startPx, (event.clientY - this._drag.startY) / scale);
     this._drag.previewPx = next;
     this._drag.body.style.height = `${next}px`;
+    if (!this._drag.page) return;
+    const moved = this._drag.edgeY + (next - this._drag.startPx);
+    showRulerSpan(this._drag.page, 'y', this._drag.edgeY, moved);
   }
 
   _endBandDrag() {

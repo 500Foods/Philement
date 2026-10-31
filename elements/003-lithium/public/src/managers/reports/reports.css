@@ -3,7 +3,10 @@
  *
  * Shell for the definition file. The page is 96 CSS pixels per inch.
  * A band body uses its stored height. The label strip is chrome.
- * The section grid is an SVG pattern on that body. Rulers land later.
+ * The section grid is an SVG pattern on that body. Rulers sit on
+ * the top and left of the sheet. The mouse line is the crosshair.
+ * `--reports-scale` sizes the page, the grid, and the rulers
+ * together. 1 is 96 CSS pixels per inch.
  */
 
 @import url('../../core/lithium-toolbar.css');
@@ -33,6 +36,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
   background-color: var(--bg-secondary);
 }
 
@@ -45,11 +49,151 @@
 }
 
 .reports-canvas {
+  position: relative;
   flex-shrink: 0;
+}
+
+.reports-canvas-fitted {
+  width: calc((var(--reports-ruler-size) + var(--reports-page-width)) * var(--reports-scale, 1));
+  height: calc((var(--reports-ruler-size) + var(--reports-page-height)) * var(--reports-scale, 1));
+}
+
+.reports-canvas-fitted > .reports-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--reports-ruler-size) + var(--reports-page-width));
+  height: calc(var(--reports-ruler-size) + var(--reports-page-height));
+  transform: scale(var(--reports-scale, 1));
+  transform-origin: top left;
+}
+
+.reports-zoom-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  height: 24px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  color: var(--text-primary);
+  user-select: none;
+  background-color: var(--accent-alt-primary);
+}
+
+.reports-sheet {
+  --reports-ruler-size: 28px;
+
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: var(--reports-ruler-size) var(--reports-page-width);
+  grid-template-rows: var(--reports-ruler-size) var(--reports-page-height);
+}
+
+.reports-ruler-corner,
+.reports-ruler {
+  box-sizing: border-box;
+  background-color: #ececec;
+  color: #2a2a2a;
+  user-select: none;
+}
+
+.reports-ruler-corner {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1;
+  align-items: center;
+  justify-content: center;
+  width: var(--reports-ruler-size);
+  height: var(--reports-ruler-size);
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 10px;
+  line-height: 1;
+  color: #2a2a2a;
+  cursor: pointer;
+  background-color: #ececec;
+  border-top: 0;
+  border-left: 0;
+  border-right: var(--border-width) solid #c8c8c8;
+  border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-ruler-corner:focus-visible {
+  outline: 1px solid var(--accent-info);
+  outline-offset: -2px;
+}
+
+.reports-ruler {
+  display: block;
+}
+
+.reports-ruler line {
+  stroke: #2a2a2a;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.reports-ruler text {
+  fill: #2a2a2a;
+  font-size: 10px;
+}
+
+.reports-ruler-span {
+  fill: #2a2a2a;
+}
+
+.reports-ruler-marks-invert line {
+  stroke: #ececec;
+}
+
+.reports-ruler-marks-invert text {
+  fill: #ececec;
+}
+
+.reports-ruler-top {
+  grid-column: 2;
+  grid-row: 1;
+  width: var(--reports-page-width);
+  height: var(--reports-ruler-size);
+  border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-ruler-left {
+  grid-column: 1;
+  grid-row: 2;
+  width: var(--reports-ruler-size);
+  height: var(--reports-page-height);
+  border-right: var(--border-width) solid #c8c8c8;
+}
+
+.reports-cursor {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  background-color: var(--accent-info);
+}
+
+.reports-cursor-x {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.reports-cursor-y {
+  right: 0;
+  left: 0;
+  height: 1px;
 }
 
 .reports-page {
   position: relative;
+  grid-column: 2;
+  grid-row: 2;
   box-sizing: border-box;
   width: var(--reports-page-width);
   height: var(--reports-page-height);

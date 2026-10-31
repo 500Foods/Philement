@@ -4,15 +4,16 @@
 
 **Date:** 2026-10-10
 **Revised:** 2026-10-31
-**Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–5
-complete. Phase 5 closed 2026-10-31. Phase 6 is in progress.
-Andrew reported drag, Undo, and New on the alternate database.
-The export sentence of 6.4 is still open. Phase 7 is in progress
-(2026-10-31), in
+**Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–7
+complete. Phases 6 and 7 closed 2026-10-31. Andrew confirmed
+drag, Undo, Redo, export, import, and the dots on the alternate
+database. Phase 8 is complete (2026-10-31). Andrew
+accepted the rulers, the corner cycle, and the unit name.
+Right and bottom rulers stay later. Phase 9 has not
+started. The
+body is in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-The first dot paint did not show. The painter now draws a full
-dot on each spacing point. Redo sits beside Undo. Do not start
-Phase 8. The contract note is
+The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
 **Home:** Manager **24**, Report Manager, already registered.
 **Design:** Acuranzo (shared product database). Lookups 0–199. Migrations
@@ -48,9 +49,9 @@ Andrew reports the apply.
 | 3 | Document model and undo | JS + Vitest | Medium | Complete |
 | 4 | Manager shell, import, export | Lithium UI | Medium | Complete |
 | 5 | Page surface | Lithium UI | Easy | Complete |
-| 6 | Bands and resize | Lithium UI | Medium | In progress |
-| 7 | Section grid | Lithium UI | Easy | In progress |
-| 8 | Rulers and the mouse line | Lithium UI | Medium | Not started |
+| 6 | Bands and resize | Lithium UI | Medium | Complete |
+| 7 | Section grid | Lithium UI | Easy | Complete |
+| 8 | Rulers and the mouse line | Lithium UI | Medium | Complete |
 | 9 | View scale | Lithium UI | Easy | Not started |
 | 10 | Static text | Lithium UI | Medium | Not started |
 | 11 | Lookup 053 repair | Helium, human apply | Medium | Not started |
@@ -158,15 +159,15 @@ milestone file that holds the current phase.
 | [`06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) | 50–67 | Place images, barcodes, and charts, and export SVG and PNG. |
 | [`07-native-pdf.md`](/docs/Li/plans/reporting/07-native-pdf.md) | 68–71 | Get charts and barcodes as vectors in the PDF. |
 
-**Resume:** Phase 7 is in progress, in
+**Resume:** Phases 1–7 are complete. Phases 6 and 7 closed
+2026-10-31. Andrew confirmed drag, Undo, Redo, export, import,
+and the dots. Phase 8 is complete (2026-10-31). Andrew
+accepted the rulers, the corner cycle, and the unit name.
+Right and bottom rulers stay later. Phase 9 has not
+started. The
+body is in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-Each band body draws the section grid. The first dot paint did
-not show. A full dot is now drawn on each spacing point. Work
-item 7.4 is waiting on Andrew after he deploys. Phase 6 is also
-in progress. He reported drag, Undo, and New. The export
-sentence of 6.4 is still open. Redo sits beside Undo. Do not
-start Phase 8 until he reports those checks. Phases 1–5 are
-complete. The contract note is
+The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md). One inch is
 96 CSS pixels. Open this file for a lock. Open the milestone file
 for the phase body.
@@ -329,7 +330,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. Sidequests stay unnumbered. |
-| **Done** | Phases 0–5 of 72 complete (2026-10-31). Phase 6 is in progress. Andrew reported drag, Undo, and New. The export sentence of 6.4 is still open. Phase 7 is in progress. The first dot paint did not show and has been repainted. |
+| **Done** | Phases 0–8 of 72 complete (2026-10-31). Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. Right and bottom rulers stay later. Phase 9 has not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -357,12 +358,14 @@ the manager. Phase 4 is complete (2026-10-31). Andrew confirmed
 the shell on `https://lithium.500courses.com`. Phase 5 is complete
 (2026-10-31). Andrew confirmed the page on
 `https://lithium.500courses.com`. Letter is larger than a 4 in
-page. Fixture guides sit inset 0.25 in. Phase 6 draws the bands.
-Andrew reported drag, Undo, and New on the alternate database.
-The export sentence of 6.4 is still open. Phase 7 draws the
-section grid. The first dots did not show. The painter now
-draws a full dot on each spacing point. Redo sits beside Undo.
-Do not start Phase 8.
+page. Fixture guides sit inset 0.25 in. Phases 6 and 7 are
+complete (2026-10-31). The bands resize, Undo and Redo are
+registered shortcuts, and each band body draws the section
+grid. Phase 8 is complete (2026-10-31). Andrew accepted
+the rulers, the corner cycle, and the unit name. The sheet
+has top and left rulers. The corner cycles inches,
+centimetres, and points and leaves the file unit alone.
+Right and bottom rulers stay later. Phase 9 has not started.
 
 ## Goals
 
@@ -444,8 +447,15 @@ Manager 24 is the designer shell. It shows the report name and
 New, Import, and Export. The stage lists the definition and draws
 one page at 96 CSS pixels per inch, with margin guides. Each
 band is a label strip and a body of the stored height. The body
-draws the section grid. Undo and Redo sit on the toolbar.
-Rulers are a later phase.
+draws the section grid. Undo is Ctrl+Z and Redo is Ctrl+Y.
+Top and left rulers sit on the sheet. The bar is 28 CSS
+pixels. The 1 inch tick is 96 CSS pixels from the page edge.
+The mouse line follows the pointer and hides on leave. A band
+drag inverts that span on the vertical ruler. The corner
+cycles inches, centimetres, and points and leaves the file
+unit alone. The letters are `#2a2a2a`. Right and bottom
+rulers stay later. Phase 8 is complete (2026-10-31).
+Phase 9 has not started.
 `conduit.js` can run QueryRefs.
 `invokeScript` is not in the client. Scripting Manager does not call
 `POST /api/conduit/script`. CATCHUP Phases 7–10 are the planned home
@@ -675,6 +685,21 @@ A field text item stores `align`. Omitted align is `Left`. A number,
 datetime, aggregate, or parameter item also stores `mask`. An item
 stores `font` only when it overrides the definition font, in the same
 shape. The style captions below are legal in both places.
+
+`history` stores undo and redo diffs on this definition. It is
+omitted when both lists are empty. Each entry is a list of JSON
+Pointer edits: `set`, `del`, or `ins`. `ins` is one added list
+entry. A changed value stores that value, not the rest of the
+report. The other keys are the current report. There is no cap.
+Clear removes `history` and leaves the current report. That is
+the production step. Export, import, and a later save of
+`reports.report` keep the trail, and opening that file or
+revision restores Undo and Redo. A bad `history` does not open.
+Compose, preview, and the emitters skip `history` and leave it
+out of the intermediate and the emitted file. Later edits commit
+through this same trail. `exportDefinition` keeps the key.
+`format` stays 1. The contract note is
+[`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
 
 `typeKey` is lookup 053 `key_idx`. Lengths are strings with a unit
 suffix (`in`, `mm`, `cm`, `pt`, `px`). The designer converts at
@@ -1569,10 +1594,14 @@ not a default.
   It is not written into the definition.
 - Import and export of the definition file work before the database
   save exists. The file is the artifact Phase 4 already proves.
+  The file keeps `history` when the trail is non-empty. New omits
+  the key. Import of a file that has `history` restores Undo and
+  Redo.
 - Split files before 1000 lines. Expected split: `reports.js` (shell),
   `reports.html`, `reports.css`, `canvas.js`, `rulers.js`, `grid.js`,
   `properties.js`, `functions.js`, `chart-panel.js`, and
-  `model/units.js`, `model/document.js`, `model/history.js`.
+  `model/units.js`, `model/document.js`, `model/history.js`,
+  `model/history-diff.js`.
 - **DOMPurify is in `package.json`** (v3.3.2) but unused as of the last
   review. Preview HTML is sanitized with DOMPurify before assignment to
   a sandboxed iframe `srcdoc` (Phase 25). Barcode SVG must survive that
@@ -1606,8 +1635,9 @@ source is clean. Typing is never blocked, and a bad chunk can still
 be saved. Compose remains the gate that refuses to render it.
 
 Report undo records the function source when the editor blurs, not
-on each keystroke. CodeMirror keeps its own undo while the buffer
-is focused.
+on each keystroke. That blur commits one diff on `history`, the
+same trail as a band resize. CodeMirror keeps its own undo while
+the buffer is focused.
 
 An undefined name is a runtime event in Lua. The editor does not
 flag `io`, `H`, or a misspelled field while the author types. Those
@@ -2019,3 +2049,136 @@ Ctrl+Shift+Z and Ctrl+Y redo. A new edit drops that tail.
 `npm run lint` and `templates:copy` exited 0. `npx eslint` on
 the grid files exited 0. Work item 7.4 stays open until he sees
 the dots after the next deploy. Do not start Phase 8.
+
+### 2026-10-31 — Phases 6 and 7 complete
+
+Andrew confirmed Undo, Redo, export, import, and the dots on
+the alternate database. He asked that the undo and redo keys
+be registered with the shortcut list. Ctrl+Z undoes and Ctrl+Y
+redoes. Both are registered for manager 24 and run only while
+that slot is visible. Ctrl+Shift+Z stays Toggle zoom. Closing
+the slot unregisters them. `npm test` exited 0 (66 files,
+1269 passed, 12 skipped). `npm run lint` and `templates:copy`
+exited 0. Phase 8 has not started.
+
+### 2026-10-31 — Tooltip origin
+
+Andrew saw the Resize band tooltip at the top left of the window.
+A tooltip stays hidden when its anchor has no box, and when the
+resolved point is within 8 CSS pixels of both window edges. The
+visible class is applied after that point is accepted. Removing
+the trigger drops the tooltip. `npm test` exited 0 (67 files,
+1275 passed, 12 skipped). `npm run lint` exited 0. Phase 8 has
+not started. The undo history file shape is still unpinned.
+
+### 2026-10-31 — History diffs on the definition
+
+Undo and redo are diffs on the open definition, under `history`.
+`undo` and `redo` are lists of JSON Pointer edits. An empty trail
+omits the key. Export and import keep it, so a later save of
+`reports.report` keeps it too. Clear asks, then removes `history`
+and leaves the current report. `npm test` exited 0 (67 files,
+1278 passed, 12 skipped). `npm run lint` and `templates:copy`
+exited 0. Phase 8 has not started.
+
+### 2026-10-31 — History stores one list entry
+
+Andrew asked whether a large report would keep a full copy on
+every undo step. The trail is diffs. A list that grows or shrinks
+stores one `ins` or `del` for that entry. A replaced picture stores
+only that picture's previous bytes. Neighboring pictures stay out
+of the step. `npm test` exited 0 (67 files, 1279 passed, 12
+skipped). `npm run lint` exited 0. Phase 8 has not started.
+
+### 2026-10-31 — History kept on export
+
+Andrew confirmed export and import keep the undo and redo trail.
+The contract note and the definition lock now say how later work
+keeps that trail: one diff list, no cap, Clear before a production
+save, compose and the emitters skip `history`, and a picture
+replacement stores that picture's previous bytes. Phase 18 stores
+the open definition, trail included. Phase 8 has not started.
+
+### 2026-10-31 — Phase 8 in progress
+
+Top and left rulers sit on the sheet. The origin is the top-left
+of the white page. The labeled `1` on an inch ruler is 96 CSS
+pixels from that corner. Inches tick at eighths. Centimetres tick
+at millimetres. Millimetres label every 10, points every 72, and
+pixels every 96. Those three scales are view chrome. The
+definition stores no ruler key. An omitted unit paints inches. An
+unknown unit toasts and draws the page with no rulers. The mouse
+line follows the pointer on the page and hides when the pointer
+leaves. `destroy` and `cleanup` disconnect the listeners. Export
+of a new report matches `createBlank` and has bands `ph`,
+`detail`, and `pf`. A band body of stored height `1 in` matches
+the `0`–`1` gap. The label strip and the `0.25 in` margin sit
+between the page edge and that body. `npm test` exited 0 (68
+files, 1288 passed, 12 skipped). The skipped cases are the auth
+integration file. `https://lithium.500courses.com` did not answer.
+`npm run lint`, `npm run lint:css`, and `templates:copy` exited
+0. `npx eslint` on the report files exited 0. Work items 8.1–8.3
+are checked. Work item 8.4 is waiting on Andrew. Do not start
+Phase 9.
+
+### 2026-10-31 — Phase 8 rulers shortened
+
+Andrew saw the first rulers and said they work. The bars were
+too large. Major, half-step, and minor ticks are three quarters
+of the first lengths (21, 13.5, and 7.5 CSS pixels). The outer
+blank band loses three quarters of its depth, so the bar is 28
+CSS pixels. A horizontal major label sits 2 pixels to the left
+of its tick, top aligned with the tick top. A vertical major
+label sits 2 pixels above its tick, left aligned with the
+tick's outer end. Zero stays unlabeled. Dragging a band edge
+inverts the vertical ruler between the old edge and the new
+edge. Release clears that span. Right and bottom rulers, and a
+corner unit toggle, are named and not built. `npm test` exited
+0 (68 files, 1290 passed, 12 skipped). `npm run lint`,
+`npm run lint:css`, and `templates:copy` exited 0. `npx eslint`
+on the report files exited 0. Work item 8.4 stays open until he
+sees the shorter rulers and the drag span. Do not start Phase 9.
+
+### 2026-10-31 — Phase 8 ruler unit cycle
+
+Andrew left the extra edge rulers for later and asked for
+the corner to cycle inches, centimetres, and points. The
+corner is a button. Each click advances `in`, then `cm`,
+then `pt`, then `in`, and both rulers relabel at the same
+physical scale. The `1` centimetre mark is `toCssPx('1 cm')`,
+about 37.8 CSS pixels. The `72` point mark is 96 CSS pixels.
+The file keeps `page.units`. New and Import show the file
+unit again. A millimetre or pixel file stays in that unit
+until the first click, which starts at inches. The choice
+lasts for the open document. Undo and redo of a band edit
+keep it. The trail records the band edit. Export of a new
+report still matches `createBlank`. Right and bottom rulers
+stay later. `npm test` exited 0 (68 files, 1292 passed, 12
+skipped). The skipped cases are the auth integration file.
+`https://lithium.500courses.com` did not answer. `npm run
+lint`, `npm run lint:css`, and `templates:copy` exited 0.
+`npx eslint` on the report files exited 0.
+`reports-rulers.test.js` has 9 tests.
+`reports-shell.test.js` has 34 tests. Work item 8.4 stays
+open until he sees the shorter rulers, the drag span, and
+the corner cycle. Do not start Phase 9.
+
+### 2026-10-31 — Phase 8 corner label
+
+Andrew said the corner cycles and the unit name was missing.
+The button inherited `--text-primary` (`#E0E0E0`) onto the
+ruler face (`#ececec`). The letters are now `#2a2a2a`, the
+same ink as the ticks. Work item 8.4 stays open. Do not start
+Phase 9.
+
+### 2026-10-31 — Phase 8 complete
+
+Andrew said he likes the unit name and asked if the phase is
+wrapped up. He had said the first rulers work, accepted the
+28 CSS pixel bar, and said the corner cycles. Work items
+8.1–8.4 are checked. Phase 8 is complete. Right and bottom
+rulers stay later. `npm test` exited 0 (68 files, 1292
+passed, 12 skipped). The skipped cases are the auth
+integration file. `https://lithium.500courses.com` did not
+answer that run. `npm run lint` and `npm run lint:css`
+exited 0. Phase 9 has not started.

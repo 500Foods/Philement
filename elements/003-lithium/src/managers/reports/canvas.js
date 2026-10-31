@@ -2,12 +2,15 @@
  * Report page surface.
  * Unzoomed scale is 96 CSS pixels per inch. Margin guides are the
  * inset. Bands stack inside that inset. Each band body carries the
- * section grid. Rulers are a later phase.
+ * section grid. Rulers sit on the top and left of the sheet.
+ * `--reports-scale` on the canvas scales that sheet together.
  */
 
 import { paintReportBands } from './bands.js';
 import { gridSpec } from './grid.js';
 import { pageBox } from './model/units.js';
+import { RULER_SIZE, paintReportRulers } from './rulers.js';
+import { formatViewScale } from './scale.js';
 
 function pageObject(doc) {
   const page = doc && doc.page;
@@ -49,13 +52,21 @@ function px(value) {
 
 /**
  * Paint one page into the host. Size and insets are CSS variables.
+ * The host carries `--reports-scale`. 1 is 96 CSS pixels per inch.
  * @param {HTMLElement} host
  * @param {object} doc
+ * @param {string} [rulerUnit]
+ * @param {number} [scale]
  * @returns {ReturnType<typeof pageFrame>}
  */
-export function paintReportPage(host, doc) {
+export function paintReportPage(host, doc, rulerUnit, scale) {
   const frame = pageFrame(doc);
   host.replaceChildren();
+  host.classList.remove('reports-canvas-fitted');
+  host.style.removeProperty('--reports-page-width');
+  host.style.removeProperty('--reports-page-height');
+  host.style.removeProperty('--reports-ruler-size');
+  host.style.removeProperty('--reports-scale');
   if (frame.omitted) {
     host.append(note('The file omits the page.'));
     return frame;
@@ -79,7 +90,25 @@ export function paintReportPage(host, doc) {
   const guide = document.createElement('div');
   guide.className = 'reports-margin-guide';
   page.append(guide);
+
+  const sheet = document.createElement('div');
+  sheet.className = 'reports-sheet';
+  sheet.id = 'reports-sheet';
+  sheet.style.setProperty('--reports-page-width', px(frame.widthPx));
+  sheet.style.setProperty('--reports-page-height', px(frame.heightPx));
+  const rulers = paintReportRulers(sheet, pageObject(doc), frame, rulerUnit);
+  if (rulers.error) frame.rulerError = rulers.error;
   if (grid.error) host.append(note(grid.error));
-  host.append(page);
+  if (rulers.error) host.append(note(rulers.error));
+  if (rulers.error) host.append(page);
+  else {
+    sheet.append(page);
+    host.style.setProperty('--reports-page-width', px(frame.widthPx));
+    host.style.setProperty('--reports-page-height', px(frame.heightPx));
+    host.style.setProperty('--reports-ruler-size', `${RULER_SIZE}px`);
+    host.style.setProperty('--reports-scale', formatViewScale(scale));
+    host.classList.add('reports-canvas-fitted');
+    host.append(sheet);
+  }
   return frame;
 }

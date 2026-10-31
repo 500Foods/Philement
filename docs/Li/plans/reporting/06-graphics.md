@@ -42,7 +42,9 @@ Phase 49 Status complete.
        source's own pixel size, in which case the original bytes are
        stored. Embedded bytes dedupe into the definition's
        content-hash registry. Changing the box later does not
-       resample.
+       resample. Confirm commits through report `history`. The
+       step stores the previous bytes of that picture. Other
+       pictures stay out of the step. Clear drops that trail.
 - [ ] 50.3 `stage=html` repeats the data URI of the stored bytes in
        each placement. DOMPurify keeps that data URI. The script
        does not call `image_scale`.
