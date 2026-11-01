@@ -1,9 +1,11 @@
 /**
  * Report list for Manager 24.
- * The left pane is a LithiumTable of the reports table. QueryRefs
- * for that list are Phase 17 and Phase 18. Until they exist, save,
- * duplicate, and delete of a row fail visibly. Import and export
- * remain the way a definition leaves the browser.
+ * The left pane is a LithiumTable of the reports table.
+ * List is QueryRef 165, search is 166, open is 167, and save is 168.
+ * Save appends a revision and sends the row category.
+ * Duplicate has no query. Delete is QueryRef 170 and removes
+ * every revision of the report. Import and export still write
+ * the definition file.
  */
 
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
@@ -11,10 +13,22 @@ import { togglePanelCollapse, restorePanelState } from '../../core/panel-collaps
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
 import { LithiumTable } from '../../tables/lithium-table-main.js';
-import { definitionMeta, rowSummary, withDefinitionMeta } from './reports-meta.js';
-import { definitionText } from './reports-file.js';
+import { definitionMeta, withDefinitionMeta } from './reports-meta.js';
+import { reportEditorContent } from './reports-json.js';
+import {
+  deleteListedReport,
+  openListedReport,
+  reportKey,
+  REPORT_DELETE_QUERY,
+  REPORT_GET_QUERY,
+  REPORT_INSERT_QUERY,
+  REPORT_LIST_QUERY,
+  REPORT_SEARCH_QUERY,
+  saveListedReport,
+} from './reports-save.js';
 
 const LIST_KEY = 'lithium_reports_left';
 const LIST_WIDTH = 360;
@@ -27,9 +41,13 @@ const COLTYPES = {
 };
 
 const ACTION_LABEL = {
-  save: 'Save',
   duplicate: 'Duplicate',
   delete: 'Delete',
+};
+
+const ACTION_DETAIL = {
+  duplicate: 'Duplicate is not available. There is no duplicate query for reports.',
+  delete: 'Delete is not available. A saved report is kept as revisions.',
 };
 
 /**
@@ -73,8 +91,9 @@ export function reportListTableDef() {
     selectableRows: 1,
     columns: {
       report_id: column('report_id', 'Report', 'index', { primaryKey: true }),
-      rev_id: column('rev_id', 'Rev', 'index', { primaryKey: true }),
+      rev_id: column('rev_id', 'Rev', 'index', { primaryKey: true, visible: true }),
       name: column('name', 'Name', 'string', { visible: true, editable: true }),
+      category: column('category', 'Category', 'string', { visible: true, editable: true }),
       summary: column('summary', 'Summary', 'text', { visible: true, editable: true }),
       report: column('report', 'Definition', 'text'),
       thumbnail: column('thumbnail', 'Thumbnail', 'text'),
@@ -95,7 +114,7 @@ export function reportListUnavailable(action) {
   const error = new Error(`No queryRef configured for ${action}`);
   error.serverError = {
     error: `${label} is not available`,
-    message: `${label} is not available until the reports table query is applied.`,
+    message: ACTION_DETAIL[action] || `${label} is not available.`,
   };
   return error;
 }
@@ -142,20 +161,29 @@ export async function mountReportList(manager) {
     tableWidthMode: 'compact',
     panel: elements.leftPanel,
     panelStateManager: panelState,
-    onExecuteSave: async () => {
-      throw reportListUnavailable('save');
-    },
+    queryRef: REPORT_LIST_QUERY,
+    searchQueryRef: REPORT_SEARCH_QUERY,
+    detailQueryRef: REPORT_GET_QUERY,
+    insertQueryRef: REPORT_INSERT_QUERY,
+    deleteQueryRef: REPORT_DELETE_QUERY,
+    onExecuteSave: (row) => saveListedReport(manager, row),
     onDuplicate: async () => {
       throw reportListUnavailable('duplicate');
     },
-    onRowSelected: (row) => openListedReport(manager, row),
+    onRowSelected: (row) => {
+      openListedReport(manager, row);
+    },
   });
   manager.reportTable = table;
   manager.editHelper.registerTable(table);
   manager.editHelper.registerEditor('definition', {
-    getContent: () => (manager.doc ? definitionText(manager.doc) : ''),
+    getContent: () => reportEditorContent(
+      manager.doc,
+      manager._page,
+      manager._recordEditing && manager._json ? manager._json.text() : '',
+    ),
     setContent: (content) => manager._importText(content),
-    setEditable: () => {},
+    setEditable: (editable) => manager.setRecordEditing(editable),
     boundTable: table,
   });
 
@@ -185,13 +213,7 @@ export async function mountReportList(manager) {
       manager.newReport();
     };
   }
-  table.handleDelete = async () => {
-    const error = reportListUnavailable('delete');
-    toast.error(error.serverError.error, {
-      description: error.serverError.message,
-      subsystem: 'Manager',
-    });
-  };
+  table.handleDelete = () => deleteReportRow(manager);
 
   manager.splitter = new LithiumSplitter({
     element: elements.splitter,
@@ -231,23 +253,8 @@ export async function mountReportList(manager) {
 }
 
 /**
- * Open a listed definition. A row with no definition leaves the
- * designer on the document it already has.
- * @param {object} manager
- * @param {object} row
- */
-function openListedReport(manager, row) {
-  const stored = row && row.report;
-  if (stored != null && stored !== '') {
-    const text = typeof stored === 'string' ? stored : JSON.stringify(stored);
-    manager._importText(text);
-  }
-  manager._paintSummary(rowSummary(row));
-}
-
-/**
  * A name edit on the list is the same definition name.
- * Summary stays on the row.
+ * Summary and category stay on the row.
  * @param {object} manager
  * @param {object} cell
  */
@@ -263,4 +270,63 @@ function applyListedCell(manager, cell) {
   if (field !== 'name' || !manager.doc) return;
   if (definitionMeta(manager.doc).name === value) return;
   manager._commitDocument(withDefinitionMeta(manager.doc, { name: value }));
+}
+
+/**
+ * Remove the selected report. A saved id calls QueryRef 170.
+ * A draft is removed locally. Cancel leaves the row.
+ * @param {object} manager
+ */
+async function deleteReportRow(manager) {
+  const grid = manager.reportTable && manager.reportTable.table;
+  const selected = grid && typeof grid.getSelectedRows === 'function'
+    ? grid.getSelectedRows()
+    : [];
+  if (!selected.length) {
+    toast.info('No Row Selected', { description: 'Please select a row to delete', duration: 3000 });
+    return;
+  }
+
+  const row = selected[0];
+  const data = typeof row.getData === 'function' ? row.getData() || {} : {};
+  const name = typeof data.name === 'string' && data.name !== '' ? data.name : 'this report';
+  const confirmed = await confirmDialog({
+    title: 'Delete report',
+    message: `Delete "${name}"?\n\nEvery revision of this report is removed.`,
+    confirmLabel: 'Delete',
+    danger: true,
+  });
+  if (!confirmed || manager._closed) return;
+
+  const reportId = reportKey(data.report_id);
+  try {
+    await deleteListedReport(manager, data);
+  } catch (error) {
+    const message = error instanceof Error && error.message ? error.message : 'Delete failed.';
+    log(Subsystems.CONDUIT, Status.ERROR, `[Reports] Delete failed: ${message}`);
+    toast.error('Delete Failed', {
+      description: error.serverError?.message || message,
+      serverError: error.serverError,
+      subsystem: 'Conduit',
+    });
+    return;
+  }
+
+  const rows = typeof grid.getRows === 'function' ? grid.getRows('active') : [];
+  const index = rows.findIndex((entry) => entry === row);
+  const nextRow = rows[index + 1] || rows[index - 1] || null;
+  const clearsOpen = (reportId > 0 && manager._openReportId === reportId)
+    || (reportId === 0 && !manager._openReportId);
+  if (typeof row.delete === 'function') row.delete();
+  if (nextRow && typeof nextRow.select === 'function') {
+    nextRow.select();
+    requestAnimationFrame(() => {
+      nextRow.scrollTo?.('center', false);
+    });
+  }
+  if (typeof manager.reportTable.exitEditMode === 'function') {
+    await manager.reportTable.exitEditMode('cancel');
+  }
+  if (!nextRow && clearsOpen && typeof manager.newReport === 'function') manager.newReport();
+  toast.success('Row Deleted', { duration: 3000 });
 }

@@ -1,12 +1,14 @@
 /**
  * Report Manager
  *
- * Shell for the definition file. The page is 96 CSS pixels per inch.
- * A band body uses its stored height. The label strip is chrome.
- * The section grid is an SVG pattern on that body. Rulers sit on
- * the top and left of the sheet. The mouse line is the crosshair.
- * `--reports-scale` sizes the page, the grid, and the rulers
- * together. 1 is 96 CSS pixels per inch.
+ * Shell for the definition file. One inch is 96 CSS pixels.
+ * The editor is a stack of bands at the content width. A band
+ * body uses its stored height. The label strip is chrome and
+ * sits above that measure. The section grid is an SVG pattern
+ * on the body. The first band carries the top ruler. Each band
+ * carries a left ruler that starts at 0. The mouse line is the
+ * crosshair. `--reports-scale` sizes the stack, the grid, and
+ * the rulers together. 1 is 96 CSS pixels per inch.
  */
 
 @import url('../../core/manager-panels.css');
@@ -39,14 +41,66 @@
   min-width: 0;
 }
 
+.reports-right-panel > .lithium-toolbar {
+  margin-bottom: 0;
+}
+
+.reports-right-panel > .lithium-toolbar + .lithium-toolbar {
+  margin-top: 1px;
+}
+
+.reports-manager[data-editing='false'] .reports-band-edge,
+.reports-manager[data-editing='false'] .reports-item,
+.reports-manager[data-editing='false'] .reports-item-corner {
+  cursor: default;
+}
+
+.reports-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  box-sizing: border-box;
+  width: 144px;
+  height: 19.2px;
+  padding: 0 2px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 19.2px;
+  color: #2a2a2a;
+  white-space: nowrap;
+  pointer-events: none;
+  background-color: #fff;
+  border: 1px solid var(--accent-info);
+}
+
 .reports-view-controls {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
 }
 
-.reports-category-btn[aria-pressed='true'] {
+.reports-category-btn[aria-pressed='true'],
+.reports-grid-btn[aria-pressed='true'],
+.reports-snap-btn[aria-pressed='true'] {
   background-color: var(--accent-focus);
+  color: var(--text-focus);
+}
+
+.reports-category-btn[aria-pressed='true']:hover,
+.reports-grid-btn[aria-pressed='true']:hover,
+.reports-snap-btn[aria-pressed='true']:hover {
+  background-color: var(--accent-success-hover, #4caf50);
+}
+
+.reports-toolbar-gap {
+  flex: 0 0 var(--space-2);
+  height: 24px;
+  pointer-events: none;
+  background-color: var(--accent-alt-primary);
+}
+
+.reports-stage.reports-grid-off .reports-band-grid {
+  display: none;
 }
 
 .reports-pages {
@@ -82,7 +136,8 @@
 }
 
 .reports-meta-field input,
-.reports-meta-field textarea {
+.reports-meta-field textarea,
+.reports-meta-field select {
   width: 100%;
   padding: var(--space-2);
   font: inherit;
@@ -95,6 +150,27 @@
 .reports-meta-field textarea {
   min-height: 6rem;
   resize: vertical;
+}
+
+.reports-revisions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 36rem;
+  padding: var(--space-4);
+}
+
+.reports-revisions-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.reports-revisions-status,
+.reports-revisions-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .reports-json-wrap {
@@ -149,16 +225,16 @@
 }
 
 .reports-canvas-fitted {
-  width: calc((var(--reports-ruler-size) + var(--reports-page-width)) * var(--reports-scale, 1));
-  height: calc((var(--reports-ruler-size) + var(--reports-page-height)) * var(--reports-scale, 1));
+  width: calc((var(--reports-ruler-size) + var(--reports-content-width)) * var(--reports-scale, 1));
+  height: calc(var(--reports-stack-height) * var(--reports-scale, 1));
 }
 
 .reports-canvas-fitted > .reports-sheet {
   position: absolute;
   top: 0;
   left: 0;
-  width: calc(var(--reports-ruler-size) + var(--reports-page-width));
-  height: calc(var(--reports-ruler-size) + var(--reports-page-height));
+  width: calc(var(--reports-ruler-size) + var(--reports-content-width));
+  height: var(--reports-stack-height);
   transform: scale(var(--reports-scale, 1));
   transform-origin: top left;
 }
@@ -181,10 +257,8 @@
   --reports-ruler-size: 28px;
 
   position: relative;
-  display: grid;
   flex-shrink: 0;
-  grid-template-columns: var(--reports-ruler-size) var(--reports-page-width);
-  grid-template-rows: var(--reports-ruler-size) var(--reports-page-height);
+  box-shadow: var(--shadow-md);
 }
 
 .reports-ruler-corner,
@@ -197,8 +271,6 @@
 
 .reports-ruler-corner {
   display: flex;
-  grid-column: 1;
-  grid-row: 1;
   align-items: center;
   justify-content: center;
   width: var(--reports-ruler-size);
@@ -251,18 +323,14 @@
 }
 
 .reports-ruler-top {
-  grid-column: 2;
-  grid-row: 1;
-  width: var(--reports-page-width);
+  width: var(--reports-content-width);
   height: var(--reports-ruler-size);
   border-bottom: var(--border-width) solid #c8c8c8;
 }
 
 .reports-ruler-left {
-  grid-column: 1;
-  grid-row: 2;
   width: var(--reports-ruler-size);
-  height: var(--reports-page-height);
+  height: var(--reports-band-height);
   border-right: var(--border-width) solid #c8c8c8;
 }
 
@@ -287,46 +355,95 @@
 
 .reports-page {
   position: relative;
-  grid-column: 2;
-  grid-row: 2;
-  box-sizing: border-box;
-  width: var(--reports-page-width);
-  height: var(--reports-page-height);
-  background-color: #fff;
-  box-shadow: var(--shadow-md);
-}
-
-.reports-margin-guide {
-  position: absolute;
-  z-index: 1;
-  box-sizing: border-box;
-  left: var(--reports-margin-left);
-  right: var(--reports-margin-right);
-  top: var(--reports-margin-top);
-  bottom: var(--reports-margin-bottom);
-  border: var(--border-width) dashed #6a6a6a;
-  pointer-events: none;
+  width: 100%;
 }
 
 .reports-bands {
-  position: absolute;
-  z-index: 0;
-  left: var(--reports-margin-left);
-  top: var(--reports-margin-top);
-  right: var(--reports-margin-right);
+  display: flex;
+  flex-direction: column;
+}
+
+.reports-band {
+  display: flex;
+  flex-direction: column;
+  width: calc(var(--reports-ruler-size, 28px) + var(--reports-content-width));
+}
+
+.reports-band-headed {
+  display: grid;
+  grid-template-columns: var(--reports-ruler-size) minmax(0, var(--reports-content-width));
+}
+
+.reports-band-headed > .reports-band-ruler-top,
+.reports-band-headed > .reports-band-measure,
+.reports-band-headed > .reports-band-note {
+  grid-column: 1 / -1;
+}
+
+.reports-band-snapping {
+  position: relative;
+  z-index: 2;
+}
+
+.reports-band-plain {
+  width: var(--reports-content-width);
 }
 
 .reports-band-strip {
   display: flex;
+  box-sizing: border-box;
   gap: var(--space-2);
-  align-items: baseline;
+  align-items: center;
+  height: var(--reports-band-strip, 22px);
   padding: 0 var(--space-2);
   background-color: #ececec;
   color: #2a2a2a;
   font-size: var(--font-size-sm);
-  line-height: 1.4;
+  line-height: var(--reports-band-strip, 22px);
   user-select: none;
   border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-band-ruler-pad {
+  box-sizing: border-box;
+  height: var(--reports-band-strip, 22px);
+  background-color: #ececec;
+  border-right: var(--border-width) solid #c8c8c8;
+  border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-snap-line {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 4;
+  height: 0;
+  pointer-events: none;
+  border-top: 1px dashed rgb(37 99 235 / 35%);
+}
+
+.reports-snap-preview {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  pointer-events: none;
+  background-color: rgb(37 99 235 / 12%);
+  border: 1px dashed rgb(37 99 235 / 45%);
+}
+
+.reports-band-ruler-top {
+  display: grid;
+  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width);
+}
+
+.reports-band-measure {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width);
+}
+
+.reports-band-plain .reports-band-measure {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .reports-band-id,
@@ -342,6 +459,7 @@
 .reports-band-body {
   position: relative;
   box-sizing: border-box;
+  width: var(--reports-content-width);
   height: var(--reports-band-height);
   background-color: var(--reports-grid-background, #fff);
   border-bottom: var(--border-width) solid #c8c8c8;

@@ -137,19 +137,41 @@ describe('ruler paint', () => {
     const sheet = host.querySelector('#reports-sheet');
     expect(sheet.querySelector('.reports-ruler-corner').textContent).toBe('in');
     const top = sheet.querySelector('.reports-ruler-top');
-    const left = sheet.querySelector('.reports-ruler-left');
+    const lefts = [...sheet.querySelectorAll('.reports-ruler-left')];
+    expect(sheet.querySelectorAll('.reports-ruler-top')).toHaveLength(1);
+    expect(lefts).toHaveLength(3);
+    expect(top.getAttribute('width')).toBe(String(toCssPx('8 in')));
     expect(top.getAttribute('height')).toBe(String(RULER_SIZE));
-    expect(left.getAttribute('width')).toBe(String(RULER_SIZE));
+    expect(top.getAttribute('preserveAspectRatio')).toBe('none');
+    expect(lefts[0].getAttribute('width')).toBe(String(RULER_SIZE));
+    expect(lefts[0].getAttribute('preserveAspectRatio')).toBe('none');
+    expect(lefts[0].getAttribute('height')).toBe(String(toCssPx('0.4 in')));
+    expect(lefts[1].getAttribute('height')).toBe(String(toCssPx('0.25 in')));
+    expect(lefts[2].getAttribute('height')).toBe(String(toCssPx('0.4 in')));
+    for (const left of lefts) {
+      const origin = [...left.querySelectorAll('line')].find((node) => node.getAttribute('y1') === '0');
+      expect(origin.getAttribute('data-rank')).toBe('major');
+    }
     const inch = labeled(top, '1');
     expect(inch.getAttribute('x')).toBe('94');
     expect(inch.getAttribute('y')).toBe('7');
     expect(inch.getAttribute('text-anchor')).toBe('end');
     expect(inch.getAttribute('dominant-baseline')).toBe('text-before-edge');
-    const down = labeled(left, '1');
-    expect(down.getAttribute('x')).toBe('7');
-    expect(down.getAttribute('y')).toBe('94');
-    expect(down.getAttribute('text-anchor')).toBe('start');
     expect(labeled(top, '0')).toBeUndefined();
+    expect(labeled(lefts[1], '1')).toBeUndefined();
+    const first = sheet.querySelector('[data-band-id="ph"]');
+    const names = [...first.children].map((node) => node.className);
+    expect(names[0]).toContain('reports-band-ruler-top');
+    expect(names[1]).toContain('reports-band-ruler-pad');
+    expect(names[2]).toContain('reports-band-strip');
+    expect(names[3]).toContain('reports-band-measure');
+    expect(first.classList.contains('reports-band-headed')).toBe(true);
+    expect(first.querySelector('.reports-band-measure .reports-ruler-left')).not.toBeNull();
+    const detail = sheet.querySelector('[data-band-id="detail"]');
+    expect(detail.querySelector('.reports-band-ruler-top')).toBeNull();
+    expect(detail.querySelector('.reports-band-ruler-pad')).toBeNull();
+    expect(detail.classList.contains('reports-band-headed')).toBe(false);
+    expect([...detail.children].map((node) => node.className)[0]).toContain('reports-band-strip');
     expect(sheet.querySelector('.reports-ruler-corner').tagName).toBe('BUTTON');
     expect(sheet.querySelector('.reports-ruler-corner').getAttribute('aria-label'))
       .toBe('Show ruler in centimetres');
@@ -175,28 +197,38 @@ describe('ruler paint', () => {
     document.body.append(host);
     paintReportPage(host, createBlank());
     const page = host.querySelector('#reports-page');
-    page.getBoundingClientRect = () => ({
+    const sheet = host.querySelector('#reports-sheet');
+    const body = sheet.querySelector('[data-band-id="detail"] .reports-band-body');
+    sheet.getBoundingClientRect = () => ({
       left: 8,
       top: 12,
-      width: 816,
-      height: 1056,
-      right: 824,
-      bottom: 1068,
+      width: 796,
+      height: 220,
+      right: 804,
+      bottom: 232,
     });
-    const sheet = host.querySelector('#reports-sheet');
+    body.getBoundingClientRect = () => ({
+      left: 8 + RULER_SIZE,
+      top: 80,
+      width: 768,
+      height: 24,
+      right: 804,
+      bottom: 104,
+    });
     const vertical = sheet.querySelector('.reports-cursor-x');
-    const horizontal = sheet.querySelector('.reports-cursor-y');
+    const horizontal = body.parentElement.querySelector('.reports-cursor-y');
     const cursor = bindReportCursor(page);
-    page.dispatchEvent(mouse('mousemove', 8 + 96, 12 + 40));
+    body.dispatchEvent(mouse('mousemove', 8 + RULER_SIZE + 96, 90));
     expect(vertical.hidden).toBe(false);
     expect(vertical.style.left).toBe(`${RULER_SIZE + 96}px`);
-    expect(horizontal.style.top).toBe(`${RULER_SIZE + 40}px`);
-    page.dispatchEvent(mouse('mousemove', 8 + 900, 12));
+    expect(horizontal.hidden).toBe(false);
+    expect(horizontal.style.top).toBe('10px');
+    page.dispatchEvent(mouse('mousemove', 8 + RULER_SIZE + 900, 90));
     expect(vertical.hidden).toBe(true);
     page.dispatchEvent(mouse('mouseleave', 0, 0));
     expect(horizontal.hidden).toBe(true);
     cursor.disconnect();
-    page.dispatchEvent(mouse('mousemove', 8 + 96, 12 + 40));
+    body.dispatchEvent(mouse('mousemove', 8 + RULER_SIZE + 96, 90));
     expect(vertical.hidden).toBe(true);
     expect(horizontal.hidden).toBe(true);
   });
@@ -209,19 +241,29 @@ describe('ruler paint', () => {
     expect(host.style.getPropertyValue('--reports-scale')).toBe('0.5');
     expect(host.classList.contains('reports-canvas-fitted')).toBe(true);
     const page = host.querySelector('#reports-page');
-    expect(page.style.getPropertyValue('--reports-page-width')).toBe('816px');
-    page.getBoundingClientRect = () => ({
+    const sheet = host.querySelector('#reports-sheet');
+    const body = sheet.querySelector('[data-band-id="ph"] .reports-band-body');
+    expect(page.style.getPropertyValue('--reports-content-width')).toBe('768px');
+    sheet.getBoundingClientRect = () => ({
       left: 0,
       top: 0,
-      width: 408,
-      height: 528,
-      right: 408,
-      bottom: 528,
+      width: 398,
+      height: 200,
+      right: 398,
+      bottom: 200,
+    });
+    body.getBoundingClientRect = () => ({
+      left: 14,
+      top: 25,
+      width: 384,
+      height: 19.2,
+      right: 398,
+      bottom: 44.2,
     });
     const cursor = bindReportCursor(page);
-    page.dispatchEvent(mouse('mousemove', 48, 20));
+    body.dispatchEvent(mouse('mousemove', 62, 30));
     expect(host.querySelector('.reports-cursor-x').style.left).toBe(`${RULER_SIZE + 96}px`);
-    expect(host.querySelector('.reports-cursor-y').style.top).toBe(`${RULER_SIZE + 40}px`);
+    expect(body.parentElement.querySelector('.reports-cursor-y').style.top).toBe('10px');
     cursor.disconnect();
   });
 
@@ -235,6 +277,8 @@ describe('ruler paint', () => {
     expect(frame.rulerError).toMatch(/Unknown unit "furlong"/);
     expect(host.querySelector('#reports-page')).not.toBeNull();
     expect(host.querySelector('.reports-ruler-top')).toBeNull();
+    expect(host.querySelector('.reports-band-ruler-pad')).toBeNull();
+    expect(host.querySelector('.reports-band-headed')).toBeNull();
     expect(host.textContent).toMatch(/Unknown unit "furlong"/);
     const sheet = document.createElement('div');
     sheet.className = 'reports-sheet';

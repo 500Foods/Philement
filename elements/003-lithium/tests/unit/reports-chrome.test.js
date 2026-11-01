@@ -2,13 +2,18 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { foldedRanges } from '@codemirror/language';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { authQuery } from '../../src/shared/conduit.js';
 import { toast } from '../../src/shared/toast.js';
 import { createBlank } from '../../src/managers/reports/model/document.js';
 import { definitionText } from '../../src/managers/reports/reports-file.js';
-import { reportJsonEdit, reportJsonText } from '../../src/managers/reports/reports-json.js';
+import { reportEditorContent, reportJsonEdit, reportJsonText } from '../../src/managers/reports/reports-json.js';
 import { reportListColtypes, reportListTableDef, reportListUnavailable } from '../../src/managers/reports/reports-table.js';
 import ReportsManager from '../../src/managers/reports/reports.js';
 import { resolveColumn } from '../../src/tables/lithium-table.js';
+
+vi.mock('../../src/shared/conduit.js', () => ({
+  authQuery: vi.fn(),
+}));
 
 vi.mock('../../src/tables/lithium-table-main.js', () => ({
   LithiumTable: class {
@@ -62,16 +67,22 @@ describe('report JSON text', () => {
   });
 });
 
-describe('report list without a query', () => {
-  it('names the reports columns and fails save, duplicate, and delete', () => {
+describe('report list columns', () => {
+  it('names the reports columns and refuses duplicate and delete', () => {
     const def = reportListTableDef();
     expect(def.table).toBe('reports');
     expect(def.columns.collection).toBeUndefined();
+    expect(def.columns.rev_id).toMatchObject({ visible: true, editable: false });
     expect(def.columns.name).toMatchObject({ visible: true, editable: true });
+    expect(def.columns.category).toMatchObject({ visible: true, editable: true });
     expect(def.columns.summary).toMatchObject({ visible: true, editable: true });
+    expect(Object.keys(def.columns).slice(0, 5)).toEqual([
+      'report_id', 'rev_id', 'name', 'category', 'summary',
+    ]);
     expect(def.columns.report.visible).toBe(false);
     const coltypes = reportListColtypes();
     expect(resolveColumn('name', def.columns.name, coltypes).editor).toBe('input');
+    expect(resolveColumn('category', def.columns.category, coltypes).editor).toBe('input');
     expect(resolveColumn('summary', def.columns.summary, coltypes).editor).toBe('textarea');
     expect(resolveColumn('report_id', def.columns.report_id, coltypes).editor).toBeUndefined();
     expect(JSON.stringify(def)).not.toMatch(/queryRef|query_ref/i);
@@ -79,10 +90,9 @@ describe('report list without a query', () => {
     const missing = reportListUnavailable('delete');
     expect(missing.message).toBe('No queryRef configured for delete');
     expect(missing.serverError.error).toBe('Delete is not available');
-    expect(missing.serverError.message).toBe('Delete is not available until the reports table query is applied.');
-    expect(reportListUnavailable('save').serverError.error).toBe('Save is not available');
-    expect(reportListUnavailable('save').serverError.message).toMatch(/^Save is not available until/);
+    expect(missing.serverError.message).toBe('Delete is not available. A saved report is kept as revisions.');
     expect(reportListUnavailable('duplicate').message).toMatch(/duplicate/);
+    expect(reportListUnavailable('duplicate').serverError.message).toMatch(/no duplicate query/);
   });
 });
 
@@ -94,6 +104,7 @@ describe('Report Manager chrome', () => {
     localStorage.removeItem('lithium_reports_left_collapsed');
     localStorage.removeItem('lithium_reports_left_width');
     toast.dismissAll();
+    authQuery.mockReset();
     const toastBox = document.getElementById('toast-container');
     if (toastBox) toastBox.innerHTML = '';
     vi.stubGlobal('fetch', vi.fn(async (url) => {
@@ -119,6 +130,7 @@ describe('Report Manager chrome', () => {
 
   async function open() {
     await manager.init();
+    manager.setRecordEditing(true);
   }
 
   function replaceJson(text) {
@@ -161,7 +173,16 @@ describe('Report Manager chrome', () => {
     expect(items.contains(manager.elements.cloneBtn)).toBe(true);
     expect(items.contains(manager.elements.deleteBtn)).toBe(true);
     const itemButtons = [...items.querySelectorAll('button')].map((button) => button.id);
+    expect(itemButtons.indexOf('reports-grid-btn')).toBeLessThan(itemButtons.indexOf('reports-snap-btn'));
+    expect(itemButtons.indexOf('reports-snap-btn')).toBeLessThan(itemButtons.indexOf('reports-clone-btn'));
     expect(itemButtons.indexOf('reports-clone-btn')).toBeLessThan(itemButtons.indexOf('reports-delete-btn'));
+    expect(manager.elements.snapBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(manager.elements.snapBtn.classList.contains('active')).toBe(true);
+    expect(manager.elements.snapBtn.disabled).toBe(false);
+    expect(manager.elements.gridBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(manager.elements.gridBtn.classList.contains('active')).toBe(true);
+    expect(items.querySelector('.reports-toolbar-gap')).not.toBeNull();
+    expect(manager.elements.snapBtn.nextElementSibling.classList.contains('reports-toolbar-gap')).toBe(true);
     expect(manager.elements.editorTab.classList.contains('active')).toBe(true);
     expect(container.querySelector('#reports-page-report').hidden).toBe(true);
     expect(container.querySelector('#reports-new-btn')).toBeNull();
@@ -270,6 +291,35 @@ describe('Report Manager chrome', () => {
     expect(reportJsonText(manager.doc)).toBe(manager._json.text());
   });
 
+  it('keeps JSON read-only until the row is edited, then dirties and reloads the editor', async () => {
+    await manager.init();
+    const before = definitionText(manager.doc);
+    manager.elements.jsonTab.click();
+    expect(manager._json.view.state.readOnly).toBe(true);
+    replaceJson(manager._json.text().replace('"name": "Report"', '"name": "Locked"'));
+    manager.elements.editorTab.click();
+    expect(definitionText(manager.doc)).toBe(before);
+    expect(manager.elements.stage.textContent).not.toContain('Locked');
+
+    manager.setRecordEditing(true);
+    manager.editHelper.activeEditingTable = manager.reportTable;
+    manager.editHelper._takeSnapshot();
+    manager.elements.jsonTab.click();
+    expect(manager._json.view.state.readOnly).toBe(false);
+    expect(manager.editHelper.isAnythingDirty()).toBe(false);
+    const edited = manager._json.text().replace('"name": "Report"', '"name": "From JSON"');
+    replaceJson(edited);
+    expect(reportEditorContent(manager.doc, 'json', edited)).not.toBe(before);
+    expect(manager.editHelper.isAnythingDirty()).toBe(true);
+    manager.elements.editorTab.click();
+    expect(manager.doc.name).toBe('From JSON');
+    expect(manager.doc.history.undo).toHaveLength(1);
+    expect(manager.elements.stage.textContent).toContain('From JSON');
+    manager.elements.undoBtn.click();
+    expect(manager.doc.name).toBe('Report');
+    expect(manager.elements.stage.textContent).not.toContain('From JSON');
+  });
+
   it('toasts a bad JSON buffer once and leaves the definition', async () => {
     await open();
     manager.elements.textBtn.click();
@@ -293,16 +343,21 @@ describe('Report Manager chrome', () => {
     await open();
     const table = manager.reportTable;
     expect(table.options.tableDef.table).toBe('reports');
-    expect(table.options.queryRefs).toBeUndefined();
+    expect(table.options.queryRef).toBe(165);
+    expect(table.options.searchQueryRef).toBe(166);
+    expect(table.options.detailQueryRef).toBe(167);
+    expect(table.options.insertQueryRef).toBe(168);
+    expect(table.options.deleteQueryRef).toBe(170);
     expect(table.options.tablePath).toBe('reports/report-manager');
     const kept = table.currentData.map((row) => row.report_id);
     await table.handleDelete();
     expect(table.currentData.map((row) => row.report_id)).toEqual(kept);
-    expect(document.body.textContent).toContain('Delete is not available');
+    expect(document.body.textContent).toContain('No Row Selected');
     expect(document.body.textContent).not.toContain('Row Deleted');
+    expect(authQuery).not.toHaveBeenCalled();
 
     await expect(table.options.onExecuteSave()).rejects.toMatchObject({
-      message: 'No queryRef configured for save',
+      serverError: { error: 'Save is not available' },
     });
     await expect(table.options.onDuplicate()).rejects.toThrow('No queryRef configured for duplicate');
 
@@ -316,5 +371,85 @@ describe('Report Manager chrome', () => {
     expect(manager.doc.name).toBe('Orders');
     table.options.onRowSelected({ report: { format: 1, name: 'Listed' } });
     expect(manager.doc.name).toBe('Listed');
+  });
+
+  it('deletes the selected report after confirmation and keeps it when the call fails', async () => {
+    await open();
+    const table = manager.reportTable;
+    const kept = {
+      getData: () => ({ report_id: 4, rev_id: 2, name: 'Kept' }),
+      delete: vi.fn(),
+    };
+    const next = {
+      getData: () => ({ report_id: 1, name: 'Other' }),
+      select: vi.fn(),
+    };
+    table.table = {
+      redraw() {},
+      getSelectedRows: () => [kept],
+      getRows: () => [kept, next],
+    };
+    table.exitEditMode = vi.fn(async () => {});
+    manager._openReportId = 4;
+    manager.app = { api: { name: 'api' } };
+
+    const cancelled = table.handleDelete();
+    await vi.waitFor(() => {
+      expect(document.querySelector('.lithium-confirm')).not.toBeNull();
+    });
+    expect(document.body.textContent).toContain('Every revision');
+    document.querySelector('.lithium-confirm .btn-secondary').click();
+    await cancelled;
+    expect(authQuery).not.toHaveBeenCalled();
+    expect(kept.delete).not.toHaveBeenCalled();
+
+    const failure = new Error('missing');
+    failure.serverError = { error: 'Query failed', message: 'relation missing' };
+    authQuery.mockRejectedValueOnce(failure);
+    const failed = table.handleDelete();
+    await vi.waitFor(() => {
+      expect(document.querySelector('.lithium-confirm .btn-danger')).not.toBeNull();
+    });
+    document.querySelector('.lithium-confirm .btn-danger').click();
+    await failed;
+    expect(kept.delete).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('relation missing');
+
+    authQuery.mockResolvedValueOnce([]);
+    const removed = table.handleDelete();
+    await vi.waitFor(() => {
+      expect(document.querySelector('.lithium-confirm .btn-danger')).not.toBeNull();
+    });
+    document.querySelector('.lithium-confirm .btn-danger').click();
+    await removed;
+    expect(authQuery).toHaveBeenLastCalledWith(manager.app.api, 170, {
+      INTEGER: { REPORT_ID: 4 },
+    });
+    expect(kept.delete).toHaveBeenCalledTimes(1);
+    expect(next.select).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).toContain('Row Deleted');
+
+    const draft = {
+      getData: () => ({ report_id: 0, name: 'Draft' }),
+      delete: vi.fn(),
+    };
+    table.table = {
+      redraw() {},
+      getSelectedRows: () => [draft],
+      getRows: () => [draft],
+    };
+    manager._openReportId = 0;
+    manager.doc = { ...manager.doc, name: 'Draft body' };
+    authQuery.mockClear();
+    const local = table.handleDelete();
+    await vi.waitFor(() => {
+      expect(document.querySelector('.lithium-confirm .btn-danger')).not.toBeNull();
+    });
+    document.querySelector('.lithium-confirm .btn-danger').click();
+    await local;
+    expect(authQuery).not.toHaveBeenCalled();
+    expect(draft.delete).toHaveBeenCalledTimes(1);
+    expect(manager.doc.name).toBe('Report');
+    expect(manager._openReportId).toBe(0);
   });
 });

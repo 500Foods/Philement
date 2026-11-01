@@ -1228,7 +1228,7 @@ Phase 10 Status complete. Andrew named this sidequest Phase
        and Clear. The third toolbar, Editor only, is Text, then
        Clone, then Delete. The page-size control and the
        property panel are absent.
-- [ ] 10-UI.4 Browser check on
+- [x] 10-UI.4 Browser check on
        `https://lithium.500courses.com`. Collapse the list,
        place text, clone it, open JSON, and confirm a bad
        buffer leaves the report. On Report, edit the name.
@@ -1258,10 +1258,10 @@ actions, then Andrew's check on
 
 ### Status
 
-**in progress — 2026-10-31.** Work items 10-UI.1 through
-10-UI.3 and 10-UI.5 through 10-UI.8 are checked. Work item
-10-UI.4 is waiting on Andrew. `npm test` exited 0 (71 files,
-1319 passed, 12 skipped). The skipped cases are the auth
+**complete — 2026-10-31.** Andrew said the changes are
+working. Work items 10-UI.1 through 10-UI.8 are checked.
+`npm test` later in the same stretch exited 0 (73 files,
+1335 passed, 12 skipped). The skipped cases are the auth
 integration file. `npm run lint` and `npm run lint:css`
 exited 0. `npx eslint` on `src/managers/reports` and the
 report unit tests exited 0. `npm run templates:copy` copied
@@ -1298,6 +1298,8 @@ report unit tests exited 0. `npm run templates:copy` copied
   now carry `input` and `textarea`. The wheel requires Ctrl
   or Cmd. Save still fails without a QueryRef. Overlapping
   clones stay on the same box until Andrew picks a mark.
+  He closed the phase on 2026-10-31 without picking one.
+  Save, delete, and the Revisions page landed in Phase 18.
 
 ### Lessons learned
 
@@ -1328,19 +1330,13 @@ report unit tests exited 0. `npm run templates:copy` copied
 
 ### Handoff
 
-Phase 10-UI is in progress. Andrew checks
-`https://lithium.500courses.com`. Collapse the list and the
-Editor page is today's canvas. Add Text, clone it, and
-confirm the copy keeps the box and takes a new id. Open
-JSON: the buffer has no `history`, and the folds start
-collapsed. Change the name and leave the editor. Undo
-returns the previous name. Type `{` and leave the page.
-The toast appears and the report stays. Save, duplicate,
-and delete on the list fail visibly. Add a row and type
-the name. Open Report and edit the name. Hold Ctrl or Cmd
-and roll the wheel over the page. A bare wheel scrolls.
-There is no page-size control and no property panel. Do
-not mark this phase complete until he reports that check.
-Do not start Phase 11. It is the lookup 053 packet in
+Phase 10-UI is complete. Andrew said the changes are
+working on `https://lithium.500courses.com` on 2026-10-31.
+There is no page-size control and no property panel.
+Identical overlapping clones still share one box. He did
+not pick a mark. Phase 11 has not started. It is the
+lookup 053 packet in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
+Do not start it until he names it. Phase 18 is complete
+in that same file.
 

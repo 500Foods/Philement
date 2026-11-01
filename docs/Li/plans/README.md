@@ -30,6 +30,14 @@ duplicated here:
 
 [`/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md`](/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md)
 
+### [Record marks](/docs/Li/plans/RECORD_MARKS.md)
+
+Flags, notes, unseen badges, and watches for Lithium grids.
+Query Manager is the proof, then both inboxes, then a live
+badge, then Scripting, then the other grids. Proposed
+2026-10-28. Not approved. Phase 1 has not started. Tickets
+and Web Push are out of this plan.
+
 ### [Reporting](/docs/Li/plans/REPORTING_PLAN.md)
 
 Report writer. Lithium manager 24 designs a JSON definition. Helium

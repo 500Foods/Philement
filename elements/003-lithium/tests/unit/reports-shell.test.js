@@ -7,6 +7,7 @@ import { pageFrame } from '../../src/managers/reports/canvas.js';
 import { createBlank } from '../../src/managers/reports/model/document.js';
 import { convertLength, toCssPx } from '../../src/managers/reports/model/units.js';
 import { RULER_SIZE } from '../../src/managers/reports/rulers.js';
+import { snapBandHeight } from '../../src/managers/reports/snap.js';
 import {
   fitWidthScale,
   formatViewScale,
@@ -193,6 +194,7 @@ describe('Report Manager shell', () => {
 
   async function open() {
     await manager.init();
+    manager.setRecordEditing(true);
     const saved = [];
     manager.saveFile = (filename, json) => {
       saved.push({ filename, json });
@@ -300,27 +302,27 @@ describe('Report Manager shell', () => {
     expect(manager.elements.stage.querySelector('img')).toBeNull();
   });
 
-  it('draws Letter larger than a 4 in page and insets the fixture margins', async () => {
+  it('draws Letter wider than a 4 in page and paints the content width', async () => {
     await open();
     const letter = pageFrame(createBlank());
     expect(letter).toMatchObject({
       omitted: false,
       widthPx: 816,
       heightPx: 1056,
+      contentWidthPx: 768,
       leftPx: 24,
       rightPx: 24,
       topPx: 24,
       bottomPx: 24,
     });
-    expect(pageVar('--reports-page-width')).toBe('816px');
-    expect(pageVar('--reports-page-height')).toBe('1056px');
-    expect(pageVar('--reports-margin-left')).toBe('24px');
-    expect(pageVar('--reports-margin-right')).toBe('24px');
-    expect(pageVar('--reports-margin-top')).toBe('24px');
-    expect(pageVar('--reports-margin-bottom')).toBe('24px');
-    const guide = pageEl().querySelector('.reports-margin-guide');
-    expect(guide).not.toBeNull();
-    expect(guide.getAttribute('style')).toBeNull();
+    expect(pageVar('--reports-content-width')).toBe('768px');
+    expect(pageEl().querySelector('.reports-margin-guide')).toBeNull();
+    expect(pageEl().querySelectorAll('.reports-ruler-top')).toHaveLength(1);
+    expect(pageEl().querySelectorAll('.reports-ruler-left')).toHaveLength(3);
+    expect(pageEl().querySelector('[data-band-id="ph"] .reports-ruler-left').getAttribute('height'))
+      .toBe(String(toCssPx('0.4 in')));
+    expect(pageEl().querySelector('[data-band-id="detail"] .reports-ruler-left').getAttribute('height'))
+      .toBe(String(toCssPx('0.25 in')));
 
     const card = {
       format: 1,
@@ -338,15 +340,12 @@ describe('Report Manager shell', () => {
       },
     };
     manager.loadReport(card);
-    expect(pageVar('--reports-page-width')).toBe('384px');
-    expect(pageVar('--reports-page-height')).toBe('384px');
+    expect(pageVar('--reports-content-width')).toBe('336px');
+    expect(letter.contentWidthPx).toBeGreaterThan(336);
     expect(letter.widthPx).toBeGreaterThan(384);
-    expect(letter.heightPx).toBeGreaterThan(384);
 
     manager._importText(loadFixture('detail.definition.json'));
-    expect(pageVar('--reports-page-width')).toBe('816px');
-    expect(pageVar('--reports-page-height')).toBe('1056px');
-    expect(pageVar('--reports-margin-left')).toBe('24px');
+    expect(pageVar('--reports-content-width')).toBe('768px');
     expect(manager.elements.metaName.value).toBe('Orders');
   });
 
@@ -357,7 +356,7 @@ describe('Report Manager shell', () => {
     expect(bandBody('detail').style.height).toBe('');
     expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
     expect(bandBody('ph').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.4 in')}px`);
-    expect(pageEl().querySelector('.reports-margin-guide').getAttribute('style')).toBeNull();
+    expect(pageEl().querySelector('.reports-margin-guide')).toBeNull();
     expect(pageEl().querySelector('.reports-band-edge').getAttribute('style')).toBeNull();
     expect(manager.elements.undoBtn.disabled).toBe(true);
 
@@ -374,6 +373,10 @@ describe('Report Manager shell', () => {
     handle.dispatchEvent(pointer('pointerdown', 100));
     document.dispatchEvent(pointer('pointermove', 196));
     expect(bandBody('detail').style.height).toBe(`${dragBandHeight(toCssPx('0.25 in'), 96)}px`);
+    const growing = pageEl().querySelector('[data-band-id="detail"] .reports-ruler-left');
+    const inch = [...growing.querySelectorAll('text')].find((node) => node.textContent === '1');
+    expect(inch.getAttribute('y')).toBe('94');
+    expect([...growing.querySelectorAll('line')].some((node) => node.getAttribute('y1') === '0')).toBe(true);
     document.dispatchEvent(pointer('pointerup', 196));
 
     const detail = () => manager.doc.bands.find((band) => band.id === 'detail');
@@ -456,7 +459,7 @@ describe('Report Manager shell', () => {
       bands: [{ id: 'detail', typeKey: 15, height: '10 mm', items: [] }],
     });
     const start = toCssPx('10 mm');
-    const preview = dragBandHeight(start, 96);
+    const preview = snapBandHeight(dragBandHeight(start, 96), toCssPx('0.125 in'), toCssPx('0.15 in'));
     dragBand('detail', 40, 40 + 96);
     const height = manager.doc.bands[0].height;
     expect(height).toBe(convertLength(`${preview} px`, 'mm'));
@@ -580,15 +583,15 @@ describe('Report Manager shell', () => {
     expect(inchTick).toBeTruthy();
     expect(inch.getAttribute('x')).toBe(String(toCssPx('1 in') - 2));
     expect(inch.getAttribute('y')).toBe('7');
-    pageEl().getBoundingClientRect = () => ({
-      left: 0,
-      top: 0,
-      width: 816,
-      height: 1056,
-      right: 816,
-      bottom: 1056,
+    const sheetBox = () => manager.elements.stage.querySelector('#reports-sheet');
+    const detailBody = () => sheetBox().querySelector('[data-band-id="detail"] .reports-band-body');
+    sheetBox().getBoundingClientRect = () => ({
+      left: 0, top: 0, width: 796, height: 220, right: 796, bottom: 220,
     });
-    pageEl().dispatchEvent(pointerAt('mousemove', 96, 24));
+    detailBody().getBoundingClientRect = () => ({
+      left: RULER_SIZE, top: 80, width: 768, height: 24, right: 796, bottom: 104,
+    });
+    detailBody().dispatchEvent(pointerAt('mousemove', RULER_SIZE + 96, 90));
     const vertical = sheet().querySelector('.reports-cursor-x');
     expect(vertical.hidden).toBe(false);
     expect(vertical.style.left).toBe(`${RULER_SIZE + 96}px`);
@@ -597,15 +600,15 @@ describe('Report Manager shell', () => {
 
     manager.loadReport(createBlank());
     const again = pageEl();
-    again.getBoundingClientRect = () => ({
-      left: 0,
-      top: 0,
-      width: 816,
-      height: 1056,
-      right: 816,
-      bottom: 1056,
+    const againSheet = again.closest('#reports-sheet');
+    const againBody = againSheet.querySelector('[data-band-id="detail"] .reports-band-body');
+    againSheet.getBoundingClientRect = () => ({
+      left: 0, top: 0, width: 796, height: 220, right: 796, bottom: 220,
     });
-    again.dispatchEvent(pointerAt('mousemove', 48, 48));
+    againBody.getBoundingClientRect = () => ({
+      left: RULER_SIZE, top: 80, width: 768, height: 24, right: 796, bottom: 104,
+    });
+    againBody.dispatchEvent(pointerAt('mousemove', RULER_SIZE + 48, 90));
     expect(sheet().querySelector('.reports-cursor-x').hidden).toBe(false);
     expect(sheet().querySelector('.reports-cursor-x').style.left).toBe(`${RULER_SIZE + 48}px`);
 
@@ -619,19 +622,14 @@ describe('Report Manager shell', () => {
   it('inverts the vertical ruler across the band edge that moved', async () => {
     await open();
     const page = pageEl();
-    const body = bandBody('detail');
-    page.getBoundingClientRect = () => ({
-      top: 100, left: 0, right: 816, bottom: 1156, width: 816, height: 1056,
-    });
-    body.getBoundingClientRect = () => ({
-      top: 280, left: 0, right: 100, bottom: 304, width: 100, height: 24,
-    });
     const handle = page.querySelector('[data-band-id="detail"] .reports-band-edge');
     handle.dispatchEvent(pointer('pointerdown', 400));
     document.dispatchEvent(pointer('pointermove', 496));
-    const bar = () => manager.elements.stage.querySelector('.reports-ruler-left .reports-ruler-span');
-    expect(bar().getAttribute('y')).toBe('204');
+    const bar = () => page.querySelector('[data-band-id="detail"] .reports-ruler-left .reports-ruler-span');
+    expect(bar().getAttribute('y')).toBe(String(toCssPx('0.25 in')));
     expect(bar().getAttribute('height')).toBe('96');
+    expect(page.querySelector('[data-band-id="detail"] .reports-ruler-left').style.height)
+      .toBe(`${toCssPx('0.25 in') + 96}px`);
     document.dispatchEvent(pointer('pointerup', 496));
     expect(bar().getAttribute('height')).toBe('0');
   });
@@ -814,27 +812,27 @@ describe('Report Manager shell', () => {
     const saved = await open();
     expect(viewScale()).toBe('1');
     expect(manager.elements.zoomLabel.textContent).toBe('100%');
-    expect(pageVar('--reports-page-width')).toBe('816px');
+    expect(pageVar('--reports-content-width')).toBe('768px');
 
     Object.defineProperty(manager.elements.stage, 'clientWidth', {
       configurable: true,
       get: () => 1000,
     });
     const pane = 1000 - panePadding();
-    const fitted = formatViewScale(fitWidthScale(pane, 816 + RULER_SIZE));
+    const fitted = formatViewScale(fitWidthScale(pane, 768 + RULER_SIZE));
     manager.elements.fitBtn.click();
     expect(viewScale()).toBe(fitted);
-    expect(fitted).toBe('1.18');
-    expect(pageVar('--reports-page-width')).toBe('816px');
+    expect(fitted).toBe('1.25');
+    expect(pageVar('--reports-content-width')).toBe('768px');
     const inch = [...manager.elements.stage.querySelectorAll('.reports-ruler-top line')]
       .find((node) => node.getAttribute('x1') === '96' && node.getAttribute('data-rank') === 'major');
     expect(inch).toBeTruthy();
-    expect(manager.elements.zoomLabel.textContent).toBe('118%');
+    expect(manager.elements.zoomLabel.textContent).toBe('125%');
 
     manager.elements.zoomInBtn.click();
     const zoomed = formatViewScale(stepViewScale(Number(fitted), 1));
     expect(viewScale()).toBe(zoomed);
-    expect(zoomed).toBe('1.23');
+    expect(zoomed).toBe('1.3');
     const corner = () => manager.elements.stage.querySelector('.reports-ruler-corner');
     corner().click();
     expect(corner().textContent).toBe('cm');
@@ -873,30 +871,30 @@ describe('Report Manager shell', () => {
     const ruler = manager.elements.stage.querySelector('.reports-ruler-top');
     const onRuler = wheel(-1, { ctrlKey: true });
     ruler.dispatchEvent(onRuler);
-    expect(onRuler.defaultPrevented).toBe(false);
-    expect(viewScale()).toBe('1.1');
+    expect(onRuler.defaultPrevented).toBe(true);
+    expect(viewScale()).toBe('1.15');
 
     const summary = manager.elements.stage.querySelector('.reports-summary');
     const aside = wheel(-1, { ctrlKey: true });
     summary.dispatchEvent(aside);
     expect(aside.defaultPrevented).toBe(false);
-    expect(viewScale()).toBe('1.1');
+    expect(viewScale()).toBe('1.15');
 
     const flat = wheel(0, { ctrlKey: true });
     pageEl().dispatchEvent(flat);
     expect(flat.defaultPrevented).toBe(false);
-    expect(viewScale()).toBe('1.1');
+    expect(viewScale()).toBe('1.15');
 
     const down = wheel(40, { ctrlKey: true });
     pageEl().querySelector('.reports-band').dispatchEvent(down);
     expect(down.defaultPrevented).toBe(true);
-    expect(viewScale()).toBe('1.05');
+    expect(viewScale()).toBe('1.1');
 
     manager.cleanup();
     const after = wheel(-1, { ctrlKey: true });
     pageEl().dispatchEvent(after);
     expect(after.defaultPrevented).toBe(false);
-    expect(viewScale()).toBe('1.05');
+    expect(viewScale()).toBe('1.1');
     manager.elements.exportBtn.click();
     expect(saved).toEqual([]);
   });
@@ -907,18 +905,22 @@ describe('Report Manager shell', () => {
     expect(viewScale()).toBe('0.5');
     const page = pageEl();
     const body = bandBody('detail');
-    page.getBoundingClientRect = () => ({
-      top: 0, left: 0, width: 408, height: 528, right: 408, bottom: 528,
+    const sheet = page.closest('#reports-sheet');
+    sheet.getBoundingClientRect = () => ({
+      top: 0, left: 0, width: 398, height: 200, right: 398, bottom: 200,
     });
     body.getBoundingClientRect = () => ({
-      top: 100, left: 0, right: 50, bottom: 112, width: 50, height: 12,
+      top: 40, left: 14, right: 398, bottom: 52, width: 384, height: 12,
     });
     const handle = page.querySelector('[data-band-id="detail"] .reports-band-edge');
     handle.dispatchEvent(pointer('pointerdown', 0));
-    document.dispatchEvent(pointer('pointermove', 48));
-    const bar = manager.elements.stage.querySelector('.reports-ruler-left .reports-ruler-span');
-    expect(bar.getAttribute('y')).toBe('224');
+    document.dispatchEvent(pointerAt('pointermove', 62, 48));
+    const bar = page.querySelector('[data-band-id="detail"] .reports-ruler-left .reports-ruler-span');
+    expect(bar.getAttribute('y')).toBe(String(toCssPx('0.25 in')));
     expect(bar.getAttribute('height')).toBe('96');
+    const cursor = body.parentElement.querySelector('.reports-cursor-y');
+    expect(cursor.hidden).toBe(false);
+    expect(cursor.style.top).toBe(`${(48 - 40) / 0.5}px`);
     expect(body.style.height).toBe(`${dragBandHeight(toCssPx('0.25 in'), 96)}px`);
     document.dispatchEvent(pointer('pointerup', 48));
   });

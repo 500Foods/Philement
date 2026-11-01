@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReportsManager from '../../src/managers/reports/reports.js';
+import { TEXT_DROP_KIND, textDropOrigin } from '../../src/managers/reports/reports-drop.js';
 import { dragItemBox, staticItemText } from '../../src/managers/reports/items.js';
+import { pageSpan } from '../../src/managers/reports/rulers.js';
 
 vi.mock('../../src/tables/lithium-table-main.js', () => ({
   LithiumTable: class {
@@ -104,6 +106,7 @@ describe('Report Manager static text', () => {
 
   async function open() {
     await manager.init();
+    manager.setRecordEditing(true);
     const saved = [];
     manager.saveFile = (filename, json) => {
       saved.push({ filename, json });
@@ -212,7 +215,7 @@ describe('Report Manager static text', () => {
     document.dispatchEvent(pointer('pointermove', 96, 0));
     document.dispatchEvent(pointer('pointerup', 96, 0));
     expect(detailItem().box.left).toBe('4.25 in');
-    expect(detailItem().box.top).toBe('0.025 in');
+    expect(detailItem().box.top).toBe('0 in');
     expect(detailItem().box.width).toBe('1.5 in');
     expect(bandEl('detail').style.getPropertyValue('--reports-band-height')).toBe('');
     expect(bandEl('detail').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
@@ -224,18 +227,18 @@ describe('Report Manager static text', () => {
     document.dispatchEvent(pointer('pointerup', 96, 0));
     expect(detailItem().box).toEqual({
       left: '4.25 in',
-      top: '0.025 in',
+      top: '0 in',
       width: '2.5 in',
-      height: '0.2 in',
+      height: '0.25 in',
     });
 
     textEl().dispatchEvent(pointer('pointerdown', 0, 0));
     document.dispatchEvent(pointer('pointermove', 1000, 80));
     document.dispatchEvent(pointer('pointerup', 1000, 80));
     expect(detailItem().box.left).toBe('5.5 in');
-    expect(detailItem().box.top).toBe('0.05 in');
+    expect(detailItem().box.top).toBe('0 in');
     expect(detailItem().box.width).toBe('2.5 in');
-    expect(detailItem().box.height).toBe('0.2 in');
+    expect(detailItem().box.height).toBe('0.25 in');
 
     manager.elements.deleteBtn.click();
     expect(manager.doc.bands.find((band) => band.id === 'detail').items).toEqual([]);
@@ -332,5 +335,106 @@ describe('Report Manager static text', () => {
     });
     expect(textEl().textContent).toBe('Text');
     expect(Object.hasOwn(manager.doc.bands[0].items[0], 'text')).toBe(false);
+  });
+
+  it('stays read-only until the record is being edited', async () => {
+    await open();
+    manager.setRecordEditing(false);
+    expect(manager.container.querySelector('.reports-manager').dataset.editing).toBe('false');
+    expect(manager.elements.textBtn.disabled).toBe(true);
+    expect(manager.elements.importBtn.disabled).toBe(true);
+    expect(manager.elements.exportBtn.disabled).toBe(false);
+    expect(manager.elements.zoomInBtn.disabled).toBe(false);
+    expect(manager.elements.metaName.disabled).toBe(true);
+    const before = JSON.stringify(manager.doc);
+    manager.elements.textBtn.click();
+    manager._addText();
+    manager.elements.metaName.value = 'Nope';
+    manager.elements.metaName.dispatchEvent(new CustomEvent('change'));
+    bandEl('detail').querySelector('.reports-band-edge')
+      .dispatchEvent(pointer('pointerdown', 0, 0));
+    document.dispatchEvent(pointer('pointermove', 0, 40));
+    document.dispatchEvent(pointer('pointerup', 0, 40));
+    expect(JSON.stringify(manager.doc)).toBe(before);
+
+    manager.setRecordEditing(true);
+    expect(manager.elements.textBtn.disabled).toBe(false);
+    expect(manager.elements.metaName.disabled).toBe(false);
+    manager.elements.textBtn.click();
+    expect(detailItem().text).toBe('Text');
+  });
+
+  it('drops a text rectangle on the band under the pointer', async () => {
+    await open();
+    const origin = textDropOrigin({ left: 100, top: 200 }, 244, 200, 1);
+    expect(origin.left).toBe(72);
+    expect(origin.top).toBeCloseTo(-9.6, 5);
+    const body = bandEl('detail').querySelector('.reports-band-body');
+    body.getBoundingClientRect = () => ({
+      left: 100, top: 200, width: 768, height: 24, right: 868, bottom: 224,
+    });
+    const transfer = {
+      setData: vi.fn(),
+      getData: (kind) => (kind === 'text/plain' ? TEXT_DROP_KIND : ''),
+      setDragImage: vi.fn(),
+      effectAllowed: '',
+      dropEffect: '',
+    };
+    const start = new CustomEvent('dragstart', { bubbles: true, cancelable: true });
+    Object.defineProperty(start, 'dataTransfer', { value: transfer });
+    manager.elements.textBtn.dispatchEvent(start);
+    expect(document.querySelector('.reports-drag-ghost')).not.toBeNull();
+    expect(document.querySelector('.reports-drag-ghost').textContent).toBe('Text');
+
+    const drop = new CustomEvent('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(drop, 'dataTransfer', { value: transfer });
+    Object.defineProperty(drop, 'clientX', { value: 244 });
+    Object.defineProperty(drop, 'clientY', { value: 200 });
+    body.dispatchEvent(drop);
+    expect(detailItem().box).toMatchObject({ left: '0.75 in', top: '0 in', width: '1.5 in', height: '0.2 in' });
+    expect(manager.doc.history.undo).toHaveLength(1);
+
+    manager.elements.textBtn.dispatchEvent(new CustomEvent('dragend', { bubbles: true }));
+    manager.elements.textBtn.click();
+    expect(manager.doc.bands.find((band) => band.id === 'detail').items).toHaveLength(1);
+    expect(document.querySelector('.reports-drag-ghost')).toBeNull();
+  });
+
+  it('highlights both rulers and keeps the crosshair moving while an item moves', async () => {
+    await open();
+    manager.elements.textBtn.click();
+    const node = textEl();
+    const page = pageEl();
+    const body = page.querySelector('[data-band-id="detail"] .reports-band-body');
+    const sheet = page.closest('.reports-sheet');
+    sheet.getBoundingClientRect = () => ({
+      top: 0, left: 0, width: 796, height: 220, right: 796, bottom: 220,
+    });
+    body.getBoundingClientRect = () => ({
+      top: 80, left: 28, width: 768, height: 24, right: 796, bottom: 104,
+    });
+    node.getBoundingClientRect = () => ({
+      top: 120, left: 100, width: 144, height: 19.2, right: 244, bottom: 139.2,
+    });
+    const span = pageSpan(
+      { left: 100, top: 120, width: 144, height: 19.2 },
+      { left: 28, top: 80 },
+      1,
+    );
+    expect(span).toEqual({ x0: 72, x1: 216, y0: 40, y1: 59.2 });
+    node.dispatchEvent(pointer('pointerdown', 100, 40));
+    document.dispatchEvent(pointer('pointermove', 110, 50));
+    const xBar = sheet.querySelector('.reports-ruler-top .reports-ruler-span');
+    const yBar = body.parentElement.querySelector('.reports-ruler-left .reports-ruler-span');
+    expect(xBar.getAttribute('x')).toBe('72');
+    expect(xBar.getAttribute('width')).toBe('144');
+    expect(yBar.getAttribute('y')).toBe('40');
+    expect(Number(yBar.getAttribute('height'))).toBeCloseTo(19.2, 5);
+    const cursor = sheet.querySelector('.reports-cursor-x');
+    expect(cursor.hidden).toBe(false);
+    expect(cursor.style.left).toBe('110px');
+    document.dispatchEvent(pointer('pointerup', 110, 50));
+    expect(xBar.getAttribute('width')).toBe('0');
+    expect(yBar.getAttribute('height')).toBe('0');
   });
 });

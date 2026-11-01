@@ -10,11 +10,99 @@ import { toast } from '../../shared/toast.js';
 import { dragBandHeight } from './bands.js';
 import { bandItemBounds, dragItemBox, itemBox } from './items.js';
 import { bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
-import { hideRulerSpan, showRulerSpan } from './rulers.js';
+import { hideRulerSpan, pageSpan, setRulerLength, showRulerSpan, trackReportCursor } from './rulers.js';
 import { readViewScale } from './scale.js';
+import { boxesNear, snapBandHeight, snapItemBox, snapSpacingPx } from './snap.js';
 import { toCssPx } from './model/units.js';
 
+function setToolbarToggle(button, on) {
+  if (!button) return;
+  button.setAttribute('aria-pressed', on ? 'true' : 'false');
+  button.classList.toggle('active', on);
+}
+
 export const reportPointerMethods = {
+  _bindSnap() {
+    const button = this.elements.snapBtn;
+    if (!button) return;
+    if (this._snap === undefined) this._snap = true;
+    setToolbarToggle(button, this._snap);
+    this._onSnap = () => {
+      this._snap = !this._snap;
+      setToolbarToggle(button, this._snap);
+      if (!this._snap) this._clearSnapPreview();
+    };
+    button.addEventListener('click', this._onSnap);
+  },
+
+  _unbindSnap() {
+    const button = this.elements && this.elements.snapBtn;
+    if (button && this._onSnap) button.removeEventListener('click', this._onSnap);
+    this._onSnap = null;
+    this._clearSnapPreview();
+  },
+
+  _syncGridVisible() {
+    const stage = this.elements && this.elements.stage;
+    if (stage) stage.classList.toggle('reports-grid-off', this._gridVisible === false);
+    setToolbarToggle(this.elements && this.elements.gridBtn, this._gridVisible !== false);
+  },
+
+  _bindGrid() {
+    const button = this.elements.gridBtn;
+    if (!button) return;
+    if (this._gridVisible === undefined) this._gridVisible = true;
+    this._syncGridVisible();
+    this._onGrid = () => {
+      this._gridVisible = !this._gridVisible;
+      this._syncGridVisible();
+    };
+    button.addEventListener('click', this._onGrid);
+  },
+
+  _unbindGrid() {
+    const button = this.elements && this.elements.gridBtn;
+    if (button && this._onGrid) button.removeEventListener('click', this._onGrid);
+    this._onGrid = null;
+  },
+
+  _snapSpacing() {
+    if (this._snap === false || !this.doc) return 0;
+    return snapSpacingPx(this.doc);
+  },
+
+  _clearSnapPreview() {
+    const stage = this.elements && this.elements.stage;
+    if (!stage) return;
+    stage.querySelectorAll('.reports-snap-preview, .reports-snap-line').forEach((node) => node.remove());
+    stage.querySelectorAll('.reports-band-snapping').forEach((node) => {
+      node.classList.remove('reports-band-snapping');
+    });
+  },
+
+  _showBandSnap(body, livePx, snappedPx) {
+    this._clearSnapPreview();
+    if (!body || !(snappedPx > 0) || Math.abs(snappedPx - livePx) < 0.5) return;
+    const line = document.createElement('div');
+    line.className = 'reports-snap-line';
+    line.style.top = `${snappedPx}px`;
+    body.append(line);
+    const band = body.closest('.reports-band');
+    if (band) band.classList.add('reports-band-snapping');
+  },
+
+  _showItemSnap(body, live, snapped) {
+    this._clearSnapPreview();
+    if (!body || !snapped || boxesNear(live, snapped)) return;
+    const ghost = document.createElement('div');
+    ghost.className = 'reports-snap-preview';
+    ghost.style.left = `${snapped.left}px`;
+    ghost.style.top = `${snapped.top}px`;
+    ghost.style.width = `${snapped.width}px`;
+    ghost.style.height = `${snapped.height}px`;
+    body.append(ghost);
+  },
+
   _beginPointer(event) {
     if (this._drag || !this.doc) return;
     if (event.button !== undefined && event.button !== 0) return;
@@ -23,10 +111,15 @@ export const reportPointerMethods = {
     if (!target || !target.closest || !stage || !stage.contains(target)) return;
     const itemEl = target.closest('.reports-item');
     if (itemEl) {
+      if (!this._recordEditing) {
+        this._selectPointerItem(itemEl);
+        return;
+      }
       this._beginItemDrag(event, itemEl, Boolean(target.closest('.reports-item-corner')));
       return;
     }
     if (target.closest('.reports-band-edge')) {
+      if (!this._recordEditing) return;
       this._beginBandDrag(event);
       return;
     }
@@ -38,7 +131,23 @@ export const reportPointerMethods = {
     }
   },
 
+  _selectPointerItem(itemEl) {
+    const bandEl = itemEl.closest('.reports-band');
+    const bandId = bandEl && bandEl.dataset.bandId;
+    const itemId = itemEl.dataset.itemId;
+    if (!bandId || !itemId) return;
+    this._selectedBandId = bandId;
+    this._selectedItemId = itemId;
+    this._markSelection();
+  },
+
   _clearItemDrag() {
+    this._clearSnapPreview();
+    const drag = this._drag;
+    if (drag && drag.page && (drag.kind === 'move' || drag.kind === 'resize')) {
+      hideRulerSpan(drag.page, 'x');
+      hideRulerSpan(drag.page, 'y');
+    }
     if (this._onItemMove) {
       document.removeEventListener('pointermove', this._onItemMove);
       document.removeEventListener('pointerup', this._onItemUp);
@@ -50,6 +159,7 @@ export const reportPointerMethods = {
   },
 
   _beginItemDrag(event, itemEl, resize) {
+    if (!this._recordEditing) return;
     const bandEl = itemEl.closest('.reports-band');
     const bandId = bandEl && bandEl.dataset.bandId;
     const itemId = itemEl.dataset.itemId;
@@ -101,23 +211,45 @@ export const reportPointerMethods = {
     drag.itemEl.style.top = `${preview.top}px`;
     drag.itemEl.style.width = `${preview.width}px`;
     drag.itemEl.style.height = `${preview.height}px`;
+    const page = drag.itemEl.closest('#reports-page');
+    const body = drag.itemEl.closest('.reports-band-body');
+    if (!page || !body) return;
+    drag.page = page;
+    const span = pageSpan(drag.itemEl.getBoundingClientRect(), body.getBoundingClientRect(), drag.scale);
+    showRulerSpan(body, 'x', span.x0, span.x1);
+    showRulerSpan(body, 'y', span.y0, span.y1);
+    trackReportCursor(page, event, body);
+    const spacing = this._snapSpacing();
+    if (!(spacing > 0)) {
+      this._clearSnapPreview();
+      return;
+    }
+    this._showItemSnap(
+      body,
+      preview,
+      snapItemBox(preview, spacing, drag.bounds, drag.kind === 'resize'),
+    );
   },
 
   _endItemDrag() {
     const drag = this._drag;
     this._clearItemDrag();
     if (!drag || drag.kind === 'band' || this._closed || !this.doc || !drag.preview) return;
+    const spacing = this._snapSpacing();
+    const box = spacing > 0
+      ? snapItemBox(drag.preview, spacing, drag.bounds, drag.kind === 'resize')
+      : drag.preview;
     let next;
     try {
       if (drag.kind === 'resize') {
         next = resizeItem(this.doc, drag.bandId, drag.itemId, {
-          width: `${drag.preview.width} px`,
-          height: `${drag.preview.height} px`,
+          width: `${box.width} px`,
+          height: `${box.height} px`,
         });
       } else {
         next = moveItem(this.doc, drag.bandId, drag.itemId, {
-          left: `${drag.preview.left} px`,
-          top: `${drag.preview.top} px`,
+          left: `${box.left} px`,
+          top: `${box.top} px`,
         });
       }
     } catch (error) {
@@ -138,6 +270,7 @@ export const reportPointerMethods = {
   },
 
   _clearBandDrag() {
+    this._clearSnapPreview();
     if (this._drag && this._drag.page) hideRulerSpan(this._drag.page, 'y');
     if (this._onBandMove) {
       document.removeEventListener('pointermove', this._onBandMove);
@@ -150,7 +283,7 @@ export const reportPointerMethods = {
   },
 
   _beginBandDrag(event) {
-    if (this._drag || !this.doc || !Array.isArray(this.doc.bands)) return;
+    if (!this._recordEditing || this._drag || !this.doc || !Array.isArray(this.doc.bands)) return;
     if (event.button !== undefined && event.button !== 0) return;
     const edge = event.target && event.target.closest && event.target.closest('.reports-band-edge');
     if (!edge || !this.elements.stage || !this.elements.stage.contains(edge)) return;
@@ -168,10 +301,8 @@ export const reportPointerMethods = {
     event.preventDefault();
     const page = body.closest('#reports-page');
     const scale = readViewScale(page || body);
-    const pageTop = page ? page.getBoundingClientRect().top : 0;
-    const edgeY = (body.getBoundingClientRect().bottom - pageTop) / scale;
     this._drag = {
-      kind: 'band', id, startPx, startY: event.clientY, body, page, edgeY, scale,
+      kind: 'band', id, startPx, startY: event.clientY, body, page, bandEl, scale,
     };
     this._onBandMove = (move) => this._moveBandDrag(move);
     this._onBandUp = () => this._endBandDrag();
@@ -186,9 +317,17 @@ export const reportPointerMethods = {
     const next = dragBandHeight(this._drag.startPx, (event.clientY - this._drag.startY) / scale);
     this._drag.previewPx = next;
     this._drag.body.style.height = `${next}px`;
+    const ruler = this._drag.bandEl && this._drag.bandEl.querySelector('.reports-ruler-left');
+    setRulerLength(ruler, next);
+    const spacing = this._snapSpacing();
+    if (spacing > 0) {
+      this._showBandSnap(this._drag.body, next, snapBandHeight(next, spacing, toCssPx('0.15 in')));
+    } else {
+      this._clearSnapPreview();
+    }
     if (!this._drag.page) return;
-    const moved = this._drag.edgeY + (next - this._drag.startPx);
-    showRulerSpan(this._drag.page, 'y', this._drag.edgeY, moved);
+    showRulerSpan(this._drag.bandEl, 'y', this._drag.startPx, next);
+    trackReportCursor(this._drag.page, event, this._drag.body);
   },
 
   _endBandDrag() {
@@ -196,9 +335,13 @@ export const reportPointerMethods = {
     this._clearBandDrag();
     if (!drag || this._closed || !this.doc) return;
     if (drag.previewPx === undefined) return;
+    const spacing = this._snapSpacing();
+    const heightPx = spacing > 0
+      ? snapBandHeight(drag.previewPx, spacing, toCssPx('0.15 in'))
+      : drag.previewPx;
     let next;
     try {
-      next = resizeBand(this.doc, drag.id, `${drag.previewPx} px`);
+      next = resizeBand(this.doc, drag.id, `${heightPx} px`);
     } catch (error) {
       const message = error instanceof Error && error.message
         ? error.message

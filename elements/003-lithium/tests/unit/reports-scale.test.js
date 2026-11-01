@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createBlank } from '../../src/managers/reports/model/document.js';
-import { pageBox } from '../../src/managers/reports/model/units.js';
+import { contentBox, pageBox } from '../../src/managers/reports/model/units.js';
 import { RULER_SIZE } from '../../src/managers/reports/rulers.js';
 import {
   VIEW_SCALE_100,
@@ -24,14 +24,16 @@ const css = readFileSync(
 describe('fit-width scale', () => {
   it('returns the hundredths that fit a known pane around a Letter sheet', () => {
     const box = pageBox(createBlank().page);
+    const content = contentBox(createBlank().page);
     expect(box.widthPx).toBe(816);
+    expect(content.widthPx).toBe(768);
     expect(RULER_SIZE).toBe(28);
-    const sheet = box.widthPx + RULER_SIZE;
-    expect(sheet).toBe(844);
-    expect(fitWidthScale(1000, sheet)).toBe(1.18);
-    expect(844 * 1.18).toBeLessThanOrEqual(1000);
-    expect(fitWidthScale(600, sheet)).toBe(0.71);
-    expect(844 * 0.71).toBeLessThanOrEqual(600);
+    const sheet = content.widthPx + RULER_SIZE;
+    expect(sheet).toBe(796);
+    expect(fitWidthScale(1000, sheet)).toBe(1.25);
+    expect(796 * 1.25).toBeLessThanOrEqual(1000);
+    expect(fitWidthScale(600, sheet)).toBe(0.75);
+    expect(796 * 0.75).toBeLessThanOrEqual(600);
     expect(fitWidthScale(sheet, sheet)).toBe(1);
   });
 
@@ -71,6 +73,7 @@ describe('fit-width scale', () => {
 
   it('scales the page, the grid, and the rulers with one variable', () => {
     expect(css).toMatch(/transform:\s*scale\(var\(--reports-scale,\s*1\)\)/);
-    expect(css).toMatch(/width:\s*calc\(\(var\(--reports-ruler-size\) \+ var\(--reports-page-width\)\) \* var\(--reports-scale,\s*1\)\)/);
+    expect(css).toMatch(/width:\s*calc\(\(var\(--reports-ruler-size\) \+ var\(--reports-content-width\)\) \* var\(--reports-scale,\s*1\)\)/);
+    expect(css).toMatch(/height:\s*calc\(var\(--reports-stack-height\) \* var\(--reports-scale,\s*1\)\)/);
   });
 });

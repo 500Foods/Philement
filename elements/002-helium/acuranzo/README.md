@@ -384,4 +384,13 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1424](/elements/002-helium/acuranzo/migrations/acuranzo_1424.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #167 - Get Report |
 | [1425](/elements/002-helium/acuranzo/migrations/acuranzo_1425.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #168 - Insert Report Revision |
 | [1426](/elements/002-helium/acuranzo/migrations/acuranzo_1426.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #169 - Get Document Image |
-| **351** | | | | **1880** | **351** | |
+| [1427](/elements/002-helium/acuranzo/migrations/acuranzo_1427.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #170 - Delete Report |
+| [1428](/elements/002-helium/acuranzo/migrations/acuranzo_1428.lua) | reports | 1.0.0 | 2026-10-31 | 6 | ✗ | reports.category |
+| [1429](/elements/002-helium/acuranzo/migrations/acuranzo_1429.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #165 include reports.category |
+| [1430](/elements/002-helium/acuranzo/migrations/acuranzo_1430.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #166 include reports.category |
+| [1431](/elements/002-helium/acuranzo/migrations/acuranzo_1431.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #167 include reports.category |
+| [1432](/elements/002-helium/acuranzo/migrations/acuranzo_1432.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #168 store reports.category |
+| [1433](/elements/002-helium/acuranzo/migrations/acuranzo_1433.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #168 store the signed-in account on a new revision |
+| [1434](/elements/002-helium/acuranzo/migrations/acuranzo_1434.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #171 - List Report Revisions |
+| [1435](/elements/002-helium/acuranzo/migrations/acuranzo_1435.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #172 - Delete Newer Report Revisions |
+| **360** | | | | **1918** | **360** | |

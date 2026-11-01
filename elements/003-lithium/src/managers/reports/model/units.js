@@ -110,6 +110,41 @@ function marginSide(margin, name) {
   return value;
 }
 
+function pageMargin(page) {
+  return page.margin && typeof page.margin === 'object' && !Array.isArray(page.margin)
+    ? page.margin
+    : {};
+}
+
+/**
+ * Content size in inches. The document unit is not read. Each length
+ * still needs its own unit. An omitted margin side is 0.25 in.
+ * @param {object} page
+ * @returns {{ widthIn: number, heightIn: number }}
+ */
+function contentInches(page) {
+  if (!page || typeof page !== 'object') throw new Error('Page is missing.');
+  const margin = pageMargin(page);
+  return {
+    widthIn: toInches(page.width)
+      - toInches(marginSide(margin, 'left'))
+      - toInches(marginSide(margin, 'right')),
+    heightIn: toInches(page.height)
+      - toInches(marginSide(margin, 'top'))
+      - toInches(marginSide(margin, 'bottom')),
+  };
+}
+
+/**
+ * Content width in CSS pixels. A page unit the ruler cannot draw
+ * still leaves a width, because each length carries its own unit.
+ * @param {object} page
+ * @returns {number}
+ */
+export function contentWidthPx(page) {
+  return toCssPxFromInches(contentInches(page).widthIn);
+}
+
 /**
  * Page size minus margins. Width and height are strings in the document
  * unit. An omitted margin side is 0.25 in. An omitted document unit is in.
@@ -121,13 +156,7 @@ export function contentBox(page) {
     ? page.units.toLowerCase()
     : DEFAULT_UNIT;
   assertUnit(units);
-  const margin = page.margin && typeof page.margin === 'object' ? page.margin : {};
-  const widthIn = toInches(page.width)
-    - toInches(marginSide(margin, 'left'))
-    - toInches(marginSide(margin, 'right'));
-  const heightIn = toInches(page.height)
-    - toInches(marginSide(margin, 'top'))
-    - toInches(marginSide(margin, 'bottom'));
+  const { widthIn, heightIn } = contentInches(page);
   const perInch = PER_INCH[units];
   return {
     units,
@@ -140,7 +169,8 @@ export function contentBox(page) {
 
 /**
  * Full page in CSS pixels, plus each margin inset. An omitted margin
- * side is 0.25 in. This is the sheet. contentBox is the area inside it.
+ * side is 0.25 in. This is the paper, kept for pagination. The design
+ * surface uses the content width and does not draw this rectangle.
  * @param {{ width: string, height: string, margin?: object }} page
  */
 export function pageBox(page) {

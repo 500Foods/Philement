@@ -320,9 +320,9 @@ waits for the apply.
         re-read it before numbering. The read is the latest `rev_id`
         for that `doc_id`.
 - [x] 17.4 Reverse deletes the QueryRef row only.
-- [ ] 17.5 Hand the packets over. Record the QueryRef integers in
-        this phase's Status after Andrew reports the apply. The files
-        are handed over. The applied integers are not recorded yet.
+- [x] 17.5 Hand the packets over. Record the QueryRef integers in
+        this phase's Status after Andrew reports the apply. Andrew
+        reported the five files applied on 2026-10-31.
 
 ### Done means
 
@@ -339,8 +339,10 @@ Andrew's apply report. The agent does not mark this complete on Test
 
 ### Status
 
-**in progress** (2026-10-31). The packet is written and not applied.
-Do not mark this complete on the expand check. Andrew applies it.
+**complete — 2026-10-31.** Andrew reported the five QueryRefs
+applied. `npm test` was not this phase's gate. The expand check
+from the writing sitting stays the file check. Phase 18 is in
+progress in the same conversation because he asked to wire them.
 
 | File | QueryRef | Name |
 | --- | --- | --- |
@@ -352,11 +354,41 @@ Do not mark this complete on the expand check. Andrew applies it.
 
 `REPORT_ID` 0 on 168 allocates the next `report_id` and stores
 `rev_id` 1. Any other `REPORT_ID` appends the next `rev_id` for that
-report. 168 returns `report_id` and `rev_id`. The manager is not
-pointed at these numbers. Phase 18 does that after this phase is
-applied. The next Acuranzo file is 1427. The next caller-facing
-QueryRef is 170. Re-check both before taking them. Files 1413–1421
-are still the AEM packet and sit in front of this one.
+report. 168 returns `report_id` and `rev_id`. Delete Report
+is `acuranzo_1427.lua`, QueryRef 170, written after this
+phase and not applied. The next Acuranzo file is 1428. The
+next caller-facing QueryRef is 171. Re-check both before
+taking them.
+
+### Accomplished
+
+- Five `TYPE_SQL` files, one QueryRef each. List and search return
+  the latest revision and omit `report` and `thumbnail`. Search
+  uses `:SEARCH` once and matches `UPPER(name)`. Get reads one
+  `(report_id, rev_id)`. Insert allocates like
+  `courses_4103.lua`. The document read returns the latest
+  `documents` revision for `doc_id`.
+- Reverse deletes the QueryRef row only.
+
+### Lessons learned
+
+- No report list, search, get, or insert QueryRef existed before
+  this packet. `acuranzo_1015.lua` only creates the table.
+  Scripts 089 and 090 are the script list and search.
+- A second use of a named parameter is not portable. Search wraps
+  `:SEARCH` once inside the engine branch.
+- The inner SQL of a long query is stored compressed. An empty
+  scan of the outer file is not a failed expand.
+
+### Handoff
+
+Phase 17 is complete. Andrew reported the apply on 2026-10-31.
+QueryRefs 165 through 169 are the applied numbers. Phase 18 is
+in progress and points the manager at 165, 166, 167, and 168.
+QueryRef 169 stays unused until Phase 51. Phase 16 has not
+started. Delete Report is `acuranzo_1427.lua`, QueryRef 170,
+written and not applied. The next Acuranzo file is 1428.
+The next caller-facing QueryRef is 171.
 
 ---
 
@@ -365,6 +397,9 @@ are still the AEM packet and sit in front of this one.
 ### Goal
 
 Save the open definition as a new revision and reopen it.
+The Revisions page lists the saved revisions of that report,
+copies one onto a new report, and reverts by deleting the
+newer rows.
 
 ### Entry gate
 
@@ -372,18 +407,29 @@ Phase 16 and Phase 17 Status complete.
 
 ### Work items
 
-- [ ] 18.1 List view of latest revisions via the list QueryRef.
+- [x] 18.1 List view of latest revisions via the list QueryRef.
        Opening a row loads that revision into the document model.
-- [ ] 18.2 Save appends a revision. It does not update the open
-       `rev_id` in place. The canvas then shows the new revision.
-- [ ] 18.3 A failed call toasts the conduit error and keeps the
-       document dirty.
-- [ ] 18.4 Browser: save, reload the manager, open the row, and see
+       Search uses the search QueryRef. LithiumTable sends
+       `STRING.SEARCH` uppercased.
+- [x] 18.2 Save appends a revision. It does not update the open
+       `rev_id` in place. The list row then shows the returned
+       `report_id` and `rev_id`. The open definition stays on
+       the canvas.
+- [x] 18.3 A failed call toasts the conduit error and keeps the
+       document dirty. The table save path does that when the
+       insert throws.
+- [x] 18.4 Browser: save, reload the manager, open the row, and see
        the same items. Save again and see `rev_id` increase.
-- [ ] 18.5 Save writes the open definition. A non-empty trail is
+- [x] 18.5 Save writes the open definition. A non-empty trail is
        stored in `reports.report`, and opening that revision
        restores Undo and Redo. Clear before the save stores the
        current report with `history` omitted.
+- [x] 18.6 The Revisions page lists saved revisions for the
+       open report. Copy loads that body and inserts a new
+       report. Revert deletes newer revisions and reloads
+       the chosen one. Both wait for edit mode. QueryRefs
+       171 and 172, and the insert rewrite that stores the
+       signed-in account, are written and not applied.
 
 ### Done means
 
@@ -397,5 +443,97 @@ against the applied QueryRefs.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** Andrew said the changes are
+working. Phase 16 has not started. He brought this phase
+forward and closed it on that check. Work items 18.1–18.6
+are checked. He also asked for the Revisions page inside
+this phase. `npm test` exited 0
+(73 files, 1335 passed, 12 skipped). The skipped cases
+are the auth integration file. `npm run lint`,
+`npm run lint:css`, and `npx eslint` on
+`src/managers/reports` and the report unit tests exited 0.
+`templates:copy` copied 137 templates. `luacheck` on
+1433–1435 exited 0. `reports-save.test.js` has 8 tests.
+`reports-chrome.test.js` has 11.
+`reports-revisions.test.js` has 3. `reports.js` is 982
+lines. `reports-save.js` is 301. `reports-revisions.js`
+is 398. `reports-pages.js` is 43. `reports-table.js` is
+332. `reports-json.js` is 228. Andrew reported Delete
+Report applied. The list calls QueryRef 170. Category
+is a reports row column. `acuranzo_1428.lua` through `acuranzo_1435.lua` are
+applied on that check. He did not recite the file
+numbers. Duplicate still has no query.
+The next Acuranzo file is 1436. The next caller-facing
+QueryRef is 173. The Acuranzo index is 360 files and
+1918 statements.
+
+### Accomplished
+
+- The list calls QueryRef 165. Search calls 166. Opening a row
+  with `report_id` and `rev_id` calls 167 and imports
+  `reports.report`. A row that already carries the definition
+  uses that text. A new row does not call 167.
+- Save calls QueryRef 168. `REPORT_ID` 0 allocates a report.
+  An open report id appends the next revision. The returned
+  `report_id` and `rev_id` land on the list row. The canvas
+  keeps the definition that was saved. A non-empty `history`
+  trail is inside that JSON. Clear removes `history` before
+  the save. Thumbnail, design, scripts, and parameters from
+  the open revision are sent again. A blank large column is
+  `''`.
+- A failed insert throws. The table toasts `serverError` and
+  leaves the row dirty. A save while the get is still in
+  flight is refused. Duplicate still has no query. List
+  Delete calls QueryRef 170 after confirmation and removes
+  every revision. A draft stays local. QueryRef 169
+  is not called. The designer stays read-only until the
+  row is edited. An edit marks the row dirty. A JSON edit
+  marks the row dirty before it is committed, and leaving
+  JSON for the Editor commits that buffer as one undo step
+  and redraws the page.
+- The Revisions page lists QueryRef 171 for a saved report.
+  The label is the revision, the save time, and the account
+  name. A draft does not call the server. Copy confirms,
+  loads that revision through 167, and inserts a new report
+  through 168 with `REPORT_ID` 0. The new list row is not
+  selected. Revert confirms, loads the body first, then
+  QueryRef 172 deletes newer revisions and the kept body
+  is imported. The edit snapshot is taken again. Revert
+  stays off on the newest revision. Both buttons wait for
+  edit mode. Save sends `INTEGER.USERID` from
+  `app.auth.user`. A missing id is 0.
+
+### Lessons learned
+
+- The list and the search omit `report`. Opening a row has to
+  call the get. Storing the definition on the list row would
+  skip that read.
+- `onExecuteSave` owns the save. The table clears dirty only
+  after it resolves, so a thrown conduit error keeps the
+  document dirty and toasts the server error.
+- Phase 16 is still open. The definition saved here is the
+  one the designer can write today. A later group band is
+  another revision of the same `report_id`.
+- QueryRef 170 deletes every revision of the report. Revert
+  needs its own delete, QueryRef 172, limited to newer
+  `rev_id` values. The get runs before that delete.
+- `:USERID` can appear once. The insert stores it as
+  `created_id` and leaves `updated_id` at 0. A new revision
+  is an insert, not an update.
+
+### Handoff
+
+Phase 18 is complete. Andrew said the changes are working
+on `https://lithium.500courses.com` on 2026-10-31. That
+check covers save, reload, a rising `rev_id`, and the
+Revisions page. It is also the apply report for
+`acuranzo_1428.lua` through `acuranzo_1435.lua`. He did
+not recite the file numbers. Duplicate still has no query.
+QueryRef 169 stays unused until Phase 51. The next
+Acuranzo file is 1436. The next caller-facing QueryRef is
+173. Phase 16 has not started. Phase 11 has not started.
+It is the lookup 053 packet at the top of this file. Do
+not start Phase 11, Phase 16, or Phase 19 until he names
+one. Phase 10-UI is complete in
+[`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
 

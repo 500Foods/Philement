@@ -19,12 +19,14 @@ import {
   foldAllInEditor,
   formatSortedJson,
   setEditorContentNoHistory,
+  setEditorEditable,
   unfoldAllInEditor,
 } from '../../core/codemirror-setup.js';
 import { processIcons } from '../../core/icons.js';
 import { LithiumEditorFooter } from '../../core/manager-ui.js';
 import { importDefinition } from './model/document.js';
 import { reportBody } from './model/history.js';
+import { definitionText } from './reports-file.js';
 
 /**
  * Definition text for the JSON page. History is omitted.
@@ -63,6 +65,24 @@ export function reportJsonEdit(text) {
 }
 
 /**
+ * Text the edit helper compares. A parsed JSON edit that has not
+ * been committed yet still counts, so Save can enable on that page.
+ * An unparsed buffer leaves the stored definition in place.
+ * @param {object|null|undefined} doc
+ * @param {string} page
+ * @param {string} jsonText
+ * @returns {string}
+ */
+export function reportEditorContent(doc, page, jsonText) {
+  const stored = doc ? definitionText(doc) : '';
+  if (page !== 'json' || typeof jsonText !== 'string' || !doc) return stored;
+  const edited = reportJsonEdit(jsonText);
+  if (!edited.doc) return stored;
+  if (reportJsonText(edited.doc) === reportJsonText(doc)) return stored;
+  return definitionText(edited.doc);
+}
+
+/**
  * CodeMirror JSON editor for one report definition.
  */
 export class ReportJsonPage {
@@ -70,14 +90,26 @@ export class ReportJsonPage {
    * @param {HTMLElement} host
    * @param {HTMLElement} footerEl
    * @param {() => void} onBlur
+   * @param {() => void} [onChange]
    */
-  constructor(host, footerEl, onBlur) {
+  constructor(host, footerEl, onBlur, onChange) {
     this.host = host;
     this.footerEl = footerEl;
     this.onBlur = onBlur;
+    this.onChange = onChange || null;
     this.view = null;
     this.footer = null;
     this._compartments = null;
+    this._editable = false;
+  }
+
+  /**
+   * @param {boolean} editable
+   */
+  setEditable(editable) {
+    this._editable = Boolean(editable);
+    if (!this.view || !this._compartments) return;
+    setEditorEditable(this.view, this._compartments.readOnly, this._editable, this.host);
   }
 
   /**
@@ -98,7 +130,7 @@ export class ReportJsonPage {
     this._compartments = compartments;
     const extensions = buildEditorExtensions({
       language: 'json',
-      readOnly: false,
+      readOnly: !this._editable,
       readOnlyCompartment: compartments.readOnly,
       wordWrapCompartment: compartments.wordWrap,
       bracketMatchCompartment: compartments.bracketMatch,
@@ -114,6 +146,7 @@ export class ReportJsonPage {
       commentContinuation: true,
       showWhitespace: false,
       onUpdate: (update) => {
+        if (update.docChanged && this._editable && this.onChange) this.onChange();
         if (update.selectionSet) {
           requestAnimationFrame(() => this.footer?.updateCursorPosition());
         }

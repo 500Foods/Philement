@@ -180,8 +180,14 @@ v1 `typeKey` allowlist:
 | 38 | Aggregate datetime. Min, max, first, and last of a datetime. |
 
 Rulers, Report Top, and Report Bottom are canvas chrome. They are not
-bands in the file. Grid and ruler settings are view defaults, stored
-so the next session opens the same page.
+bands in the file. The design surface draws each band once. The first
+band carries the top ruler above its descriptor. That ruler measures
+the content width from 0. Each band carries a left ruler that starts
+at 0 at the top of that band. The page margins are not on the surface,
+so that content corner is the origin. Paper height stays in the file
+for pagination and stays off the surface. Grid and ruler settings are
+view defaults, stored so the next session opens the same page. Snap
+is a view choice. It is not a file key.
 
 ## Intermediate
 

@@ -25,6 +25,7 @@
 <fa fa-bell-concierge></fa>
 <fa fa-bell></fa>
 <fa fa-book-open-lines></fa>
+<fa fa-border-all></fa>
 <fa fa-brackets-curly></fa>
 <fa fa-brackets-square></fa>
 <fa fa-briefcase></fa>
@@ -101,6 +102,7 @@
 <fa fa-list></fa>
 <fa fa-location-crosshairs></fa>
 <fa fa-lock></fa>
+<fa fa-magnet></fa>
 <fa fa-magnifying-glass-plus></fa>
 <fa fa-magnifying-glass></fa>
 <fa fa-maximize></fa>

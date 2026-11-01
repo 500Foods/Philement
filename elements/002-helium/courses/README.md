@@ -144,4 +144,5 @@ Macro scripts are the shared set in [`/elements/002-helium/helium/`](/elements/0
 | [4129](/elements/002-helium/courses/migrations/courses_4129.lua) | scripts | 1.0.0 | 2026-10-27 | 4 | ✗ | CATCHUP Phase 22: seed Build.InspectFail (invokable) |
 | [4130](/elements/002-helium/courses/migrations/courses_4130.lua) | scripts | 1.0.0 | 2026-10-27 | 4 | ✗ | CATCHUP Phase 22: seed Build.Publish (invokable) |
 | [4131](/elements/002-helium/courses/migrations/courses_4131.lua) | queries | 1.0.0 | 2026-10-27 | 4 | ✗ | QueryRef #4526 - Staff: Set Run State |
-| **132** | | | | **619** | **132** | |
+| [4132](/elements/002-helium/courses/migrations/courses_4132.lua) | account_roles | 1.0.0 | 2026-10-31 | 4 | ✗ | Seed: grant admin role (role_id 3) to adminuser (account_id 1) |
+| **133** | | | | **623** | **133** | |

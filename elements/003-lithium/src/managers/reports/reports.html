@@ -21,6 +21,10 @@
         <fa fa-brackets-curly></fa>
         <span>JSON</span>
       </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-revisions-tab" data-page="revisions" data-collapsible-text>
+        <fa fa-clock></fa>
+        <span>Revisions</span>
+      </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-import-btn" title="Import a definition file">
         <fa fa-upload></fa>
@@ -78,11 +82,20 @@
       </button>
     </div>
     <div class="lithium-toolbar" id="reports-items-toolbar" data-reports-page="editor">
-      <button type="button" class="lithium-toolbar-btn" id="reports-text-btn" title="Add static text to the selected band">
+      <button type="button" class="lithium-toolbar-btn" id="reports-text-btn" title="Add static text to the selected band" draggable="true">
         <fa fa-font-case></fa>
         <span>Text</span>
       </button>
       <div class="lithium-toolbar-placeholder"></div>
+      <button type="button" class="lithium-toolbar-btn reports-grid-btn" id="reports-grid-btn" title="Show the grid" aria-pressed="true">
+        <fa fa-border-all></fa>
+        <span>Grid</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn reports-snap-btn" id="reports-snap-btn" title="Snap to the grid" aria-pressed="true">
+        <fa fa-magnet></fa>
+        <span>Snap</span>
+      </button>
+      <div class="reports-toolbar-gap" aria-hidden="true"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-clone-btn" title="Clone the selected item" disabled>
         <fa fa-copy></fa>
         <span>Clone</span>
@@ -111,6 +124,26 @@
       </div>
       <div class="reports-page-pane" id="reports-page-editor" data-reports-page="editor">
         <div class="reports-stage" id="reports-stage"></div>
+      </div>
+      <div class="reports-page-pane" id="reports-page-revisions" data-reports-page="revisions" hidden>
+        <form class="reports-revisions" id="reports-revisions">
+          <p class="reports-revisions-status" id="reports-revisions-status"></p>
+          <label class="reports-meta-field" for="reports-revision-select">
+            Saved revisions
+            <select id="reports-revision-select"></select>
+          </label>
+          <div class="reports-revisions-actions">
+            <button type="button" class="lithium-toolbar-btn" id="reports-revision-copy" disabled>
+              <fa fa-copy></fa>
+              <span>Copy to new report</span>
+            </button>
+            <button type="button" class="lithium-toolbar-btn" id="reports-revision-revert" disabled>
+              <fa fa-clock></fa>
+              <span>Revert to this revision</span>
+            </button>
+          </div>
+          <p class="reports-revisions-note">Revert deletes every revision newer than the one selected, then reloads that revision.</p>
+        </form>
       </div>
       <div class="reports-page-pane" id="reports-page-json" data-reports-page="json" hidden>
         <div class="reports-json-wrap">
