@@ -12,6 +12,8 @@ import {
   formatViewScale,
   stepViewScale,
   viewScaleLabel,
+  wheelViewScaleDirection,
+  wheelZoomHeld,
 } from '../../src/managers/reports/scale.js';
 
 const css = readFileSync(
@@ -40,15 +42,22 @@ describe('fit-width scale', () => {
     expect(fitWidthScale(-20, 844)).toBe(1);
   });
 
-  it('steps by a tenth and stops at the limits', () => {
-    expect(stepViewScale(1, 1)).toBe(1.1);
-    expect(stepViewScale(1, -1)).toBe(0.9);
-    expect(stepViewScale(1.18, 1)).toBe(1.28);
-    expect(stepViewScale(1.18, -1)).toBe(1.08);
+  it('steps by five percent and stops at the limits', () => {
+    expect(stepViewScale(1, 1)).toBe(1.05);
+    expect(stepViewScale(1, -1)).toBe(0.95);
+    expect(stepViewScale(1.18, 1)).toBe(1.23);
+    expect(stepViewScale(1.18, -1)).toBe(1.13);
     expect(stepViewScale(VIEW_SCALE_MAX, 1)).toBe(VIEW_SCALE_MAX);
     expect(stepViewScale(VIEW_SCALE_MIN, -1)).toBe(VIEW_SCALE_MIN);
-    expect(stepViewScale(5, -1)).toBe(4.9);
+    expect(stepViewScale(5, -1)).toBe(4.95);
     expect(stepViewScale(5, 1)).toBe(5);
+    expect(wheelViewScaleDirection(-1)).toBe(1);
+    expect(wheelViewScaleDirection(1)).toBe(-1);
+    expect(wheelViewScaleDirection(0)).toBe(0);
+    expect(wheelZoomHeld({ ctrlKey: true })).toBe(true);
+    expect(wheelZoomHeld({ metaKey: true })).toBe(true);
+    expect(wheelZoomHeld({ ctrlKey: false, metaKey: false })).toBe(false);
+    expect(wheelZoomHeld(null)).toBe(false);
   });
 
   it('labels 100% as 96 CSS pixels per inch and formats the variable', () => {

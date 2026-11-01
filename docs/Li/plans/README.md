@@ -43,7 +43,14 @@ are complete. Phases 6 and 7 closed 2026-10-31. Andrew
 confirmed drag, Undo, Redo, export, import, and the dots.
 Phase 8 is complete (2026-10-31). Andrew accepted the
 rulers, the corner cycle, and the unit name. Right and
-bottom rulers stay later. Phase 9 has not started.
+bottom rulers stay later. Phase 9 is complete
+(2026-10-31). Andrew said the view scale works pretty
+well. Phase 10 is complete (2026-10-31). Andrew said
+it works pretty well. Phase 10-UI is in progress
+(2026-10-31). The shell has the report list, Report,
+Editor, and JSON pages, and the three toolbars. The
+wheel zooms with Ctrl or Cmd. The 500 Courses check
+is waiting. Phase 11 has not started.
 The body is in
 [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
 The

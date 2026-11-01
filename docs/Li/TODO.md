@@ -17,7 +17,14 @@ the rulers, the corner cycle, and the unit name. The 1 inch
 mark is 96 CSS pixels from the page origin. The corner
 cycles inches, centimetres, and points and leaves the file
 unit alone. Right and bottom rulers stay later. Phase 9
-has not started. The
+is complete (2026-10-31). Andrew said the view scale
+works pretty well. Phase 10 is complete (2026-10-31).
+Andrew said static text works pretty well. Phase 10-UI
+is in progress (2026-10-31). The shell has the report
+list, Report, Editor, and JSON pages, and the three
+toolbars. The wheel zooms with Ctrl or Cmd. The 500
+Courses check is waiting. Phase 11 has
+not started. The
 contract note is
 [LITHIUM-RPT.md](/docs/Li/LITHIUM-RPT.md). One inch is 96 CSS pixels.
 The phase body is
@@ -55,9 +62,9 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 ## P2 — Report writer
 
 Gated plan for manager 24. Phase 0 approved 2026-10-10. The phase
-bodies were split into milestone files on 2026-10-30. Next is
-Phase 1, contracts and fixtures, in
-[01-designer.md](/docs/Li/plans/reporting/01-designer.md). PDF is
+bodies were split into milestone files on 2026-10-30. Phase 10
+is complete. Phase 10-UI is in progress. The shell is in
+[REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md). PDF is
 the default export. The locks stay in the parent plan. One phase
 per conversation.
 
@@ -65,9 +72,9 @@ per conversation.
 | --- | --- |
 | **Plan** | [REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) |
 | **Phases** | [reporting/](/docs/Li/plans/reporting/) |
-| **Next** | Phase 1 — contracts and fixtures, in `01-designer.md` |
+| **Next** | Phase 10-UI is in progress. The 500 Courses check is waiting. Do not start Phase 11 until Andrew names it |
 | **Effort** | XL across Phases 0–71. Each phase is one behavior and one gate. |
-| **Done** | Phase 0 of 72 (2026-10-10). File split 2026-10-30. |
+| **Done** | Phases 0–10 of 72 (2026-10-31). Phase 10-UI is in progress. File split 2026-10-30. |
 
 ## Parallel (other repos)
 

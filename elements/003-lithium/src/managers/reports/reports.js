@@ -10,10 +10,18 @@
  * corner cycles the ruler through inches, centimetres, and points
  * and leaves the file unit alone. The view scale fits the sheet
  * to the canvas width, or sits at 100%, which is 96 CSS pixels
- * per inch. Zoom steps by a tenth. The scale is not stored on
- * the definition. Undo
- * and redo apply the stored diff. Clear
- * removes that trail. destroy and cleanup release the same
+ * per inch. Zoom steps by five percent. The wheel does that
+ * same step while Ctrl or Cmd is held and the pointer is over
+ * the page. A bare wheel still scrolls. The scale is
+ * not stored on the definition. The left pane lists reports.
+ * Report is the first page and edits the name, the title, and
+ * the list summary. The Editor page is this stage. The JSON
+ * page edits the definition with history removed. Undo, redo,
+ * and Clear sit on the Editor toolbar. They use the stored
+ * diff. The item toolbar adds, clones, and deletes. Static
+ * text is the first of those buttons. A drag moves it
+ * and the corner resizes it. Both commit on pointerup and stay
+ * inside the band. destroy and cleanup release the same
  * listeners, including the mouse line.
  */
 
@@ -21,21 +29,24 @@ import './reports.css';
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { registerShortcut, unregisterShortcut } from '../../core/manager-ui.js';
 import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
-import { dragBandHeight } from './bands.js';
 import { pageFrame, paintReportPage } from './canvas.js';
 import { watchBandGrids } from './grid.js';
-import { bandHeight, resizeBand } from './model/document.js';
-import {
-  bindReportCursor, hideRulerSpan, nextRulerUnit, RULER_SIZE, rulerUnit, showRulerSpan,
-} from './rulers.js';
+import { defaultBandId, itemBox, markReportSelection } from './items.js';
+import { addItem, cloneItem, deleteItem } from './model/document.js';
+import { bindReportCursor, nextRulerUnit, RULER_SIZE, rulerUnit } from './rulers.js';
 import {
   fitWidthScale, formatViewScale, readViewScale, stepViewScale, viewScaleLabel,
+  wheelViewScaleDirection, wheelZoomHeld,
 } from './scale.js';
 import { createHistory } from './model/history.js';
-import { toCssPx } from './model/units.js';
+import { definitionMeta, withDefinitionMeta } from './reports-meta.js';
+import { ReportJsonPage, reportJsonEdit, reportJsonText } from './reports-json.js';
+import { reportPointerMethods } from './reports-pointer.js';
+import { mountReportList } from './reports-table.js';
 import {
   blankReport,
   definitionText,
@@ -150,13 +161,28 @@ export default class ReportsManager {
     this._scale = null;
     this._scaleChosen = false;
     this._paneWatch = null;
+    this._selectedBandId = '';
+    this._selectedItemId = '';
+    this._page = 'editor';
+    this._category = 'static';
+    this._json = null;
+    this._jsonHeld = false;
+    this._jsonLock = false;
+    this._jsonErrorText = '';
+    this._metaLock = false;
+    this.reportTable = null;
+    this.splitter = null;
+    this.editHelper = new ManagerEditHelper({ name: 'Reports' });
   }
 
   async init() {
     await this._render();
-    if (this._closed || !this.elements.name) return;
+    if (this._closed || !this.elements.metaName) return;
     this._setDocument(blankReport());
     this._bind();
+    if (!this._listening) return;
+    await mountReportList(this);
+    this.showPage('editor');
   }
 
   async _render() {
@@ -164,7 +190,7 @@ export default class ReportsManager {
       const response = await fetch(TEMPLATE);
       if (!response.ok) throw new Error(`Report template returned ${response.status}.`);
       const html = await response.text();
-      if (!html.includes('id="reports-name"')) {
+      if (!html.includes('id="reports-meta-name"')) {
         throw new Error('Report template is empty.');
       }
       this.container.innerHTML = html;
@@ -180,13 +206,28 @@ export default class ReportsManager {
     }
 
     this.elements = {
-      name: this.container.querySelector('#reports-name'),
-      newBtn: this.container.querySelector('#reports-new-btn'),
+      collapseBtn: this.container.querySelector('#reports-collapse-btn'),
+      reportTab: this.container.querySelector('#reports-report-tab'),
+      editorTab: this.container.querySelector('#reports-editor-tab'),
+      jsonTab: this.container.querySelector('#reports-json-tab'),
+      metaName: this.container.querySelector('#reports-meta-name'),
+      metaTitle: this.container.querySelector('#reports-meta-title'),
+      metaSummary: this.container.querySelector('#reports-meta-summary'),
+      metaForm: this.container.querySelector('#reports-meta'),
       importBtn: this.container.querySelector('#reports-import-btn'),
       exportBtn: this.container.querySelector('#reports-export-btn'),
       undoBtn: this.container.querySelector('#reports-undo-btn'),
       redoBtn: this.container.querySelector('#reports-redo-btn'),
       clearBtn: this.container.querySelector('#reports-clear-btn'),
+      foldBtn: this.container.querySelector('#reports-fold-btn'),
+      unfoldBtn: this.container.querySelector('#reports-unfold-btn'),
+      viewControls: this.container.querySelector('#reports-view-controls'),
+      deleteBtn: this.container.querySelector('#reports-delete-btn'),
+      cloneBtn: this.container.querySelector('#reports-clone-btn'),
+      staticBtn: this.container.querySelector('#reports-static-btn'),
+      categories: this.container.querySelector('#reports-categories'),
+      itemsToolbar: this.container.querySelector('#reports-items-toolbar'),
+      textBtn: this.container.querySelector('#reports-text-btn'),
       fitBtn: this.container.querySelector('#reports-fit-btn'),
       zoomOutBtn: this.container.querySelector('#reports-zoom-out-btn'),
       zoomLabel: this.container.querySelector('#reports-zoom-label'),
@@ -194,18 +235,31 @@ export default class ReportsManager {
       zoomInBtn: this.container.querySelector('#reports-zoom-in-btn'),
       fileInput: this.container.querySelector('#reports-import-input'),
       stage: this.container.querySelector('#reports-stage'),
+      jsonHost: this.container.querySelector('#reports-json-editor'),
+      jsonFooter: this.container.querySelector('#reports-json-footer'),
+      leftPanel: this.container.querySelector('.reports-left-panel'),
+      tableContainer: this.container.querySelector('#reports-table-container'),
+      navigatorContainer: this.container.querySelector('#reports-navigator-container'),
+      splitter: this.container.querySelector('#reports-splitter'),
     };
     processIcons(this.container);
   }
 
+  _missingControl() {
+    const required = [
+      'collapseBtn', 'reportTab', 'editorTab', 'jsonTab', 'importBtn', 'exportBtn',
+      'undoBtn', 'redoBtn', 'clearBtn', 'foldBtn', 'unfoldBtn', 'viewControls',
+      'metaName', 'metaTitle', 'metaSummary', 'metaForm',
+      'deleteBtn', 'cloneBtn', 'staticBtn', 'categories', 'itemsToolbar', 'textBtn',
+      'fitBtn', 'zoomOutBtn', 'zoomLabel', 'zoom100Btn', 'zoomInBtn', 'fileInput',
+      'stage', 'jsonHost', 'jsonFooter', 'leftPanel', 'tableContainer',
+      'navigatorContainer', 'splitter',
+    ];
+    return required.some((key) => !this.elements[key]);
+  }
+
   _bind() {
-    const {
-      newBtn, importBtn, exportBtn, undoBtn, redoBtn, clearBtn,
-      fitBtn, zoomOutBtn, zoomLabel, zoom100Btn, zoomInBtn, fileInput, stage,
-    } = this.elements;
-    if (!newBtn || !importBtn || !exportBtn || !undoBtn || !redoBtn || !clearBtn
-      || !fitBtn || !zoomOutBtn || !zoomLabel || !zoom100Btn || !zoomInBtn
-      || !fileInput || !stage) {
+    if (this._missingControl()) {
       log(Subsystems.MANAGER, Status.ERROR, '[Reports] Template is missing a control.');
       toast.error('Failed to load Report Manager', {
         description: 'Template is missing a control.',
@@ -213,7 +267,12 @@ export default class ReportsManager {
       });
       return;
     }
-    this._onNew = () => this._newReport();
+    const {
+      importBtn, exportBtn, undoBtn, redoBtn, clearBtn, deleteBtn, cloneBtn, textBtn,
+      staticBtn, reportTab, editorTab, jsonTab, foldBtn, unfoldBtn,
+      metaName, metaTitle, metaSummary, metaForm,
+      fitBtn, zoomOutBtn, zoom100Btn, zoomInBtn, fileInput, stage,
+    } = this.elements;
     this._onImportClick = () => fileInput.click();
     this._onFile = () => {
       this._importSelected();
@@ -224,23 +283,48 @@ export default class ReportsManager {
     this._onClear = () => {
       this._clearHistory();
     };
+    this._onDelete = () => this._deleteItem();
+    this._onClone = () => this._cloneItem();
+    this._onText = () => this._addText();
+    this._onStatic = () => this.selectCategory('static');
+    this._onReport = () => this.showPage('report');
+    this._onEditor = () => this.showPage('editor');
+    this._onJson = () => this.showPage('json');
+    this._onMetaChange = () => this._commitMetaFields();
+    this._onMetaSubmit = (event) => event.preventDefault();
+    this._onFold = () => this._json?.fold();
+    this._onUnfold = () => this._json?.unfold();
     this._onFit = () => this._fitWidth();
     this._onZoomOut = () => this._zoomBy(-1);
     this._onZoom100 = () => this._zoom100();
     this._onZoomIn = () => this._zoomBy(1);
-    this._onBandDown = (event) => this._beginBandDrag(event);
-    newBtn.addEventListener('click', this._onNew);
+    this._onWheel = (event) => this._wheelZoom(event);
+    this._onPointerDown = (event) => this._beginPointer(event);
     importBtn.addEventListener('click', this._onImportClick);
     fileInput.addEventListener('change', this._onFile);
     exportBtn.addEventListener('click', this._onExport);
     undoBtn.addEventListener('click', this._onUndo);
     redoBtn.addEventListener('click', this._onRedo);
     clearBtn.addEventListener('click', this._onClear);
+    deleteBtn.addEventListener('click', this._onDelete);
+    cloneBtn.addEventListener('click', this._onClone);
+    textBtn.addEventListener('click', this._onText);
+    staticBtn.addEventListener('click', this._onStatic);
+    reportTab.addEventListener('click', this._onReport);
+    editorTab.addEventListener('click', this._onEditor);
+    jsonTab.addEventListener('click', this._onJson);
+    metaName.addEventListener('change', this._onMetaChange);
+    metaTitle.addEventListener('change', this._onMetaChange);
+    metaSummary.addEventListener('change', this._onMetaChange);
+    metaForm.addEventListener('submit', this._onMetaSubmit);
+    foldBtn.addEventListener('click', this._onFold);
+    unfoldBtn.addEventListener('click', this._onUnfold);
     fitBtn.addEventListener('click', this._onFit);
     zoomOutBtn.addEventListener('click', this._onZoomOut);
     zoom100Btn.addEventListener('click', this._onZoom100);
     zoomInBtn.addEventListener('click', this._onZoomIn);
-    stage.addEventListener('pointerdown', this._onBandDown);
+    stage.addEventListener('wheel', this._onWheel, { passive: false });
+    stage.addEventListener('pointerdown', this._onPointerDown);
     this._registerKeys();
     this._watchPane();
     this._listening = true;
@@ -377,6 +461,16 @@ export default class ReportsManager {
     log(Subsystems.MANAGER, Status.INFO, `[Reports] View scale ${viewScaleLabel(next)}`);
   }
 
+  _wheelZoom(event) {
+    if (this._closed || !this.doc || !event.target || !event.target.closest) return;
+    if (!event.target.closest('#reports-page')) return;
+    if (!wheelZoomHeld(event)) return;
+    const direction = wheelViewScaleDirection(event.deltaY);
+    if (!direction) return;
+    event.preventDefault();
+    this._zoomBy(direction);
+  }
+
   _dropPane() {
     if (this._paneWatch) this._paneWatch.disconnect();
     this._paneWatch = null;
@@ -395,30 +489,54 @@ export default class ReportsManager {
 
   _release() {
     this._closed = true;
+    this._clearItemDrag();
     this._clearBandDrag();
     this._dropGrid();
     this._dropCursor();
     this._dropRulerUnit();
     this._dropPane();
+    if (this._json) this._json.destroy();
+    this._json = null;
+    if (this.reportTable) this.reportTable.destroy();
+    this.reportTable = null;
+    if (this.splitter) this.splitter.destroy();
+    this.splitter = null;
     if (!this._listening) return;
     const {
-      newBtn, importBtn, exportBtn, undoBtn, redoBtn, clearBtn,
+      importBtn, exportBtn, undoBtn, redoBtn, clearBtn, deleteBtn, cloneBtn, textBtn,
+      staticBtn, reportTab, editorTab, jsonTab, foldBtn, unfoldBtn, collapseBtn,
+      metaName, metaTitle, metaSummary, metaForm,
       fitBtn, zoomOutBtn, zoom100Btn, zoomInBtn, fileInput, stage,
     } = this.elements;
-    newBtn.removeEventListener('click', this._onNew);
     importBtn.removeEventListener('click', this._onImportClick);
     fileInput.removeEventListener('change', this._onFile);
     exportBtn.removeEventListener('click', this._onExport);
     undoBtn.removeEventListener('click', this._onUndo);
     redoBtn.removeEventListener('click', this._onRedo);
     clearBtn.removeEventListener('click', this._onClear);
+    deleteBtn.removeEventListener('click', this._onDelete);
+    cloneBtn.removeEventListener('click', this._onClone);
+    textBtn.removeEventListener('click', this._onText);
+    staticBtn.removeEventListener('click', this._onStatic);
+    reportTab.removeEventListener('click', this._onReport);
+    editorTab.removeEventListener('click', this._onEditor);
+    jsonTab.removeEventListener('click', this._onJson);
+    metaName.removeEventListener('change', this._onMetaChange);
+    metaTitle.removeEventListener('change', this._onMetaChange);
+    metaSummary.removeEventListener('change', this._onMetaChange);
+    metaForm.removeEventListener('submit', this._onMetaSubmit);
+    foldBtn.removeEventListener('click', this._onFold);
+    unfoldBtn.removeEventListener('click', this._onUnfold);
+    collapseBtn.removeEventListener('click', this._onCollapse);
     fitBtn.removeEventListener('click', this._onFit);
     zoomOutBtn.removeEventListener('click', this._onZoomOut);
     zoom100Btn.removeEventListener('click', this._onZoom100);
     zoomInBtn.removeEventListener('click', this._onZoomIn);
-    stage.removeEventListener('pointerdown', this._onBandDown);
+    stage.removeEventListener('wheel', this._onWheel);
+    stage.removeEventListener('pointerdown', this._onPointerDown);
     unregisterShortcut('reports-undo');
     unregisterShortcut('reports-redo');
+    unregisterShortcut('reports-delete');
     this._listening = false;
   }
 
@@ -445,15 +563,17 @@ export default class ReportsManager {
     this._rulerDisplay = null;
     this._scale = null;
     this._scaleChosen = false;
+    this._selectedBandId = '';
+    this._selectedItemId = '';
     this.history = history;
     this._showDocument(history.document);
   }
 
   _showDocument(doc) {
+    this._jsonHeld = false;
     this._dropCursor();
     this._dropRulerUnit();
     this.doc = doc;
-    if (this.elements.name) this.elements.name.textContent = reportDisplayName(doc);
     if (this.elements.stage) {
       const frame = paintReportStage(
         this.elements.stage,
@@ -470,13 +590,85 @@ export default class ReportsManager {
       this._watchCursor();
       this._watchRulerUnit();
     }
+    this._retainSelection();
+    this._markSelection();
     this._syncHistory();
     this._syncZoom();
+    this._paintMeta();
+    this._syncRowName();
+    this._refreshJson();
+  }
+
+  _paintMeta() {
+    const meta = definitionMeta(this.doc);
+    const nameInput = this.elements.metaName;
+    const titleInput = this.elements.metaTitle;
+    if (nameInput && document.activeElement !== nameInput) nameInput.value = meta.name;
+    if (titleInput && document.activeElement !== titleInput) titleInput.value = meta.title;
+  }
+
+  /**
+   * Summary lives on the list row, not the definition.
+   * @param {string} value
+   */
+  _paintSummary(value) {
+    const input = this.elements.metaSummary;
+    if (!input || document.activeElement === input) return;
+    input.value = typeof value === 'string' ? value : '';
+  }
+
+  _selectedRow() {
+    const grid = this.reportTable && this.reportTable.table;
+    if (!grid || typeof grid.getSelectedRows !== 'function') return null;
+    const rows = grid.getSelectedRows();
+    return rows.length ? rows[0] : null;
+  }
+
+  _syncRowName() {
+    if (this._metaLock || !this.doc) return;
+    const row = this._selectedRow();
+    if (!row || typeof row.getData !== 'function' || typeof row.update !== 'function') return;
+    const name = definitionMeta(this.doc).name;
+    const data = row.getData() || {};
+    if (data.name === name) return;
+    this._writeRowFields({ name });
+  }
+
+  /**
+   * @param {object} fields
+   */
+  _writeRowFields(fields) {
+    const row = this._selectedRow();
+    if (!row || typeof row.update !== 'function') return;
+    const held = this._metaLock;
+    this._metaLock = true;
+    try {
+      row.update(fields);
+    } finally {
+      this._metaLock = held;
+    }
+  }
+
+  _commitMetaFields() {
+    if (this._closed || !this.doc || this._metaLock) return;
+    const current = definitionMeta(this.doc);
+    const name = this.elements.metaName ? this.elements.metaName.value : current.name;
+    const title = this.elements.metaTitle ? this.elements.metaTitle.value : current.title;
+    const summary = this.elements.metaSummary ? this.elements.metaSummary.value : '';
+    const changed = name !== current.name || title !== current.title;
+    this._metaLock = true;
+    try {
+      if (changed) this._commitDocument(withDefinitionMeta(this.doc, { name, title }));
+      this._writeRowFields({ name, summary });
+    } finally {
+      this._metaLock = false;
+    }
   }
 
   _commitDocument(next) {
     if (!this.history) this.history = createHistory(this.doc);
     this._showDocument(this.history.commit(next));
+    this.editHelper?.checkDirtyState();
   }
 
   _syncHistory() {
@@ -531,87 +723,171 @@ export default class ReportsManager {
     const options = { managerId: REPORTS_MANAGER_ID, category: 'Report Manager' };
     registerShortcut('reports-undo', 'Ctrl+Z', 'Undo', () => this._undo(), options);
     registerShortcut('reports-redo', 'Ctrl+Y', 'Redo', () => this._redo(), options);
+    registerShortcut('reports-delete', 'Delete', 'Delete the selected item', () => this._deleteItem(), options);
   }
 
-  _clearBandDrag() {
-    if (this._drag && this._drag.page) hideRulerSpan(this._drag.page, 'y');
-    if (this._onBandMove) {
-      document.removeEventListener('pointermove', this._onBandMove);
-      document.removeEventListener('pointerup', this._onBandUp);
-      document.removeEventListener('pointercancel', this._onBandUp);
+  _retainSelection() {
+    const bands = Array.isArray(this.doc && this.doc.bands) ? this.doc.bands : [];
+    const band = bands.find((entry) => entry.id === this._selectedBandId);
+    if (!band) {
+      this._selectedBandId = defaultBandId(this.doc);
+      this._selectedItemId = '';
     }
-    this._onBandMove = null;
-    this._onBandUp = null;
-    this._drag = null;
   }
 
-  _beginBandDrag(event) {
-    if (this._drag || !this.doc || !Array.isArray(this.doc.bands)) return;
-    if (event.button !== undefined && event.button !== 0) return;
-    const edge = event.target && event.target.closest && event.target.closest('.reports-band-edge');
-    if (!edge || !this.elements.stage || !this.elements.stage.contains(edge)) return;
-    const bandEl = edge.closest('.reports-band');
-    const id = bandEl && bandEl.dataset.bandId;
-    const body = bandEl && bandEl.querySelector('.reports-band-body');
-    const band = id && this.doc.bands.find((entry) => entry.id === id);
-    if (!band || !body) return;
-    let startPx;
-    try {
-      startPx = toCssPx(bandHeight(band));
-    } catch {
-      return;
-    }
-    event.preventDefault();
-    const page = body.closest('#reports-page');
-    const scale = readViewScale(page || body);
-    const pageTop = page ? page.getBoundingClientRect().top : 0;
-    const edgeY = (body.getBoundingClientRect().bottom - pageTop) / scale;
-    this._drag = {
-      id, startPx, startY: event.clientY, body, page, edgeY, scale,
-    };
-    this._onBandMove = (move) => this._moveBandDrag(move);
-    this._onBandUp = () => this._endBandDrag();
-    document.addEventListener('pointermove', this._onBandMove);
-    document.addEventListener('pointerup', this._onBandUp);
-    document.addEventListener('pointercancel', this._onBandUp);
+  _markSelection() {
+    markReportSelection(this.elements.stage, this._selectedBandId, this._selectedItemId);
+    this._syncItems();
   }
 
-  _moveBandDrag(event) {
-    if (!this._drag) return;
-    const scale = this._drag.scale > 0 ? this._drag.scale : 1;
-    const next = dragBandHeight(this._drag.startPx, (event.clientY - this._drag.startY) / scale);
-    this._drag.previewPx = next;
-    this._drag.body.style.height = `${next}px`;
-    if (!this._drag.page) return;
-    const moved = this._drag.edgeY + (next - this._drag.startPx);
-    showRulerSpan(this._drag.page, 'y', this._drag.edgeY, moved);
+  _syncItems() {
+    const live = Boolean(itemBox(this.doc, this._selectedBandId, this._selectedItemId));
+    if (this.elements.textBtn) this.elements.textBtn.disabled = !this._selectedBandId;
+    if (this.elements.deleteBtn) this.elements.deleteBtn.disabled = !live;
+    if (this.elements.cloneBtn) this.elements.cloneBtn.disabled = !live;
   }
 
-  _endBandDrag() {
-    const drag = this._drag;
-    this._clearBandDrag();
-    if (!drag || this._closed || !this.doc) return;
-    if (drag.previewPx === undefined) return;
+  _failEdit(error, fallback) {
+    const message = error instanceof Error && error.message ? error.message : fallback;
+    log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
+    toast.error(message, { subsystem: 'Manager' });
+  }
+
+  _addText() {
+    if (this._drag || this._closed || !this.doc || !this._selectedBandId) return;
     let next;
     try {
-      next = resizeBand(this.doc, drag.id, `${drag.previewPx} px`);
+      next = addItem(this.doc, this._selectedBandId, { typeKey: 0 });
     } catch (error) {
-      const message = error instanceof Error && error.message
-        ? error.message
-        : 'Band could not be resized.';
-      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
-      toast.error(message, { subsystem: 'Manager' });
-      this._showDocument(this.doc);
+      this._failEdit(error, 'Static text could not be added.');
       return;
     }
-    const before = this.doc.bands.find((entry) => entry.id === drag.id);
-    const after = next.bands.find((entry) => entry.id === drag.id);
-    if (before && after && before.height === after.height) {
-      this._showDocument(this.doc);
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added static text ${added ? added.id : ''} on ${this._selectedBandId}`);
+  }
+
+  _deleteItem() {
+    if (this._drag || this._closed || !this.doc || !this._selectedItemId) return;
+    if (!itemBox(this.doc, this._selectedBandId, this._selectedItemId)) return;
+    const itemId = this._selectedItemId;
+    let next;
+    try {
+      next = deleteItem(this.doc, this._selectedBandId, itemId);
+    } catch (error) {
+      this._failEdit(error, 'Item could not be deleted.');
       return;
     }
     this._commitDocument(next);
-    log(Subsystems.MANAGER, Status.INFO, `[Reports] Resized ${drag.id} to ${after.height}`);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Deleted ${itemId}`);
+  }
+
+  _cloneItem() {
+    if (this._drag || this._closed || !this.doc || !this._selectedItemId) return;
+    if (!itemBox(this.doc, this._selectedBandId, this._selectedItemId)) return;
+    const sourceId = this._selectedItemId;
+    let next;
+    try {
+      next = cloneItem(this.doc, this._selectedBandId, sourceId);
+    } catch (error) {
+      this._failEdit(error, 'Item could not be cloned.');
+      return;
+    }
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Cloned ${sourceId} as ${added ? added.id : ''} on ${this._selectedBandId}`);
+  }
+
+  /**
+   * Show the Report page, the Editor page, or the JSON page.
+   * Leaving Report commits the meta fields. Leaving JSON commits
+   * a parsed edit first.
+   * @param {'report'|'editor'|'json'} page
+   */
+  showPage(page) {
+    if (this._closed) return;
+    const next = page === 'json' || page === 'report' ? page : 'editor';
+    if (this._page === 'report' && next !== 'report') this._commitMetaFields();
+    if (this._page === 'json' && next !== 'json') this.commitJson();
+    this._page = next;
+    const root = this.container.querySelector('.reports-manager');
+    if (root) root.dataset.page = next;
+    for (const el of this.container.querySelectorAll('[data-reports-page]')) {
+      el.hidden = el.dataset.reportsPage !== next;
+    }
+    if (this.elements.reportTab) {
+      this.elements.reportTab.classList.toggle('active', next === 'report');
+    }
+    if (this.elements.editorTab) {
+      this.elements.editorTab.classList.toggle('active', next === 'editor');
+    }
+    if (this.elements.jsonTab) {
+      this.elements.jsonTab.classList.toggle('active', next === 'json');
+    }
+    if (next === 'json') this._openJson();
+  }
+
+  /**
+   * Category buttons change the third toolbar. Static is the only
+   * category in this shell. The definition is left alone.
+   * @param {string} name
+   */
+  selectCategory(name) {
+    if (name !== 'static') return;
+    this._category = 'static';
+    if (this.elements.staticBtn) this.elements.staticBtn.setAttribute('aria-pressed', 'true');
+  }
+
+  _openJson() {
+    if (!this.elements.jsonHost || !this.doc) return;
+    if (!this._json) {
+      this._json = new ReportJsonPage(
+        this.elements.jsonHost,
+        this.elements.jsonFooter,
+        () => this.commitJson(),
+      );
+    }
+    this._json.open(this.doc, this._jsonHeld);
+  }
+
+  _refreshJson() {
+    if (this._page !== 'json' || !this._json || this._jsonHeld || this._jsonLock) return;
+    this._json.open(this.doc, false);
+  }
+
+  /**
+   * Commit the JSON buffer as one history step.
+   * A parse error toasts and leaves the definition.
+   * @returns {boolean}
+   */
+  commitJson() {
+    if (this._jsonLock || !this._json || !this.doc) return true;
+    const edited = reportJsonEdit(this._json.text());
+    if (edited.error) {
+      this._jsonHeld = true;
+      const text = this._json.text();
+      if (this._jsonErrorText !== text) {
+        this._jsonErrorText = text;
+        log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${edited.error}`);
+        toast.error(edited.error, { subsystem: 'Manager' });
+      }
+      return false;
+    }
+    this._jsonErrorText = '';
+    this._jsonHeld = false;
+    if (reportJsonText(edited.doc) === reportJsonText(this.doc)) return true;
+    this._jsonLock = true;
+    try {
+      this._commitDocument(edited.doc);
+    } finally {
+      this._jsonLock = false;
+    }
+    if (this._page === 'json' && this._json) this._json.open(this.doc, false);
+    return true;
   }
 
   /** Replace the open definition and redraw the page. */
@@ -624,8 +900,11 @@ export default class ReportsManager {
     toast.error(message, { subsystem: 'Manager' });
   }
 
-  _newReport() {
+  newReport() {
+    if (this._closed) return;
+    this._jsonHeld = false;
     this._setDocument(blankReport());
+    this._paintSummary('');
     log(Subsystems.MANAGER, Status.INFO, '[Reports] New report');
   }
 
@@ -671,3 +950,5 @@ export default class ReportsManager {
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Exported ${filename}`);
   }
 }
+
+Object.assign(ReportsManager.prototype, reportPointerMethods);

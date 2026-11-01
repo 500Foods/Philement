@@ -9,17 +9,112 @@
  * together. 1 is 96 CSS pixels per inch.
  */
 
+@import url('../../core/manager-panels.css');
 @import url('../../core/lithium-toolbar.css');
 
 @layer managers {
 .reports-manager {
-  display: flex;
-  flex-direction: column;
   width: 100%;
   height: 100%;
+  min-height: 0;
+}
+
+.reports-manager [hidden] {
+  display: none;
+}
+
+.reports-left-panel,
+.reports-right-panel {
+  min-height: 0;
+}
+
+.reports-table-container {
+  flex: 1;
+  min-height: 0;
+  margin: var(--space-2) var(--space-3);
   overflow: hidden;
-  background-color: var(--bg-primary);
+}
+
+.reports-right-panel {
+  min-width: 0;
+}
+
+.reports-view-controls {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.reports-category-btn[aria-pressed='true'] {
+  background-color: var(--accent-focus);
+}
+
+.reports-pages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+}
+
+.reports-page-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.reports-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 36rem;
+  padding: var(--space-4);
+}
+
+.reports-meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
   color: var(--text-primary);
+}
+
+.reports-meta-field input,
+.reports-meta-field textarea {
+  width: 100%;
+  padding: var(--space-2);
+  font: inherit;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+}
+
+.reports-meta-field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.reports-json-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.reports-json-host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+}
+
+.reports-json-host .cm-editor {
+  height: 100%;
 }
 
 .reports-manager .lithium-toolbar-title {
@@ -267,9 +362,80 @@
   right: 0;
   bottom: 0;
   left: 0;
+  z-index: 1;
   height: 8px;
   cursor: ns-resize;
   touch-action: none;
+}
+
+.reports-band-selected > .reports-band-strip {
+  box-shadow: inset 3px 0 0 var(--accent-info);
+}
+
+.reports-item {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  padding: 0 2px;
+  overflow: hidden;
+  font-family: var(--reports-item-font-family, 'Vanadium Sans'), sans-serif;
+  font-size: var(--reports-item-font-size, 13.333px);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.2;
+  color: #2a2a2a;
+  text-align: left;
+  white-space: nowrap;
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
+.reports-item[data-align='Center'] {
+  text-align: center;
+}
+
+.reports-item[data-align='Right'] {
+  text-align: right;
+}
+
+.reports-item[data-font-style='Bold'] {
+  font-weight: 700;
+}
+
+.reports-item[data-font-style='Italic'] {
+  font-style: italic;
+}
+
+.reports-item[data-font-style='Bold + Italic'] {
+  font-weight: 700;
+  font-style: italic;
+}
+
+.reports-item-selected {
+  outline: 1px solid var(--accent-info);
+  outline-offset: -1px;
+}
+
+.reports-item-text {
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.reports-item-corner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.reports-item-selected .reports-item-corner {
+  background-color: var(--accent-info);
 }
 
 .reports-page-note {

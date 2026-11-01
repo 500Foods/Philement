@@ -1,49 +1,124 @@
-<div class="reports-manager">
-  <div class="lithium-toolbar" id="reports-toolbar">
-    <span class="lithium-toolbar-title" id="reports-name">Report</span>
-    <div class="lithium-toolbar-placeholder"></div>
-    <button type="button" class="lithium-toolbar-btn" id="reports-new-btn" title="New report">
-      <fa fa-file></fa>
-      <span>New</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-import-btn" title="Import a definition file">
-      <fa fa-upload></fa>
-      <span>Import</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-export-btn" title="Export the definition file">
-      <fa fa-download></fa>
-      <span>Export</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-undo-btn" title="Undo" data-shortcut-id="reports-undo" disabled>
-      <fa fa-rotate-left></fa>
-      <span>Undo</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-redo-btn" title="Redo" data-shortcut-id="reports-redo" disabled>
-      <fa fa-rotate-right></fa>
-      <span>Redo</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-clear-btn" title="Clear history" disabled>
-      <fa fa-eraser></fa>
-      <span>Clear</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-fit-btn" title="Fit the page to the canvas width">
-      <fa fa-expand></fa>
-      <span>Fit width</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-zoom-out-btn" title="Zoom out">
-      <fa fa-minus></fa>
-      <span>Zoom out</span>
-    </button>
-    <span class="reports-zoom-label" id="reports-zoom-label" aria-live="polite">100%</span>
-    <button type="button" class="lithium-toolbar-btn" id="reports-zoom-100-btn" title="100% is 96 CSS pixels per inch">
-      <fa fa-magnifying-glass></fa>
-      <span>100%</span>
-    </button>
-    <button type="button" class="lithium-toolbar-btn" id="reports-zoom-in-btn" title="Zoom in">
-      <fa fa-plus></fa>
-      <span>Zoom in</span>
-    </button>
+<div class="manager-panels reports-manager" data-page="editor" style="--panel-left-w: 360px">
+  <div class="reports-left-panel" data-panel="left">
+    <div class="reports-table-container lithium-table-container" id="reports-table-container"></div>
+    <div class="reports-navigator-container lithium-navigator-container" id="reports-navigator-container"></div>
   </div>
-  <input type="file" class="reports-file-input" id="reports-import-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
-  <div class="reports-stage" id="reports-stage"></div>
+  <div class="lithium-splitter" data-splitter="left" id="reports-splitter"></div>
+  <div class="reports-right-panel" data-panel="right">
+    <div class="lithium-toolbar" id="reports-toolbar">
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="reports-collapse-btn" data-collapse-target="left" title="Toggle table">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-report-tab" data-page="report" data-collapsible-text>
+        <fa fa-file-lines></fa>
+        <span>Report</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab active" id="reports-editor-tab" data-page="editor" data-collapsible-text>
+        <fa fa-pen-to-square></fa>
+        <span>Editor</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-json-tab" data-page="json" data-collapsible-text>
+        <fa fa-brackets-curly></fa>
+        <span>JSON</span>
+      </button>
+      <div class="lithium-toolbar-placeholder"></div>
+      <button type="button" class="lithium-toolbar-btn" id="reports-import-btn" title="Import a definition file">
+        <fa fa-upload></fa>
+        <span>Import</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-export-btn" title="Export the definition file">
+        <fa fa-download></fa>
+        <span>Export</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-fold-btn" data-reports-page="json" title="Collapse all folds" hidden>
+        <fa fa-compress></fa>
+        <span>Collapse all</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-unfold-btn" data-reports-page="json" title="Expand all folds" hidden>
+        <fa fa-expand></fa>
+        <span>Expand all</span>
+      </button>
+      <span class="reports-view-controls" id="reports-view-controls" data-reports-page="editor">
+        <button type="button" class="lithium-toolbar-btn" id="reports-fit-btn" title="Fit the page to the canvas width">
+          <fa fa-expand></fa>
+          <span>Fit width</span>
+        </button>
+        <button type="button" class="lithium-toolbar-btn" id="reports-zoom-out-btn" title="Zoom out">
+          <fa fa-minus></fa>
+          <span>Zoom out</span>
+        </button>
+        <span class="reports-zoom-label" id="reports-zoom-label" aria-live="polite">100%</span>
+        <button type="button" class="lithium-toolbar-btn" id="reports-zoom-100-btn" title="100% is 96 CSS pixels per inch">
+          <fa fa-magnifying-glass></fa>
+          <span>100%</span>
+        </button>
+        <button type="button" class="lithium-toolbar-btn" id="reports-zoom-in-btn" title="Zoom in">
+          <fa fa-plus></fa>
+          <span>Zoom in</span>
+        </button>
+      </span>
+    </div>
+    <div class="lithium-toolbar" id="reports-categories" data-reports-page="editor">
+      <button type="button" class="lithium-toolbar-btn reports-category-btn" id="reports-static-btn" title="Static items" aria-pressed="true">
+        <fa fa-cube></fa>
+        <span>Static</span>
+      </button>
+      <div class="lithium-toolbar-placeholder"></div>
+      <button type="button" class="lithium-toolbar-btn" id="reports-undo-btn" title="Undo" data-shortcut-id="reports-undo" disabled>
+        <fa fa-rotate-left></fa>
+        <span>Undo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-redo-btn" title="Redo" data-shortcut-id="reports-redo" disabled>
+        <fa fa-rotate-right></fa>
+        <span>Redo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-clear-btn" title="Clear history" disabled>
+        <fa fa-eraser></fa>
+        <span>Clear</span>
+      </button>
+    </div>
+    <div class="lithium-toolbar" id="reports-items-toolbar" data-reports-page="editor">
+      <button type="button" class="lithium-toolbar-btn" id="reports-text-btn" title="Add static text to the selected band">
+        <fa fa-font-case></fa>
+        <span>Text</span>
+      </button>
+      <div class="lithium-toolbar-placeholder"></div>
+      <button type="button" class="lithium-toolbar-btn" id="reports-clone-btn" title="Clone the selected item" disabled>
+        <fa fa-copy></fa>
+        <span>Clone</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-delete-btn" title="Delete the selected item" data-shortcut-id="reports-delete" disabled>
+        <fa fa-trash></fa>
+        <span>Delete</span>
+      </button>
+    </div>
+    <div class="reports-pages">
+      <div class="reports-page-pane" id="reports-page-report" data-reports-page="report" hidden>
+        <form class="reports-meta" id="reports-meta">
+          <label class="reports-meta-field" for="reports-meta-name">
+            Name
+            <input id="reports-meta-name" type="text" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="reports-meta-field" for="reports-meta-title">
+            Title
+            <input id="reports-meta-title" type="text" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="reports-meta-field" for="reports-meta-summary">
+            Summary
+            <textarea id="reports-meta-summary" rows="4" spellcheck="true"></textarea>
+          </label>
+        </form>
+      </div>
+      <div class="reports-page-pane" id="reports-page-editor" data-reports-page="editor">
+        <div class="reports-stage" id="reports-stage"></div>
+      </div>
+      <div class="reports-page-pane" id="reports-page-json" data-reports-page="json" hidden>
+        <div class="reports-json-wrap">
+          <div class="reports-json-host" id="reports-json-editor"></div>
+          <div class="lithium-toolbar lithium-editor-footer" id="reports-json-footer"></div>
+        </div>
+      </div>
+    </div>
+    <input type="file" class="reports-file-input" id="reports-import-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+  </div>
 </div>

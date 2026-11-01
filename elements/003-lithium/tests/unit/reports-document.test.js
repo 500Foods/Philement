@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addBand,
   addItem,
+  cloneItem,
   createBlank,
   deleteBand,
   deleteItem,
@@ -154,16 +155,70 @@ describe('report document', () => {
       left: '1 in',
       top: '0.025 in',
       width: '2 in',
-      height: '0.3 in',
+      height: '0.225 in',
     });
     const removed = deleteItem(resized, 'detail', 'i1');
     expect(band(removed, 'detail').items.map((entry) => entry.id)).toEqual(['i2']);
     expect(band(blank, 'detail').items).toEqual([]);
   });
 
+  it('clamps a move and a resize to the band', () => {
+    const blank = createBlank();
+    const added = addItem(blank, 'detail', {
+      typeKey: 0,
+      box: { left: '0 in', top: '0 in', width: '1 in', height: '1 in' },
+    });
+    expect(item(added, 'detail', 'i1').box.height).toBe('1 in');
+    const slid = moveItem(added, 'detail', 'i1', { left: '-2 in', top: '-1 in' });
+    expect(item(slid, 'detail', 'i1').box).toEqual({
+      left: '0 in',
+      top: '0 in',
+      width: '1 in',
+      height: '0.25 in',
+    });
+    const parked = moveItem(added, 'detail', 'i1', { left: '10 in' });
+    expect(item(parked, 'detail', 'i1').box.left).toBe('7 in');
+    expect(item(parked, 'detail', 'i1').box.width).toBe('1 in');
+    const wide = resizeItem(added, 'detail', 'i1', { width: '20 in' });
+    expect(item(wide, 'detail', 'i1').box.left).toBe('0 in');
+    expect(item(wide, 'detail', 'i1').box.width).toBe('8 in');
+    const flat = resizeItem(added, 'detail', 'i1', { width: '0 in', height: '0 in' });
+    expect(item(flat, 'detail', 'i1').box.width).toBe('0.010417 in');
+    expect(item(flat, 'detail', 'i1').box.height).toBe('0.010417 in');
+    const metric = {
+      format: 1,
+      page: {
+        units: 'mm',
+        width: '210 mm',
+        height: '297 mm',
+        margin: { left: '0 mm', right: '0 mm', top: '0 mm', bottom: '0 mm' },
+      },
+      bands: [{ id: 'detail', typeKey: 15, height: '20 mm', items: [] }],
+    };
+    const millimetre = moveItem(addItem(metric, 'detail', { typeKey: 0 }), 'detail', 'i1', { left: '0 px' });
+    expect(item(millimetre, 'detail', 'i1').box.left.endsWith(' mm')).toBe(true);
+    expect(item(millimetre, 'detail', 'i1').box.left).toBe('0 mm');
+  });
+
   it('does not invent a datasource on a new detail band', () => {
     const next = addBand(createBlank(), { typeKey: 15, id: 'more' });
     expect(Object.hasOwn(band(next, 'more'), 'datasource')).toBe(false);
     expect(band(next, 'more').height).toBe('0.25 in');
+  });
+
+  it('copies an item onto the same band with a new id and the same box', () => {
+    const blank = createBlank();
+    const added = addItem(blank, 'detail', {
+      typeKey: 0,
+      text: 'Hello',
+      box: { left: '1 in', top: '0 in', width: '1.5 in', height: '0.2 in' },
+    });
+    const copy = cloneItem(added, 'detail', 'i1');
+    const items = band(copy, 'detail').items;
+    expect(items.map((entry) => entry.id)).toEqual(['i1', 'i2']);
+    expect(item(copy, 'detail', 'i2').text).toBe('Hello');
+    expect(item(copy, 'detail', 'i2').box).toEqual(item(copy, 'detail', 'i1').box);
+    expect(band(added, 'detail').items).toHaveLength(1);
+    expect(band(blank, 'detail').items).toEqual([]);
   });
 });

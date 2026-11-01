@@ -3,15 +3,15 @@
  * 1 is 100%, which is 96 CSS pixels per inch. Fit-width is the
  * hundredths of pane width over sheet width, rounded down, so the
  * scaled sheet is no wider than the pane. The definition is not
- * involved. Zoom steps by a tenth and stays between the limits
- * unless a fit already sits outside them.
+ * involved. Zoom steps by five percent and stays between the
+ * limits unless a fit already sits outside them.
  */
 
 /** 100%. One inch is 96 CSS pixels. */
 export const VIEW_SCALE_100 = 1;
 
-/** One zoom step, as a fraction of 100%. */
-export const VIEW_SCALE_STEP = 0.1;
+/** One zoom step, as a fraction of 100%. Five percent per bump. */
+export const VIEW_SCALE_STEP = 0.05;
 
 /** Lowest scale a zoom button will walk to. */
 export const VIEW_SCALE_MIN = 0.1;
@@ -53,6 +53,28 @@ export function formatViewScale(scale) {
  */
 export function viewScaleLabel(scale) {
   return `${Math.round(Number(formatViewScale(scale)) * 100)}%`;
+}
+
+/**
+ * Ctrl or Cmd. A bare wheel still scrolls the page.
+ * @param {{ ctrlKey?: boolean, metaKey?: boolean }|null} event
+ * @returns {boolean}
+ */
+export function wheelZoomHeld(event) {
+  return Boolean(event && (event.ctrlKey || event.metaKey));
+}
+
+/**
+ * Wheel direction over the report page. Scroll up zooms in.
+ * A wheel with no vertical travel is ignored, so the page can
+ * still scroll sideways.
+ * @param {number} deltaY
+ * @returns {number} 1 zooms in, -1 zooms out, 0 leaves the scale.
+ */
+export function wheelViewScaleDirection(deltaY) {
+  const delta = Number(deltaY);
+  if (!(delta > 0) && !(delta < 0)) return 0;
+  return delta < 0 ? 1 : -1;
 }
 
 /**

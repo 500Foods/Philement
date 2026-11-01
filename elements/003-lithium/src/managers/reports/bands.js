@@ -7,6 +7,7 @@
  */
 
 import { paintBandGrid } from './grid.js';
+import { paintBandItems } from './items.js';
 import { bandHeight } from './model/document.js';
 import { toCssPx } from './model/units.js';
 import { bandRoleName } from './reports-file.js';
@@ -103,6 +104,8 @@ export function paintReportBands(page, doc, grid) {
         edge.title = 'Resize band';
         body.append(edge);
       }
+      const source = Array.isArray(doc.bands) ? doc.bands[index] : null;
+      if (source) paintBandItems(body, source, doc);
       band.append(body);
     }
     stack.append(band);

@@ -379,4 +379,9 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1419](/elements/002-helium/acuranzo/migrations/acuranzo_1419.lua) | queries | 1.0.0 | 2026-10-30 | 4 | ✗ | QueryRef #162 - AEM Insert Counter |
 | [1420](/elements/002-helium/acuranzo/migrations/acuranzo_1420.lua) | queries | 1.0.0 | 2026-10-30 | 4 | ✗ | QueryRef #163 - AEM Insert Gauge |
 | [1421](/elements/002-helium/acuranzo/migrations/acuranzo_1421.lua) | queries | 1.0.0 | 2026-10-30 | 4 | ✗ | QueryRef #164 - AEM Insert Event |
-| **346** | | | | **1860** | **346** | |
+| [1422](/elements/002-helium/acuranzo/migrations/acuranzo_1422.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #165 - List Reports |
+| [1423](/elements/002-helium/acuranzo/migrations/acuranzo_1423.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #166 - Search Reports |
+| [1424](/elements/002-helium/acuranzo/migrations/acuranzo_1424.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #167 - Get Report |
+| [1425](/elements/002-helium/acuranzo/migrations/acuranzo_1425.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #168 - Insert Report Revision |
+| [1426](/elements/002-helium/acuranzo/migrations/acuranzo_1426.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #169 - Get Document Image |
+| **351** | | | | **1880** | **351** | |

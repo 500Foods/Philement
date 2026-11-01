@@ -7,6 +7,7 @@
  */
 
 import {
+  CSS_PX_PER_INCH,
   contentBox,
   convertLength,
   formatLength,
@@ -303,6 +304,75 @@ function takeBox(doc, band, item) {
   return { ...item.box };
 }
 
+function inchesOf(length) {
+  return parseLength(convertLength(length, 'in')).value;
+}
+
+function bandLimits(doc, band) {
+  const page = doc.page;
+  if (!page || typeof page.width !== 'string' || typeof page.height !== 'string') {
+    throw new Error('Page needs a width and a height.');
+  }
+  const content = contentBox({
+    units: documentUnit(doc),
+    width: page.width,
+    height: page.height,
+    margin: page.margin,
+  });
+  return {
+    widthIn: inchesOf(content.width),
+    heightIn: inchesOf(bandHeight(band)),
+  };
+}
+
+/**
+ * Keep a box inside the band. A resize keeps the top left and
+ * will not go below 1 CSS pixel when the band has that room.
+ * A move slides the origin and shrinks a side only when it is
+ * already larger than the band.
+ * @param {object} doc
+ * @param {object} band
+ * @param {object} box
+ * @param {boolean} resize
+ * @returns {{ left: string, top: string, width: string, height: string }}
+ */
+function clampStoredBox(doc, band, box, resize) {
+  const limits = bandLimits(doc, band);
+  const unit = documentUnit(doc);
+  const minIn = 1 / CSS_PX_PER_INCH;
+  const place = (originIn, sizeIn, limitIn) => {
+    const limit = limitIn > 0 ? limitIn : 0;
+    if (!(limit > 0)) return { origin: 0, size: 0 };
+    if (resize) {
+      let origin = originIn;
+      if (origin < 0) origin = 0;
+      if (origin > limit) origin = limit;
+      const room = limit - origin;
+      const floor = room >= minIn ? minIn : room;
+      let size = sizeIn;
+      if (size < floor) size = floor;
+      if (size > room) size = room;
+      return { origin, size };
+    }
+    let size = sizeIn;
+    if (size < 0) size = 0;
+    if (size > limit) size = limit;
+    let origin = originIn;
+    const maxOrigin = Math.max(0, limit - size);
+    if (origin < 0) origin = 0;
+    if (origin > maxOrigin) origin = maxOrigin;
+    return { origin, size };
+  };
+  const horizontal = place(inchesOf(box.left), inchesOf(box.width), limits.widthIn);
+  const vertical = place(inchesOf(box.top), inchesOf(box.height), limits.heightIn);
+  return {
+    left: storedLength(formatLength(horizontal.origin, 'in'), unit),
+    top: storedLength(formatLength(vertical.origin, 'in'), unit),
+    width: storedLength(formatLength(horizontal.size, 'in'), unit),
+    height: storedLength(formatLength(vertical.size, 'in'), unit),
+  };
+}
+
 /**
  * @param {object} doc
  * @param {{ id?: string, typeKey: number, height?: string, index?: number, items?: object[] }} spec
@@ -436,7 +506,7 @@ export function moveItem(doc, bandId, itemId, position) {
   const box = takeBox(next, band, item);
   if (position.left !== undefined) box.left = storedLength(position.left, unit);
   if (position.top !== undefined) box.top = storedLength(position.top, unit);
-  item.box = box;
+  item.box = { ...box, ...clampStoredBox(next, band, box, false) };
   return next;
 }
 
@@ -458,7 +528,7 @@ export function resizeItem(doc, bandId, itemId, size) {
   const box = takeBox(next, band, item);
   if (size.width !== undefined) box.width = storedLength(size.width, unit);
   if (size.height !== undefined) box.height = storedLength(size.height, unit);
-  item.box = box;
+  item.box = { ...box, ...clampStoredBox(next, band, box, true) };
   return next;
 }
 
@@ -478,4 +548,20 @@ export function deleteItem(doc, bandId, itemId) {
   if (index < 0) throw new Error(`Item "${itemId}" was not found on band "${bandId}".`);
   band.items.splice(index, 1);
   return next;
+}
+
+/**
+ * Copy an item onto the same band. The copy gets a new id and the same box.
+ * @param {object} doc
+ * @param {string} bandId
+ * @param {string} itemId
+ * @returns {object}
+ */
+export function cloneItem(doc, bandId, itemId) {
+  const source = clone(doc);
+  const band = findBand(source, bandId);
+  const item = findItem(band, itemId);
+  const spec = clone(item);
+  delete spec.id;
+  return addItem(doc, bandId, spec);
 }

@@ -3,8 +3,8 @@
 # Reporting — Designer
 
 **Parent:** [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md)
-**Phases:** 1–10
-**Stop when:** The author can place static text and export the definition file.
+**Phases:** 1–10, and Phase 10-UI
+**Stop when:** The author can place static text and export the definition file. Phase 10-UI is the manager chrome and is in progress.
 
 The locks, the phase index, Phase 0, the backlog, and the Working Log
 live in the parent. This file holds these phase bodies. Work one phase
@@ -13,7 +13,7 @@ Handoff on the phase in this file, set the same Status in the parent's
 phase table, and append the Working Log in the parent.
 
 **Entry:** Phase 0 in the parent is complete.
-**Next file:** [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md) after Phase 10.
+**Next file:** [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md) after Phase 10-UI, when Andrew names Phase 11.
 
 ## Phase 1 — Contracts and fixtures
 
@@ -883,11 +883,11 @@ Phase 8 Status complete.
 
 ### Work items
 
-- [ ] 9.1 A CSS variable scales the page, the grid, and the rulers
+- [x] 9.1 A CSS variable scales the page, the grid, and the rulers
       together. The definition's physical units do not change.
-- [ ] 9.2 Fit-width, 100%, zoom in, and zoom out. 100% is 96 CSS
+- [x] 9.2 Fit-width, 100%, zoom in, and zoom out. 100% is 96 CSS
       pixels per inch.
-- [ ] 9.3 Browser: fit-width keeps the whole Letter page visible in
+- [x] 9.3 Browser: fit-width keeps the whole Letter page visible in
       the designer pane. 100% makes the ruler's 1 inch mark match a
       CSS measurement of 96 pixels.
 
@@ -902,7 +902,124 @@ a known pane width, and the browser check.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** Andrew said the view scale works
+pretty well. Work items 9.1–9.3 are checked. `npm test`
+exited 0 (69 files, 1301 passed, 12 skipped). The skipped
+cases are the auth integration file. The server check for
+`https://lithium.500courses.com` was aborted. `npm run lint`
+exited 0. `npm run lint:css` exited 0. `npx eslint` on the
+report files exited 0. `npm run templates:copy` copied 137
+templates, including `reports.html` and `reports.css`.
+Phase 10 has not started.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/scale.js`](/elements/003-lithium/src/managers/reports/scale.js)
+  is the view math. `1` is 100%, which is 96 CSS pixels per
+  inch. Fit-width is `floor(100 * paneWidth / sheetWidth) / 100`.
+  A Letter sheet is the page (`816`) plus the 28 pixel ruler
+  bar, `844`. A `1000` pixel pane returns `1.18`. A `600` pixel
+  pane returns `0.71`. Equal widths return `1`. A pane or a
+  sheet that is not positive returns `1`. Below one percent the
+  exact ratio is kept. Zoom steps by `0.05` on integer
+  hundredths. The step stops at `0.1` and `4`. A fit that
+  already sits outside those limits stays there until the next
+  step walks back in. The label is the rounded percent.
+- [`/elements/003-lithium/src/managers/reports/canvas.js`](/elements/003-lithium/src/managers/reports/canvas.js)
+  sets `--reports-page-width`, `--reports-page-height`,
+  `--reports-ruler-size`, and `--reports-scale` on the canvas,
+  and adds `reports-canvas-fitted`. The page element keeps the
+  unscaled size. A Letter page stays `816px` wide. The 1 inch
+  major tick stays at `x1=96`.
+- [`/elements/003-lithium/src/managers/reports/reports.css`](/elements/003-lithium/src/managers/reports/reports.css)
+  sizes the canvas to the scaled sheet. The sheet is
+  `transform: scale(var(--reports-scale, 1))` from the top left,
+  so the page, the grid, the rulers, and the corner scale
+  together. Layout coordinates stay at 96 CSS pixels per inch.
+  `.reports-stage` uses `scrollbar-gutter: stable`.
+- [`/elements/003-lithium/src/managers/reports/reports.html`](/elements/003-lithium/src/managers/reports/reports.html)
+  adds Fit width, Zoom out, the percent label, 100%, and Zoom
+  in after Clear. 100% is titled "100% is 96 CSS pixels per
+  inch".
+- [`/elements/003-lithium/src/managers/reports/reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  keeps the scale on the manager. It is absent from the
+  definition, from history, and from settings. Fit width
+  follows a later resize. 100% and the zoom buttons keep the
+  chosen scale. The wheel over `#reports-page` takes the same
+  five percent step. Scroll up zooms in. That wheel does not
+  scroll the stage. A wheel on the summary, the rulers, or a
+  wheel with no vertical travel still scrolls. New and Import
+  clear the choice and fit again. A pane whose width is still
+  `0` paints at `1`. A `ResizeObserver` fits once the stage
+  has a width. The corner cycle and undo repaint through the
+  same scale. A band drag divides the pointer delta by the
+  scale. `destroy` and `cleanup` disconnect the pane observer
+  and the wheel listener. Export of a zoomed blank report
+  matches `createBlank()`.
+- [`/elements/003-lithium/src/managers/reports/rulers.js`](/elements/003-lithium/src/managers/reports/rulers.js)
+  divides the pointer by the scale before placing the mouse
+  line. At scale `1` the line is unchanged.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-scale.test.js`](/elements/003-lithium/tests/unit/reports-scale.test.js)
+  (5),
+  [`/elements/003-lithium/tests/unit/reports-shell.test.js`](/elements/003-lithium/tests/unit/reports-shell.test.js)
+  (37), and
+  [`/elements/003-lithium/tests/unit/reports-rulers.test.js`](/elements/003-lithium/tests/unit/reports-rulers.test.js)
+  (10). The shell proves a `1000` pixel pane fits at `1.18`,
+  zoom in reaches `1.23`, 100% returns `1`, a wheel over the
+  page reaches `1.05`, and a zoomed export matches
+  `createBlank()`.
+
+### Lessons learned
+
+- Fit is the pane width over the sheet width. The sheet is the
+  page plus the 28 pixel bar. Height is outside the formula. A
+  pane shorter than the scaled Letter page scrolls vertically.
+  `scrollbar-gutter: stable` keeps that bar from stealing the
+  width the fit just used. Work item 9.3 says the whole Letter
+  page stays visible. This sitting reads that as the full page
+  width, with vertical scroll when the pane is shorter. Andrew
+  accepted that reading on 2026-10-31.
+- One transform scales the sheet, including the ruler bar and
+  the corner. Tick coordinates stay at 96 CSS pixels per inch,
+  so the 1 inch mark is still 96 layout pixels at 100%. The
+  canvas width and height match the visual size, because a
+  transform on its own does not change layout.
+- happy-dom reports `clientWidth` `0` and does not apply the
+  `@layer` rules to computed style. Open paints at `1`. The
+  tests set the CSS variable, the tick attribute, and the
+  source text of the transform. A real browser fits when the
+  stage has a width. If that observer misses, Fit width is the
+  control.
+- The scale is view state. It is absent from the definition,
+  from the undo trail, and from settings. New and Import fit
+  again. The corner cycle and undo keep the open scale.
+- Andrew asked for five percent per bump, on the buttons and
+  on the wheel, the same rate the photo editor uses. The step
+  is `0.05` on integer hundredths. The `0.1`–`4` limits stay.
+  He accepted them on 2026-10-31. The wheel acts only while
+  the pointer is over the page. The summary and the rulers
+  still scroll.
+- Ctrl+Shift+Z stays the global Toggle zoom shortcut. Report
+  zoom has no shortcut. Undo stays Ctrl+Z and redo stays
+  Ctrl+Y, manager 24 only.
+- `npm run lint` does not expand into `src/managers/reports`.
+  `npx eslint` on those files is the extra gate. It exited 0.
+- The 12 skipped auth cases are the standing variance. The
+  server check for `https://lithium.500courses.com` was
+  aborted. That skip is outside this phase's gate.
+- happy-dom is the math and the variable. That is not the 500
+  Courses check.
+
+### Handoff
+
+Phase 9 is complete. Andrew said the view scale works pretty
+well on 2026-10-31. Fit width shows the Letter width in the
+designer pane. A shorter pane scrolls vertically. 100% is 96
+CSS pixels per inch. The zoom buttons and the wheel over the
+page step by 5 points, and the buttons stop at 10% and 400%.
+The scale stays off the definition. Phase 10 has not started.
+It places, moves, resizes, and selects a static text item.
 
 ---
 
@@ -918,21 +1035,21 @@ Phase 9 Status complete.
 
 ### Work items
 
-- [ ] 10.1 The palette adds a static text item to the selected band.
+- [x] 10.1 The palette adds a static text item to the selected band.
        The new item writes the Defaults table: box `1.5 in` by
        `0.2 in`, centered in the band, `align` `Left`, `text`
        `Text`. It omits `font` and `mask`.
-- [ ] 10.2 Drag moves `left` and `top`. Corner resize changes `width`
+- [x] 10.2 Drag moves `left` and `top`. Corner resize changes `width`
        and `height`. Commit on pointerup through the model. Clamp to
        the band.
-- [ ] 10.3 Selection draws an inset outline. Delete removes the item.
+- [x] 10.3 Selection draws an inset outline. Delete removes the item.
        Undo restores position and existence.
-- [ ] 10.4 The item shows its text. v1 text is the item's `text`
+- [x] 10.4 The item shows its text. v1 text is the item's `text`
        property, edited in Phase 14. Until then a new item reads
        "Text".
-- [ ] 10.5 Browser: add, drag, resize, undo, export. The file has
+- [x] 10.5 Browser: add, drag, resize, undo, export. The file has
        `typeKey` 0 and unit strings.
-- [ ] 10.6 The canvas clips item text to the item box. A string
+- [x] 10.6 The canvas clips item text to the item box. A string
        longer than the box is cut off on screen. Emit clips the same
        way. The band does not grow.
 
@@ -946,5 +1063,284 @@ Lint, unit tests for the clamp, and the browser check.
 
 ### Status
 
-**not started**
+**complete — 2026-10-31.** Andrew said it works pretty well.
+Work items 10.1–10.6 are checked. `npm test`
+exited 0 (70 files, 1309 passed, 12 skipped). The skipped
+cases are the auth integration file. The Hydrogen server at
+`https://lithium.500courses.com` was not available. `npm run
+lint` exited 0. `npm run lint:css` exited 0. `npx eslint` on
+`src/managers/reports` and the two report unit files exited 0.
+`npm run templates:copy` copied 137 templates, including
+`reports.html` and `reports.css`. Phase 11 has not started.
+
+### Accomplished
+
+- [`/elements/003-lithium/src/managers/reports/items.js`](/elements/003-lithium/src/managers/reports/items.js)
+  paints `typeKey` 0. `staticItemText` returns a stored
+  string, including a blank, and reads "Text" when the key
+  is absent. `dragItemBox` slides `left` and `top` on a
+  move and keeps the top left on a resize. Both stay inside
+  the band. A resize is at least 1 CSS pixel when the band
+  has that room. `bandItemBounds` uses the content width
+  and the stored band height. `defaultBandId` returns
+  `detail` when that band exists. `paintBandItems` writes
+  the box in CSS pixels, sets the font variables, and
+  appends the text and the corner. Other type keys stay in
+  the file and off the page.
+- [`/elements/003-lithium/src/managers/reports/model/document.js`](/elements/003-lithium/src/managers/reports/model/document.js)
+  clamps inside `moveItem` and `resizeItem`. `addItem`
+  still writes the Defaults table and leaves an explicit
+  box as given. Lengths convert into `page.units`. A
+  resize to `0.3 in` at top `0.025 in` on the `0.25 in`
+  detail band stores height `0.225 in`. A resize to `0 in`
+  stores `0.010417 in`, which is 1 CSS pixel.
+- [`/elements/003-lithium/src/managers/reports/bands.js`](/elements/003-lithium/src/managers/reports/bands.js)
+  paints the items after the band edge. The band height
+  stays the stored height.
+- [`/elements/003-lithium/src/managers/reports/reports.html`](/elements/003-lithium/src/managers/reports/reports.html)
+  adds Delete after Clear. The shortcut id is
+  `reports-delete`. The palette row holds Text
+  (`#reports-text-btn`, `fa-font-case`).
+- [`/elements/003-lithium/src/managers/reports/reports.css`](/elements/003-lithium/src/managers/reports/reports.css)
+  clips `.reports-item` with `overflow: hidden` and
+  `white-space: nowrap`. The ink is `#2a2a2a`. The
+  selected item uses an inset outline. The selected band
+  strip uses an inset accent bar. The corner is 8 CSS
+  pixels.
+- [`/elements/003-lithium/src/managers/reports/reports.js`](/elements/003-lithium/src/managers/reports/reports.js)
+  selects `detail` on New and Import. A band click selects
+  that band and clears the item. Text adds `typeKey` 0 on
+  the selected band and selects the new item. Drag and the
+  corner preview in pixels, divide the pointer by
+  `--reports-scale`, and commit on pointerup. An unchanged
+  box does not add a history step. Delete removes the item.
+  The item id stays so Undo selects it again. A second
+  Delete while the item is gone does nothing. The Delete
+  key is registered for manager 24.
+- Tests:
+  [`/elements/003-lithium/tests/unit/reports-items.test.js`](/elements/003-lithium/tests/unit/reports-items.test.js)
+  (7) and
+  [`/elements/003-lithium/tests/unit/reports-document.test.js`](/elements/003-lithium/tests/unit/reports-document.test.js)
+  (10). The shell adds Text on detail at `3.25 in`,
+  `0.025 in`, `1.5 in` by `0.2 in`, exports `typeKey` 0
+  with unit strings, and proves move, resize, clamp,
+  delete, undo, scale, and the clip rules in the
+  stylesheet.
+
+### Lessons learned
+
+- `moveItem` and `resizeItem` clamp. `addItem` and import
+  leave the box as written. A short band can still receive
+  the default `0.2 in` height until the next move or
+  resize. The older resize expectation of `0.3 in` on
+  detail is now `0.225 in`.
+- The resize floor is 1 CSS pixel when the band has that
+  room, so a zero box still has a corner. `formatLength`
+  stores that pixel as `0.010417 in`. A move slides a box
+  and shrinks a side only when that side is already larger
+  than the band.
+- Corner resize keeps the top left. One handle sits at the
+  bottom right. The item is `z-index` 2 and the band edge
+  is `z-index` 1, so the corner stays hittable where they
+  overlap.
+- The palette is one row under the toolbar. This phase adds
+  Text. Later phases add their choices to the same row.
+  Andrew then locked the manager chrome in the parent plan.
+  That lock moves Text onto the third editor toolbar. The
+  running shell still has this single row.
+  Detail is the selected band on New and Import. A band
+  click moves the selection. Text is disabled when no band
+  is selected.
+- Delete is the toolbar button and the Delete key, manager
+  24 only. Undo is the way back, so there is no confirm.
+  The item id is kept after Delete so Undo selects the item
+  again. New and Import clear the band choice and the item
+  id. Selection stays off the definition, the same way the
+  view scale does.
+- The canvas ink is `#2a2a2a`. A missing text key paints
+  "Text". A stored string paints as written. The item font
+  wins when it is present. Otherwise the report font is
+  used. Otherwise the face is Vanadium Sans, 10 pt, Normal.
+  The family has to match a plain name or the paint falls
+  back to Vanadium Sans. Only `typeKey` 0 is painted. Field
+  items stay in the summary until Phase 15.
+- The canvas clips with `overflow: hidden` and
+  `white-space: nowrap`. The band does not grow. Emit is
+  Phase 24. The page-rules lock already says text clips to
+  the box, and that emit has to clip the same way.
+- happy-dom canonicalizes `2.4000000000000004px` to
+  `2.4px`, so the paint test compares parsed pixels.
+  happy-dom does not apply an `@layer` stylesheet to
+  computed style, so the clip test reads `reports.css`.
+  `npm run lint` does not expand into
+  `src/managers/reports`. `npx eslint` on those files is
+  the extra gate. It exited 0.
+- The 12 skipped auth cases are the standing variance.
+  That skip is outside this phase's gate. happy-dom is the
+  clamp and the stylesheet text. That is not the 500
+  Courses check.
+
+### Handoff
+
+Phase 10 is complete. Andrew said it works pretty well on
+2026-10-31. Text on Detail adds, drags, resizes, undoes,
+and exports. The file has `typeKey` 0, `text` "Text",
+`align` `Left`, and a box of `1.5 in` by `0.2 in`. On
+Letter detail the origin is `3.25 in`, `0.025 in`. Font
+and mask are absent. Delete removes the item, and Undo
+brings it back. A long string is cut off inside the box.
+Emit clips the same way in Phase 24. The manager chrome
+lock is in the parent, under Designer rules. The running
+shell is still the single toolbar and the one Text row.
+Phase 11 has not started. It is the lookup 053 packet in
+[`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
+Phase 10-UI, below, is the shell he named next.
+
+## Phase 10-UI — Manager chrome
+
+### Goal
+
+Give Report Manager the Query Manager shell: a report list, an
+Editor page, a JSON page, and toolbars that show only on the
+page they change.
+
+### Entry gate
+
+Phase 10 Status complete. Andrew named this sidequest Phase
+10-UI. The count stays seventy-two phases, numbered 0 through
+71.
+
+### Work items
+
+- [x] 10-UI.1 The left pane is a LithiumTable of `reports`.
+       There is no QueryRef and no Lookup 059 key. Name and
+       summary are the visible columns. Navigator Add starts a
+       blank report. Save, duplicate, and delete of a row toast
+       and do not store or remove a row.
+- [x] 10-UI.2 Editor is the stage. JSON is a CodeMirror buffer
+       of the definition with `history` removed. Folds start
+       collapsed. A parsed edit commits one history step on blur
+       or when the page changes. A parse error toasts and leaves
+       the definition.
+- [x] 10-UI.3 The main toolbar keeps Import and Export. Zoom
+       sits at the right end and shows only on Editor. The
+       second toolbar, Editor only, is Static, then Undo, Redo,
+       and Clear. The third toolbar, Editor only, is Text, then
+       Clone, then Delete. The page-size control and the
+       property panel are absent.
+- [ ] 10-UI.4 Browser check on
+       `https://lithium.500courses.com`. Collapse the list,
+       place text, clone it, open JSON, and confirm a bad
+       buffer leaves the report. On Report, edit the name.
+       On the list, Add and type the name. Hold Ctrl or Cmd
+       and roll the wheel over the page. A bare wheel scrolls.
+- [x] 10-UI.5 Undo, Redo, and Clear show only on the Editor
+       toolbar. Clone sits before Delete on the item toolbar.
+- [x] 10-UI.6 Report is the first tab. It edits definition
+       `name` and `title`, and the list row's `summary`.
+       There is no group field.
+- [x] 10-UI.7 Name and summary cells use the string and text
+       editors. Save, duplicate, and delete of a row still
+       fail without a QueryRef.
+- [x] 10-UI.8 The wheel over the page zooms only while Ctrl
+       or Cmd is held. A bare wheel still scrolls.
+
+### Done means
+
+The author can list, edit, and inspect a definition from one
+manager, and a control is hidden when its page is hidden.
+
+### Exit gate
+
+Lint, unit tests for the pages, the clone, and the honest row
+actions, then Andrew's check on
+`https://lithium.500courses.com`.
+
+### Status
+
+**in progress — 2026-10-31.** Work items 10-UI.1 through
+10-UI.3 and 10-UI.5 through 10-UI.8 are checked. Work item
+10-UI.4 is waiting on Andrew. `npm test` exited 0 (71 files,
+1319 passed, 12 skipped). The skipped cases are the auth
+integration file. `npm run lint` and `npm run lint:css`
+exited 0. `npx eslint` on `src/managers/reports` and the
+report unit tests exited 0. `npm run templates:copy` copied
+137 templates. Phase 11 has not started.
+
+### Accomplished
+
+- The shell follows Query Manager. The left pane lists
+  `reports` from an in-memory table definition. The columns
+  match `acuranzo_1015.lua`. There is no `collection` column
+  and no QueryRef. Navigator Add calls `newReport()`. The
+  footer Save and Cancel use `ManagerEditHelper`. Until
+  Phases 17 and 18, save and duplicate throw, and delete
+  toasts without removing the row.
+- Editor keeps `#reports-stage`. JSON uses
+  `buildEditorExtensions` with `language: 'json'` and a
+  `LithiumEditorFooter`. The buffer is `reportBody`. Folds
+  start collapsed on each open. The same bad buffer toasts
+  once. The external editor registered for a later save
+  still includes `history`.
+- Static is the only category. Text is `#reports-text-btn`.
+  Delete is `#reports-delete-btn` and the Delete key. Clone
+  uses `cloneItem`: same band, new id, same box, and the
+  copy is selected. Both stay disabled when no item is
+  selected. Switching Static leaves the definition alone.
+- `#reports-new-btn`, the page-size control, and the
+  property panel are absent. Import and Export stay on the
+  main toolbar. The open report name stays there too.
+- Finishing touches, same phase: Undo, Redo, and Clear moved
+  to the Editor toolbar. Clone then Delete moved onto the
+  item toolbar. Report is the first tab and edits `name`,
+  `title`, and the row `summary`. There is no group. The
+  list cells open because the local string and text coltypes
+  now carry `input` and `textarea`. The wheel requires Ctrl
+  or Cmd. Save still fails without a QueryRef. Overlapping
+  clones stay on the same box until Andrew picks a mark.
+
+### Lessons learned
+
+- An author `display: flex` rule beats the `hidden` attribute
+  inside the same CSS layer. `.reports-manager [hidden]`
+  sets `display: none`. Tests assert the attribute, because
+  happy-dom does not apply the layered stylesheet.
+- LithiumTable's default delete removes the row and toasts
+  "Row Deleted" when `deleteQueryRef` is missing. The
+  report list replaces that handler. Save and duplicate
+  throw `No queryRef configured for …` so the existing
+  toast path can run later. This sitting does not call
+  `authQuery`.
+- `reports.js` stayed at 857 lines by moving the pointer
+  methods to `reports-pointer.js`. Those methods call free
+  functions, so that file imports them.
+- Blur and the following page click both parse one bad
+  buffer. The second toast is skipped when the text has
+  not changed.
+- The JSON editor is created when the JSON page opens, so
+  CodeMirror is not measured while the pane is hidden.
+- A local coltype map without `editor` never opens a cell.
+  `editable: true` is not enough. String uses `input` and
+  text uses `textarea`, the same editors as `coltypes.json`.
+- The wheel zoomed on a bare scroll. Ctrl and Cmd are the
+  modifier already used for shortcuts. Cmd is recorded as
+  Ctrl. A bare wheel does not call `preventDefault`.
+
+### Handoff
+
+Phase 10-UI is in progress. Andrew checks
+`https://lithium.500courses.com`. Collapse the list and the
+Editor page is today's canvas. Add Text, clone it, and
+confirm the copy keeps the box and takes a new id. Open
+JSON: the buffer has no `history`, and the folds start
+collapsed. Change the name and leave the editor. Undo
+returns the previous name. Type `{` and leave the page.
+The toast appears and the report stays. Save, duplicate,
+and delete on the list fail visibly. Add a row and type
+the name. Open Report and edit the name. Hold Ctrl or Cmd
+and roll the wheel over the page. A bare wheel scrolls.
+There is no page-size control and no property panel. Do
+not mark this phase complete until he reports that check.
+Do not start Phase 11. It is the lookup 053 packet in
+[`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 

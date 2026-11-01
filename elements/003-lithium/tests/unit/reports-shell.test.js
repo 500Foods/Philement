@@ -22,6 +22,25 @@ import {
 } from '../../src/managers/reports/reports-file.js';
 import ReportsManager from '../../src/managers/reports/reports.js';
 
+vi.mock('../../src/tables/lithium-table-main.js', () => ({
+  LithiumTable: class {
+    constructor(options) {
+      this.options = options;
+      this.queryRefs = null;
+      this.currentData = [];
+      this.table = { redraw() {} };
+      this.handleAdd = async () => {};
+      this.handleDelete = async () => {};
+      this.setSplitter = () => {};
+      this.destroy = () => {};
+    }
+
+    async init() {}
+
+    async loadData() {}
+  },
+}));
+
 const html = readFileSync(
   resolve(process.cwd(), 'src/managers/reports/reports.html'),
   'utf8',
@@ -146,6 +165,8 @@ describe('Report Manager shell', () => {
   let manager;
 
   beforeEach(() => {
+    localStorage.removeItem('lithium_reports_left_collapsed');
+    localStorage.removeItem('lithium_reports_left_width');
     toast.dismissAll();
     const toastBox = document.getElementById('toast-container');
     if (toastBox) toastBox.innerHTML = '';
@@ -195,6 +216,14 @@ describe('Report Manager shell', () => {
     return pageEl().querySelector(`[data-band-id="${id}"] .reports-band-body`);
   }
 
+  function wheel(deltaY, modifiers = {}) {
+    const event = new CustomEvent('wheel', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'deltaY', { value: deltaY });
+    Object.defineProperty(event, 'ctrlKey', { value: Boolean(modifiers.ctrlKey) });
+    Object.defineProperty(event, 'metaKey', { value: Boolean(modifiers.metaKey) });
+    return event;
+  }
+
   function pointer(type, clientY) {
     const event = new CustomEvent(type, { bubbles: true, cancelable: true });
     Object.defineProperty(event, 'clientY', { value: clientY });
@@ -216,7 +245,7 @@ describe('Report Manager shell', () => {
 
   it('starts from a blank report and exports the written defaults', async () => {
     const saved = await open();
-    expect(manager.elements.name.textContent).toBe('Report');
+    expect(manager.elements.metaName.value).toBe('Report');
     expect(container.textContent).not.toMatch(/under development/i);
     manager.elements.exportBtn.click();
     expect(saved[0].filename).toBe('Report.report.json');
@@ -244,7 +273,7 @@ describe('Report Manager shell', () => {
     expect(stageText()).toContain('Orders');
     expect(stageText()).toContain('Detail, detail, 0.25 in, orders');
     expect(stageText()).toContain('customer');
-    manager.elements.newBtn.click();
+    manager.newReport();
     const stage = stageText();
     expect(stage).toContain('Page header, ph, 0.4 in');
     expect(stage).toContain('Detail, detail, 0.25 in');
@@ -318,7 +347,7 @@ describe('Report Manager shell', () => {
     expect(pageVar('--reports-page-width')).toBe('816px');
     expect(pageVar('--reports-page-height')).toBe('1056px');
     expect(pageVar('--reports-margin-left')).toBe('24px');
-    expect(manager.elements.name.textContent).toBe('Orders');
+    expect(manager.elements.metaName.value).toBe('Orders');
   });
 
   it('paints each band at its stored height, in array order', async () => {
@@ -462,7 +491,7 @@ describe('Report Manager shell', () => {
 
     dragBand('detail', 10, 10 + 96);
     expect(manager.elements.undoBtn.disabled).toBe(false);
-    manager.elements.newBtn.click();
+    manager.newReport();
     expect(manager.elements.undoBtn.disabled).toBe(true);
     expect(manager.elements.redoBtn.disabled).toBe(true);
     expect(manager.elements.clearBtn.disabled).toBe(true);
@@ -621,11 +650,11 @@ describe('Report Manager shell', () => {
     expect(labelAt('72').getAttribute('x')).toBe(String(toCssPx('72 pt') - 2));
     corner().click();
     expect(corner().textContent).toBe('in');
-    manager.elements.newBtn.click();
+    manager.newReport();
     expect(corner().textContent).toBe('in');
     corner().click();
     expect(corner().textContent).toBe('cm');
-    manager.elements.newBtn.click();
+    manager.newReport();
     expect(corner().textContent).toBe('in');
     manager.elements.exportBtn.click();
     expect(JSON.parse(saved[0].json)).toEqual(createBlank());
@@ -686,34 +715,34 @@ describe('Report Manager shell', () => {
     });
     manager.elements.fileInput.dispatchEvent(new CustomEvent('change'));
     await vi.waitFor(() => {
-      expect(manager.elements.name.textContent).toBe('Orders');
+      expect(manager.elements.metaName.value).toBe('Orders');
     });
     manager.elements.exportBtn.click();
     expect(saved[0].filename).toBe('Orders.report.json');
     expect(JSON.parse(saved[0].json)).toEqual(JSON.parse(detail));
     manager._importText(saved[0].json);
-    expect(manager.elements.name.textContent).toBe('Orders');
+    expect(manager.elements.metaName.value).toBe('Orders');
     expect(manager.doc).toEqual(JSON.parse(detail));
   });
 
   it('toasts a bad file and keeps the open name', async () => {
     await open();
     manager._importText(loadFixture('detail.definition.json'));
-    expect(manager.elements.name.textContent).toBe('Orders');
+    expect(manager.elements.metaName.value).toBe('Orders');
     manager._importText('{');
-    expect(manager.elements.name.textContent).toBe('Orders');
+    expect(manager.elements.metaName.value).toBe('Orders');
     expect(manager.doc.name).toBe('Orders');
     expect(stageText()).toContain('customer');
     expect(document.body.textContent).toMatch(/Report file is not JSON/);
     manager._importText('{"format":2,"name":"Other"}');
-    expect(manager.elements.name.textContent).toBe('Orders');
+    expect(manager.elements.metaName.value).toBe('Orders');
     expect(document.body.textContent).toMatch(/Report format must be 1/);
   });
 
   it('leaves an omitted key omitted on export', async () => {
     const saved = await open();
     manager._importText('{"format":1,"name":"Bare"}');
-    expect(manager.elements.name.textContent).toBe('Bare');
+    expect(manager.elements.metaName.value).toBe('Bare');
     manager.elements.exportBtn.click();
     expect(saved[0].filename).toBe('Bare.report.json');
     expect(JSON.parse(saved[0].json)).toEqual({ format: 1, name: 'Bare' });
@@ -722,8 +751,8 @@ describe('Report Manager shell', () => {
   it('New replaces an imported report with the written defaults', async () => {
     const saved = await open();
     manager._importText(loadFixture('detail.definition.json'));
-    manager.elements.newBtn.click();
-    expect(manager.elements.name.textContent).toBe('Report');
+    manager.newReport();
+    expect(manager.elements.metaName.value).toBe('Report');
     manager.elements.exportBtn.click();
     expect(JSON.parse(saved[0].json)).toEqual(createBlank());
   });
@@ -743,7 +772,7 @@ describe('Report Manager shell', () => {
     });
     manager.elements.fileInput.dispatchEvent(new CustomEvent('change'));
     await Promise.resolve();
-    expect(manager.elements.name.textContent).toBe('Report');
+    expect(manager.elements.metaName.value).toBe('Report');
     expect(document.body.textContent).not.toMatch(/Report file/);
   });
 
@@ -755,7 +784,7 @@ describe('Report Manager shell', () => {
         throw new Error('disk');
       },
     });
-    expect(manager.elements.name.textContent).toBe('Orders');
+    expect(manager.elements.metaName.value).toBe('Orders');
     expect(document.body.textContent).toContain('disk');
   });
 
@@ -803,27 +832,78 @@ describe('Report Manager shell', () => {
     expect(manager.elements.zoomLabel.textContent).toBe('118%');
 
     manager.elements.zoomInBtn.click();
-    expect(viewScale()).toBe(formatViewScale(stepViewScale(Number(fitted), 1)));
+    const zoomed = formatViewScale(stepViewScale(Number(fitted), 1));
+    expect(viewScale()).toBe(zoomed);
+    expect(zoomed).toBe('1.23');
     const corner = () => manager.elements.stage.querySelector('.reports-ruler-corner');
     corner().click();
     expect(corner().textContent).toBe('cm');
-    expect(viewScale()).toBe('1.28');
+    expect(viewScale()).toBe(zoomed);
     manager.elements.zoom100Btn.click();
     expect(viewScale()).toBe('1');
     expect(manager.elements.zoomLabel.textContent).toBe('100%');
     manager.elements.zoomOutBtn.click();
-    expect(viewScale()).toBe('0.9');
+    expect(viewScale()).toBe('0.95');
 
-    manager.elements.newBtn.click();
+    manager.newReport();
     expect(viewScale()).toBe(fitted);
     manager.elements.zoomInBtn.click();
     manager.elements.exportBtn.click();
     expect(JSON.parse(saved[0].json)).toEqual(createBlank());
   });
 
+  it('zooms from Ctrl or Cmd plus the wheel over the page and leaves a bare wheel scrolling', async () => {
+    const saved = await open();
+    const bare = wheel(-1);
+    pageEl().dispatchEvent(bare);
+    expect(bare.defaultPrevented).toBe(false);
+    expect(viewScale()).toBe('1');
+
+    const up = wheel(-1, { ctrlKey: true });
+    pageEl().dispatchEvent(up);
+    expect(up.defaultPrevented).toBe(true);
+    expect(viewScale()).toBe('1.05');
+    expect(manager.elements.zoomLabel.textContent).toBe('105%');
+
+    const mac = wheel(-1, { metaKey: true });
+    pageEl().dispatchEvent(mac);
+    expect(mac.defaultPrevented).toBe(true);
+    expect(viewScale()).toBe('1.1');
+
+    const ruler = manager.elements.stage.querySelector('.reports-ruler-top');
+    const onRuler = wheel(-1, { ctrlKey: true });
+    ruler.dispatchEvent(onRuler);
+    expect(onRuler.defaultPrevented).toBe(false);
+    expect(viewScale()).toBe('1.1');
+
+    const summary = manager.elements.stage.querySelector('.reports-summary');
+    const aside = wheel(-1, { ctrlKey: true });
+    summary.dispatchEvent(aside);
+    expect(aside.defaultPrevented).toBe(false);
+    expect(viewScale()).toBe('1.1');
+
+    const flat = wheel(0, { ctrlKey: true });
+    pageEl().dispatchEvent(flat);
+    expect(flat.defaultPrevented).toBe(false);
+    expect(viewScale()).toBe('1.1');
+
+    const down = wheel(40, { ctrlKey: true });
+    pageEl().querySelector('.reports-band').dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    expect(viewScale()).toBe('1.05');
+
+    manager.cleanup();
+    const after = wheel(-1, { ctrlKey: true });
+    pageEl().dispatchEvent(after);
+    expect(after.defaultPrevented).toBe(false);
+    expect(viewScale()).toBe('1.05');
+    manager.elements.exportBtn.click();
+    expect(saved).toEqual([]);
+  });
+
   it('drags a band in layout pixels when the view is scaled', async () => {
     await open();
-    for (let step = 0; step < 5; step += 1) manager.elements.zoomOutBtn.click();
+    for (let step = 0; step < 10; step += 1) manager.elements.zoomOutBtn.click();
     expect(viewScale()).toBe('0.5');
     const page = pageEl();
     const body = bandBody('detail');
@@ -847,9 +927,9 @@ describe('Report Manager shell', () => {
     const saved = await open();
     manager.destroy();
     manager.elements.exportBtn.click();
-    manager.elements.newBtn.click();
+    manager.newReport();
     expect(saved).toEqual([]);
-    expect(manager.elements.name.textContent).toBe('Report');
+    expect(manager.elements.metaName.value).toBe('Report');
     manager.destroy();
 
     const second = new ReportsManager({}, container);

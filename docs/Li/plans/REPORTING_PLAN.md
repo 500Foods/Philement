@@ -9,8 +9,14 @@ complete. Phases 6 and 7 closed 2026-10-31. Andrew confirmed
 drag, Undo, Redo, export, import, and the dots on the alternate
 database. Phase 8 is complete (2026-10-31). Andrew
 accepted the rulers, the corner cycle, and the unit name.
-Right and bottom rulers stay later. Phase 9 has not
-started. The
+Right and bottom rulers stay later. Phase 9 is complete
+(2026-10-31). Andrew said the view scale works pretty
+well. Phase 10 is complete (2026-10-31). Andrew said
+it works pretty well. Phase 10-UI is in progress
+(2026-10-31). The shell has the report list, Report,
+Editor, and JSON pages, and the three toolbars. The
+wheel zooms with Ctrl or Cmd. The 500 Courses check
+is waiting. Phase 11 has not started. The
 body is in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
 The contract note is
@@ -52,15 +58,16 @@ Andrew reports the apply.
 | 6 | Bands and resize | Lithium UI | Medium | Complete |
 | 7 | Section grid | Lithium UI | Easy | Complete |
 | 8 | Rulers and the mouse line | Lithium UI | Medium | Complete |
-| 9 | View scale | Lithium UI | Easy | Not started |
-| 10 | Static text | Lithium UI | Medium | Not started |
+| 9 | View scale | Lithium UI | Easy | Complete |
+| 10 | Static text | Lithium UI | Medium | Complete |
+| 10-UI | Manager chrome | Lithium UI | Medium | In progress |
 | 11 | Lookup 053 repair | Helium, human apply | Medium | Not started |
 | 12 | Lookup 054 fonts | Helium, human apply | Easy | Not started |
 | 13 | Lookup 057 page sizes | Helium, human apply | Easy | Not started |
 | 14 | Property panel | Lithium UI | Medium | Not started |
 | 15 | Field items and a sample datasource | Lithium UI | Easy | Not started |
 | 16 | One group level | Lithium UI | Easy | Not started |
-| 17 | Save and load packet | Helium, human apply | Medium | Not started |
+| 17 | Save and load packet | Helium, human apply | Medium | In progress |
 | 18 | Revisions in the manager | Lithium UI | Medium | Not started |
 | 19 | Compose skeleton | Helium seed, human apply | Medium | Not started |
 | 20 | Value format | Helium amendment | Medium | Not started |
@@ -120,7 +127,9 @@ Seventy-two phases, numbered 0 through 71. Each one is Easy or
 Medium, and each one closes on a single behavior. Easy is a
 fixture, a probe, or a decision. Medium adds a designer surface
 or a browser pass. A sitting that ends early marks that phase in
-progress and keeps its number.
+progress and keeps its number. Phase 10-UI is a labeled
+sidequest between 10 and 11. It is not an extra number in that
+count.
 
 A phase that hands a packet to a human is one sitting of agent work
 plus the wait for the apply. Its Status block records the wait.
@@ -151,7 +160,7 @@ milestone file that holds the current phase.
 | File | Phases | Stop when |
 | --- | --- | --- |
 | This file | 0 | The locks are approved. |
-| [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md) | 1–10 | Place static text and export the definition file. |
+| [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md) | 1–10, and 10-UI | Place static text and export the definition file. Phase 10-UI is the manager chrome and is in progress. |
 | [`02-save.md`](/docs/Li/plans/reporting/02-save.md) | 11–18 | Save a revision and open it again. |
 | [`03-preview.md`](/docs/Li/plans/reporting/03-preview.md) | 19–27 | Preview the HTML export and read the generation log. |
 | [`04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md) | 28–32 | Run a QueryRef and download a text PDF. |
@@ -163,8 +172,14 @@ milestone file that holds the current phase.
 2026-10-31. Andrew confirmed drag, Undo, Redo, export, import,
 and the dots. Phase 8 is complete (2026-10-31). Andrew
 accepted the rulers, the corner cycle, and the unit name.
-Right and bottom rulers stay later. Phase 9 has not
-started. The
+Right and bottom rulers stay later. Phase 9 is complete
+(2026-10-31). Andrew said the view scale works pretty
+well. Phase 10 is complete (2026-10-31). Andrew said
+it works pretty well. Phase 10-UI is in progress
+(2026-10-31). The shell has the report list, Report,
+Editor, and JSON pages, and the three toolbars. The
+wheel zooms with Ctrl or Cmd. The 500 Courses check
+is waiting. Phase 11 has not started. The
 body is in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
 The contract note is
@@ -248,10 +263,12 @@ next phase, record the apply, mark the packet phase complete, and
 do the named phase. When it only reports the apply, mark the phase
 complete and stop.
 
-**Sidequests.** A sidequest is its own chat and gets no new phase
-number. Record it in the Working Log in this file. When it changes
-a lock, amend that lock here. When it blocks the current phase,
-that phase stays **in progress** and the handoff names the
+**Sidequests.** A sidequest is its own chat. It stays unnumbered
+unless Andrew names it. He named Phase 10-UI on 2026-10-31. That
+label sits between 10 and 11 and does not change the count.
+Record a sidequest in the Working Log in this file. When it
+changes a lock, amend that lock here. When it blocks the current
+phase, that phase stays **in progress** and the handoff names the
 sidequest. Defer a work item with `[~]`, one line, and the phase
 it moves to. Moving a row out of "Later, not scheduled" means
 amending this file. Phase numbers stay 0 through 71.
@@ -329,8 +346,8 @@ the phase body.
 | | |
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
-| **Effort** | XL. Each phase is one behavior and one gate. Sidequests stay unnumbered. |
-| **Done** | Phases 0–8 of 72 complete (2026-10-31). Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. Right and bottom rulers stay later. Phase 9 has not started. |
+| **Effort** | XL. Each phase is one behavior and one gate. A sidequest stays unnumbered unless he names it. Phase 10-UI is that name. It does not change the count of 72. |
+| **Done** | Phases 0–10 of 72 complete (2026-10-31). Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. Right and bottom rulers stay later. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is in progress. Phase 11 has not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -365,7 +382,16 @@ grid. Phase 8 is complete (2026-10-31). Andrew accepted
 the rulers, the corner cycle, and the unit name. The sheet
 has top and left rulers. The corner cycles inches,
 centimetres, and points and leaves the file unit alone.
-Right and bottom rulers stay later. Phase 9 has not started.
+Right and bottom rulers stay later. Phase 9 is complete
+(2026-10-31). Andrew said the view scale works pretty well.
+Fit width, 100%, and zoom are on the toolbar.
+`--reports-scale` scales the page, the grid, and the rulers.
+Phase 10 is complete (2026-10-31). Text adds a static
+item on the selected band. Drag and the corner commit on
+pointerup. Phase 10-UI is in progress. The left pane
+lists reports. Editor and JSON are the right-hand pages.
+Text sits on the third toolbar. Manager chrome, below,
+is that shell.
 
 ## Goals
 
@@ -443,8 +469,8 @@ Right and bottom rulers stay later. Phase 9 has not started.
 
 ### Lithium
 
-Manager 24 is the designer shell. It shows the report name and
-New, Import, and Export. The stage lists the definition and draws
+Manager 24 is the designer shell. It shows the report name,
+Import, and Export. New is the list navigator. The stage lists the definition and draws
 one page at 96 CSS pixels per inch, with margin guides. Each
 band is a label strip and a body of the stored height. The body
 draws the section grid. Undo is Ctrl+Z and Redo is Ctrl+Y.
@@ -455,7 +481,24 @@ drag inverts that span on the vertical ruler. The corner
 cycles inches, centimetres, and points and leaves the file
 unit alone. The letters are `#2a2a2a`. Right and bottom
 rulers stay later. Phase 8 is complete (2026-10-31).
-Phase 9 has not started.
+Phase 9 is complete (2026-10-31). Andrew said the view
+scale works pretty well. Fit width, 100%, zoom in, and
+zoom out sit on the toolbar. The wheel over the page takes
+the same step while Ctrl or Cmd is held. A bare wheel still
+scrolls. `--reports-scale` scales the page, the grid,
+and the rulers. 100% is 96 CSS pixels per inch. The scale
+stays off the definition. Phase 10 is complete
+(2026-10-31). Andrew said it works pretty well. Text
+adds a static item on the selected band. The canvas
+shows the text and clips it to the box. Drag and the
+corner commit on pointerup. Delete and Undo restore the
+item. Phase 10-UI is in progress (2026-10-31). The
+left pane lists reports. Report is the first page. It
+edits the name, the title, and the list summary. Editor keeps
+the stage. JSON edits the definition with `history`
+removed. Undo, Redo, and Clear show only on Editor.
+Clone and Delete sit with Text. The 500 Courses
+check is waiting. Phase 11 has not started.
 `conduit.js` can run QueryRefs.
 `invokeScript` is not in the client. Scripting Manager does not call
 `POST /api/conduit/script`. CATCHUP Phases 7–10 are the planned home
@@ -470,7 +513,7 @@ as the same release, so either path drops the shell listeners.
 
 | Object | Where | What it holds |
 | --- | --- | --- |
-| `reports` table | [`acuranzo_1015.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1015.lua) | `(report_id, rev_id)` primary key. Columns `report`, `thumbnail`, `name`, `design`, `scripts`, `parameters`, `summary`, plus the usual audit and `collection` JSON. Created 2025-09-13. No QueryRef reads or writes it. |
+| `reports` table | [`acuranzo_1015.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1015.lua) | `(report_id, rev_id)` primary key. Columns `report`, `thumbnail`, `name`, `design`, `scripts`, `parameters`, `summary`, plus the usual audit. Created 2025-09-13. Phase 17 wrote QueryRefs 165–169 (`acuranzo_1422.lua` through `acuranzo_1426.lua`) and has not applied them. |
 | Lookup 053 | [`acuranzo_1086.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | Report Object Types, keys 0–60. |
 | Lookup 054 | [`acuranzo_1087.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua) | Report Object Attributes, keys 0–40. |
 | Lookup 057 | [`acuranzo_1090.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua) | Two page-size rows. |
@@ -1582,11 +1625,14 @@ not a default.
   variable on the canvas.
 - Palette and property editors read lookups 053, 054, and 057.
   Captions and icons come from those rows. The file stores keys.
-  One palette lists the v1 type keys. Hidden types stay off it.
-  Adding an item or a band is a palette choice. Phases 10, 16, 22,
-  23, 28, 34, 38, 50, 54, and 58 use that palette.
+  The item buttons are the third editor toolbar in Manager chrome.
+  Hidden types stay off it. Adding an item or a band is one of
+  those buttons. Phases 10, 16, 22, 23, 28, 34, 38, 50, 54, and
+  58 add a button. Phase 10 shipped Text on a single row.
+  Phase 10-UI moved that button onto the third toolbar.
 - The property panel shows the Defaults table, including a key the
-  file omits. The canvas uses the faces Lithium already loads.
+  file omits. It is the Editor-page column in Manager chrome.
+  The canvas uses the faces Lithium already loads.
   Vanadium Sans is the SPA face in
   [`/elements/003-lithium/src/styles/base.css`](/elements/003-lithium/src/styles/base.css).
 - Sample datasource JSON in the designer is session state. It is how
@@ -1597,8 +1643,12 @@ not a default.
   The file keeps `history` when the trail is non-empty. New omits
   the key. Import of a file that has `history` restores Undo and
   Redo.
-- Split files before 1000 lines. Expected split: `reports.js` (shell),
-  `reports.html`, `reports.css`, `canvas.js`, `rulers.js`, `grid.js`,
+- Split files before 1000 lines. Phase 10-UI added the table
+  host, the JSON page, and the toolbars, and split before 1000
+  lines. The shell is `reports.js`. Pointer edits are
+  `reports-pointer.js`. The JSON page is `reports-json.js`. The
+  list is `reports-table.js`. Later files stay `reports.html`,
+  `reports.css`, `canvas.js`, `rulers.js`, `grid.js`,
   `properties.js`, `functions.js`, `chart-panel.js`, and
   `model/units.js`, `model/document.js`, `model/history.js`,
   `model/history-diff.js`.
@@ -1609,6 +1659,118 @@ not a default.
   into the DOM. Even though the preview HTML is fully generated by
   `Reports.Render` and there is no external HTML surface, the sanitizer
   stays as defense-in-depth for the iframe.
+
+### Manager chrome
+
+Andrew set this on 2026-10-31, after Phase 10, and named the
+build Phase 10-UI. That label sits between phases 10 and 11.
+It does not change the count of seventy-two phases, numbered
+0 through 71. Phase 11 stays the lookup 053 packet. The shell
+below is what Phase 10-UI built. Status stays in progress
+until he checks `https://lithium.500courses.com`. The
+page-size control and the property panel are still absent.
+Phase 14 fills both.
+
+The module follows Query Manager
+([`/elements/003-lithium/src/managers/queries/`](/elements/003-lithium/src/managers/queries/)).
+
+The left pane is a LithiumTable of `reports`, with the navigator
+under it. Add, duplicate, and delete of a report row live on that
+navigator. New is not a designer toolbar button. A splitter
+separates the panes. The main toolbar's first button collapses the
+left pane, the same control Query Manager uses. Collapsed, the
+Editor page is the full width.
+
+The right pane's main toolbar stays visible on every page:
+
+- Collapse, then the page tabs. Report is first. Editor is the
+  page that opens. JSON is third. A later phase adds a tab on
+  this bar. Preview is Phase 25. That tab's tools show only
+  while it is the active page.
+- Import and Export of the definition file. Export still writes
+  `history` when the trail is non-empty. The Phase 4 file
+  round-trip stays.
+
+The Report page edits metadata that is already stored. Name and
+title are on the definition and commit through the same history
+trail. Summary is the `summary` column on the reports row. It is
+not a definition key. There is no group column and no group key,
+so the page does not add one.
+
+Undo, Redo, and Clear sit on the Editor toolbar, one bar below
+the main toolbar, and show only on that page. They use the
+definition history trail. A canvas edit, a property edit, a meta
+edit, and a JSON edit are the same trail. Ctrl+Z and Ctrl+Y stay
+registered for manager 24. Ctrl+Shift+Z stays Toggle zoom. The
+buttons are hidden on Report and on JSON. CodeMirror still owns
+Ctrl+Z while the JSON editor is focused.
+
+Save and Cancel are the slot footer, through `ManagerEditHelper`,
+the same path Query Manager uses. The definition is an external
+editor on that helper, the way Query Manager registers CodeMirror.
+Save writes the open definition, trail included, onto the row. The
+table's QueryRefs are Phase 17 and Phase 18. Until those are
+applied, Import and Export remain the way a definition leaves the
+browser. Phase 10-UI built the chrome before the table has rows.
+A row save, duplicate, or delete toasts and does not store or
+remove a row. Navigator Add starts a local blank report. Name
+and summary use the string and text cell editors, so that new
+row can be typed into. Save still has no QueryRef.
+
+The Editor page is the current stage: the page, the bands, the
+rulers, the grid, and the items.
+
+The second toolbar shows only on the Editor page:
+
+- Category buttons. A category appears when it has at least one v1
+  item. Static is first and starts selected. Field, the database
+  fields, arrives with Phase 15. Later categories follow lookup
+  053 `value_int`: Calculated, Aggregate, System, and Band. Hidden
+  types stay off every category. Switching category changes the
+  third toolbar and leaves the definition alone.
+- Undo, Redo, and Clear, at the right end of this bar.
+
+The right end of the main toolbar holds the view controls, and
+they show only on the Editor page: the page-size control, Fit
+width, zoom out, the percent, 100%, and zoom in. Page size uses
+lookup 057 and writes `sizeKey`, width, height, and margins, the
+same write as Phase 14. The control is absent until that lookup
+is loaded. The wheel zooms only while Ctrl or Cmd is held and
+the pointer is over the page. A bare wheel still scrolls.
+
+The third toolbar shows only on the Editor page. It lists the
+item buttons for the selected category, then Clone, then Delete.
+Static shows Text. Clone copies the selected item onto the same
+band, assigns a new id, keeps the box, and selects the copy.
+Delete is this button and the Delete key. It removes the item.
+It does not remove the report row. Both are disabled when no
+item is selected. A phase that adds a palette choice adds its
+button on this bar, with the items.
+
+The JSON page hides the second toolbar, the third toolbar, the
+page-size control, and the zoom controls. It is a CodeMirror JSON
+editor, the same stack as the Query Manager collection editor,
+with a `LithiumEditorFooter`. The buffer is the open definition
+with `history` removed. Folds start collapsed. Collapse all and
+Expand all sit on the main toolbar and show only on this page.
+A parsed edit commits one history step when the editor blurs or
+the page changes. CodeMirror undo covers the buffer while it is
+focused. A parse error toasts and leaves the definition. The
+write keeps the existing trail and does not put `history` back
+into the buffer.
+
+The property panel is Phase 14. It is a column on the right of
+the Editor page. It is hidden on the other pages, and it is
+hidden until that phase fills it. Chart and barcode options stay
+beside it. The panel and the page-size control edit the same
+page keys.
+
+A control is shown only on the page that uses it. The JSON page
+does not show Text, Delete, Clone, zoom, or page size. The
+Editor page does not show the JSON fold buttons.
+
+Selection, the view scale, and the ruler unit stay off the
+definition.
 
 ### Formula editor
 
@@ -2182,3 +2344,194 @@ passed, 12 skipped). The skipped cases are the auth
 integration file. `https://lithium.500courses.com` did not
 answer that run. `npm run lint` and `npm run lint:css`
 exited 0. Phase 9 has not started.
+
+### 2026-10-31 — Phase 9 in progress
+
+`--reports-scale` on the canvas scales the page, the grid, and
+the rulers together. 100% is 96 CSS pixels per inch. The 1 inch
+tick stays at layout `x1=96`. A Letter page stays `816px` wide.
+Fit-width is `floor(100 * paneWidth / sheetWidth) / 100`. The
+sheet is the page plus the 28 pixel bar, `844`. A `1000` pixel
+pane returns `1.18`. A `600` pixel pane returns `0.71`. Zoom
+steps by `0.1` and the buttons stop at `0.1` and `4`. Fit width
+follows a later resize. 100% and zoom keep the chosen scale.
+New and Import fit again. The corner cycle and undo keep the
+open scale. The scale stays off the definition, off history,
+and off settings. Export of a zoomed blank report matches
+`createBlank()`. The mouse line and a band drag divide the
+pointer by the scale. Fit uses the pane width. A shorter pane
+scrolls vertically. `npm test` exited 0 (69 files, 1300 passed,
+12 skipped). The skipped cases are the auth integration file.
+The server check for `https://lithium.500courses.com` was
+aborted. `npm run lint`, `npm run lint:css`, and `templates:copy`
+exited 0. `templates:copy` copied 137 templates. `npx eslint` on
+the report files exited 0. `reports-scale.test.js` has 5 tests.
+`reports-shell.test.js` has 36 tests. `reports-rulers.test.js`
+has 10 tests. Work items 9.1 and 9.2 are checked. Work item 9.3
+is waiting on Andrew. Do not start Phase 10.
+
+### 2026-10-31 — Phase 9 wheel step
+
+Andrew asked for the wheel to zoom the report, at five percent
+per bump, and for the buttons to use that same step. Scroll up
+over `#reports-page` zooms in. That wheel does not scroll the
+stage. A wheel on the summary, on the rulers, or with no
+vertical travel still scrolls. The step is `0.05`. From `1.18`
+one zoom in is `1.23`. The buttons still stop at `0.1` and `4`.
+`npm test` exited 0 (69 files, 1301 passed, 12 skipped). The
+skipped cases are the auth integration file. The server check
+for `https://lithium.500courses.com` was aborted. `npm run lint`,
+`npm run lint:css`, and `npx eslint` on the report files exited
+0. `reports-shell.test.js` has 37 tests. Work item 9.3 stays
+open. Do not start Phase 10.
+
+### 2026-10-31 — Phase 9 complete
+
+Andrew said the view scale works pretty well and asked if
+that covers Phase 9. Work items 9.1–9.3 are checked. Fit
+width, 100%, the zoom buttons, and the wheel over the page
+are the phase. The step is five percent. The scale stays
+off the definition. Phase 9 is complete. Phase 10 has not
+started. It places a static text item. The earlier gate
+stands: `npm test` exited 0 (69 files, 1301 passed, 12
+skipped).
+
+### 2026-10-31 — Phase 10 in progress
+
+Text adds a static item on the selected band. The box is
+`1.5 in` by `0.2 in`, centered, `align` `Left`, `text`
+`Text`. Font and mask stay omitted. Letter detail places
+it at `3.25 in`, `0.025 in`. Drag moves `left` and `top`.
+The bottom-right corner changes `width` and `height` and
+keeps the top left. Pointerup commits through `moveItem`
+and `resizeItem`, which clamp to the band. `addItem` and
+import leave the box as written. A resize of `0.3 in` at
+top `0.025 in` on a `0.25 in` detail band stores
+`0.225 in`. The resize floor is 1 CSS pixel, stored
+`0.010417 in`. Delete is the toolbar and the Delete key
+for manager 24. Undo restores the item and selects it
+again. The canvas clips the text to the box. The ink is
+`#2a2a2a`. The band height stays stored. Emit clip stays
+with Phase 24. Only `typeKey` 0 is painted. `npm test`
+exited 0 (70 files, 1309 passed, 12 skipped). The skipped
+cases are the auth integration file. The Hydrogen server
+at `https://lithium.500courses.com` was not available.
+`npm run lint`, `npm run lint:css`, and `templates:copy`
+exited 0. `templates:copy` copied 137 templates.
+`npx eslint` on `src/managers/reports` and the two report
+unit files exited 0. `reports-items.test.js` has 7 tests.
+`reports-document.test.js` has 10 tests. Work items
+10.1–10.4 and 10.6 are checked. Work item 10.5 is waiting
+on Andrew. Do not start Phase 11.
+
+### 2026-10-31 — Phase 10 complete
+
+Andrew said static text works pretty well and asked to
+close Phase 10. Work items 10.1–10.6 are checked. Text on
+Detail adds, drags, resizes from the corner, undoes, and
+exports. The file has `typeKey` 0, `text` "Text", `align`
+`Left`, and `1.5 in` by `0.2 in`. Letter detail places it
+at `3.25 in`, `0.025 in`. Font and mask stay omitted.
+Delete removes the item and Undo brings it back. A long
+string is cut off inside the box. The earlier gate stands:
+`npm test` exited 0 (70 files, 1309 passed, 12 skipped).
+Phase 11 has not started.
+
+### 2026-10-31 — Manager chrome
+
+Andrew asked for the Report Manager shell before the next
+phase. The lock is Manager chrome, under Designer rules.
+The running shell is unchanged. The left pane is a
+LithiumTable of `reports`, with navigator add, duplicate,
+and delete. The right pane has Editor and JSON pages.
+Editor keeps the current stage. JSON is a CodeMirror
+buffer of the definition with `history` removed, folds
+collapsed on open, and a commit on blur. Undo, Redo, and
+Clear stay on the main toolbar and use that trail. Zoom
+and page size sit at the right end of the main toolbar
+and show only on Editor. The second toolbar, Editor only,
+switches category and holds Delete and Clone. The third
+toolbar, Editor only, holds the item buttons. Static
+shows Text. Save and Cancel are the slot footer through
+`ManagerEditHelper`. The table QueryRefs stay Phase 17
+and Phase 18. The property panel is the Editor column in
+Phase 14. Build the chrome as a sidequest before Phase
+14. No new phase number. Phase 11 has not started.
+
+### 2026-10-31 — Phase 10-UI in progress
+
+Andrew named the manager chrome Phase 10-UI and asked to build
+it. The count stays seventy-two phases, numbered 0 through 71.
+Phase 10-UI sits between 10 and 11. The left pane is a
+LithiumTable of `reports` with no QueryRef. Name and summary
+are the visible columns. Save, duplicate, and delete of a row
+toast and do not store or remove a row. Navigator Add calls
+`newReport()`. There is no New button. The right pane has
+Editor and JSON. Editor keeps the stage, the rulers, and the
+grid. Zoom sits at the right end of the main toolbar and shows
+only on Editor. The page-size control is absent. Undo, Redo,
+Clear, Import, and Export stay on the main toolbar. The second
+toolbar, Editor only, is Static, Delete, and Clone. Clone
+copies the selected item onto the same band, assigns a new id,
+keeps the box, and selects the copy. The third toolbar, Editor
+only, is Text. JSON is CodeMirror. The buffer omits `history`,
+folds start collapsed, and a parsed edit commits one history
+step on blur or when the page changes. A parse error toasts
+once and leaves the definition. The property panel is absent.
+`npm test` exited 0 (71 files, 1318 passed, 12 skipped). The
+skipped cases are the auth integration file.
+`npm run lint`, `npm run lint:css`, and `npx eslint` on
+`src/managers/reports` and the report unit tests exited 0.
+`templates:copy` copied 137 templates. `reports.js` is 857
+lines. `reports-pointer.js` is 220. `reports-json.js` is 195.
+`reports-table.js` is 225. `reports-chrome.test.js` has 8
+tests. `reports-document.test.js` has 11. Status stays in
+progress. The check is
+`https://lithium.500courses.com`. Do not mark Phase 10-UI
+complete. Do not start Phase 11.
+
+### 2026-10-31 — Phase 10-UI finishing touches
+
+Andrew asked for the toolbar moves, a Report page, editable
+list fields, and the wheel modifier. Undo, Redo, and Clear
+moved to the Editor toolbar. Clone then Delete moved onto
+the item toolbar with Text. Report is the first tab. It
+edits definition `name` and `title`, and the row `summary`.
+There is no group column. Name and summary cells use `input`
+and `textarea`. The local coltypes had omitted those editors,
+so a cell never opened. Save, duplicate, and delete of a row
+still toast and do not store or remove a row. The wheel over
+the page zooms only while Ctrl or Cmd is held. A bare wheel
+scrolls. Overlapping clones stay on the same box. `npm test`
+exited 0 (71 files, 1319 passed, 12 skipped). The skipped
+cases are the auth integration file. `npm run lint`,
+`npm run lint:css`, and `npx eslint` on
+`src/managers/reports` and the report unit tests exited 0.
+`templates:copy` copied 137 templates. `reports.js` is 956
+lines. `reports-table.js` is 263. `reports-chrome.test.js`
+has 9 tests. Status stays in progress. The check is
+`https://lithium.500courses.com`. Do not mark Phase 10-UI
+complete. Do not start Phase 11.
+
+### 2026-10-31 — Report QueryRefs handed over
+
+There was no reports list, search, get, or insert QueryRef.
+`acuranzo_1015.lua` only creates the table. Scripts 089 and 090
+are the script list and search. The packet is
+`acuranzo_1422.lua` through `acuranzo_1426.lua`, QueryRefs
+165 List Reports, 166 Search Reports, 167 Get Report,
+168 Insert Report Revision, and 169 Get Document Image.
+`TYPE_SQL`. Reverse deletes that row only. Not applied.
+The manager is not pointed at them, so Save still refuses.
+The toolbar name span is gone. The Report tab name field
+remains. `npm test` exited 0 (71 files, 1319 passed, 12
+skipped). `npm run lint`, `npm run lint:css`, and `npx eslint`
+on `src/managers/reports` and the report unit tests exited 0.
+`templates:copy` copied 137 templates. `luacheck` on the five
+files exited 0. `get_migration.sh` expanded them on
+postgresql, mysql, mariadb, sqlite, db2, firebird, and mssql
+with no unsubstituted macros. Each parameter name is used
+once. Phase 17 stays in progress until the apply. Phase 10-UI
+stays in progress. Do not mark either complete. Do not start
+Phase 11. The next Acuranzo file is 1427. The next
+caller-facing QueryRef is 170.

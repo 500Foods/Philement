@@ -150,7 +150,9 @@ Andrew's apply report.
 ### Goal
 
 Edit the selected object from lookup 054, limited to the attribute
-list on its lookup 053 row.
+list on its lookup 053 row. The panel is the Editor-page column
+named in Manager chrome in the parent. It stays hidden on the
+other pages.
 
 ### Entry gate
 
@@ -293,33 +295,42 @@ waits for the apply.
 
 ### Work items
 
-- [ ] 17.1 Read a recent QueryRef seed (the 1260 / 1108 pattern in
+- [x] 17.1 Read a recent QueryRef seed (the 1260 / 1108 pattern in
        [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md)) and
        [`acuranzo_1015.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1015.lua)
-       before writing SQL.
-- [ ] 17.2 Three report migrations, one QueryRef each, `TYPE_SQL` so
+       before writing SQL. The id allocation copies
+       [`courses_4103.lua`](/elements/002-helium/courses/migrations/courses_4103.lua):
+       `COALESCE(MAX(id), 0) + 1`.
+- [x] 17.2 Three report migrations, one QueryRef each, `TYPE_SQL` so
         the SPA can call them. List latest revision per `report_id`.
         Get one `(report_id, rev_id)`. Insert the next `rev_id` for a
         name and a definition. Insert allocates `report_id` the way a
         sibling insert migration allocates its id. Copy that pattern.
         Do not invent one. The document-image read is the fourth
-        migration, in 17.3.
-- [ ] 17.3 A fourth QueryRef reads one document image by `doc_id`:
+        migration, in 17.3. Andrew also asked for the list's search
+        query. That is a fifth file, between the list and the get.
+        The list and the search omit `report` and `thumbnail`.
+        The search matches `UPPER(name)` and uses `:SEARCH` once.
+- [x] 17.3 A fourth QueryRef reads one document image by `doc_id`:
         `file_data` and `file_name` from `documents`
         ([`acuranzo_1010.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1010.lua)).
         The report writer's `reference` image kind resolves through it
         in Phase 51, so the picker and compose share one read. If the
         documents table shape has changed by the day this is written,
-        re-read it before numbering.
-- [ ] 17.4 Reverse deletes the QueryRef row only.
+        re-read it before numbering. The read is the latest `rev_id`
+        for that `doc_id`.
+- [x] 17.4 Reverse deletes the QueryRef row only.
 - [ ] 17.5 Hand the packets over. Record the QueryRef integers in
-        this phase's Status after Andrew reports the apply.
+        this phase's Status after Andrew reports the apply. The files
+        are handed over. The applied integers are not recorded yet.
 
 ### Done means
 
-Andrew reports the four QueryRefs applied. A manual call of the
-insert returns the row he inserted, and a manual call of the
-document read returns `file_data` for a `doc_id`.
+Andrew reports the five QueryRefs applied. A manual call of the
+insert returns `report_id` and `rev_id`, a manual call of the get
+returns that row, and a manual call of the document read returns
+`file_data` for a `doc_id`. The search returns the latest revisions
+whose name contains the term.
 
 ### Exit gate
 
@@ -328,7 +339,24 @@ Andrew's apply report. The agent does not mark this complete on Test
 
 ### Status
 
-**not started**
+**in progress** (2026-10-31). The packet is written and not applied.
+Do not mark this complete on the expand check. Andrew applies it.
+
+| File | QueryRef | Name |
+| --- | --- | --- |
+| [`acuranzo_1422.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1422.lua) | 165 | List Reports |
+| [`acuranzo_1423.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1423.lua) | 166 | Search Reports |
+| [`acuranzo_1424.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1424.lua) | 167 | Get Report |
+| [`acuranzo_1425.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1425.lua) | 168 | Insert Report Revision |
+| [`acuranzo_1426.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1426.lua) | 169 | Get Document Image |
+
+`REPORT_ID` 0 on 168 allocates the next `report_id` and stores
+`rev_id` 1. Any other `REPORT_ID` appends the next `rev_id` for that
+report. 168 returns `report_id` and `rev_id`. The manager is not
+pointed at these numbers. Phase 18 does that after this phase is
+applied. The next Acuranzo file is 1427. The next caller-facing
+QueryRef is 170. Re-check both before taking them. Files 1413–1421
+are still the AEM packet and sit in front of this one.
 
 ---
 
