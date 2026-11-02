@@ -23,6 +23,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.7.3 - 2026-11-02 - Icons use the literal ▇▇ glyph, not \U2587, so a C/POSIX locale no longer prints \u2587
 # 4.7.2 - 2026-09-04 - Keep TEST/PASS/FAIL in OUTPUT_COLLECTION until completion
 #                     (do not dump on each print_subtest); still close an unpaired
 #                     TEST at print_test_completion
@@ -86,7 +87,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="4.7.2"
+LOG_OUTPUT_VERSION="4.7.3"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -116,13 +117,13 @@ if [[ -z "${BOLD:-}" ]]; then
 fi
 
 # Rounded rectangle icons with colors matching label themes (double-wide)
-PASS_ICON="${PASS_COLOR}\U2587\U2587${NC}"
-FAIL_ICON="${FAIL_COLOR}\U2587\U2587${NC}"
-WARN_ICON="${WARN_COLOR}\U2587\U2587${NC}"
-INFO_ICON="${INFO_COLOR}\U2587\U2587${NC}"
-DATA_ICON="${DATA_COLOR}\U2587\U2587${NC}"
-EXEC_ICON="${EXEC_COLOR}\U2587\U2587${NC}"
-TEST_ICON="${TEST_COLOR}\U2587\U2587${NC}"
+PASS_ICON="${PASS_COLOR}▇▇${NC}"
+FAIL_ICON="${FAIL_COLOR}▇▇${NC}"
+WARN_ICON="${WARN_COLOR}▇▇${NC}"
+INFO_ICON="${INFO_COLOR}▇▇${NC}"
+DATA_ICON="${DATA_COLOR}▇▇${NC}"
+EXEC_ICON="${EXEC_COLOR}▇▇${NC}"
+TEST_ICON="${TEST_COLOR}▇▇${NC}"
 
 MARKER="──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────"
 MARKERLENGTH=50 # how much do we want to display - the rest might be used in boxes

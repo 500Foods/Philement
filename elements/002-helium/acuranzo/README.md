@@ -394,4 +394,5 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1434](/elements/002-helium/acuranzo/migrations/acuranzo_1434.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #171 - List Report Revisions |
 | [1435](/elements/002-helium/acuranzo/migrations/acuranzo_1435.lua) | queries | 1.0.0 | 2026-10-31 | 4 | ✗ | QueryRef #172 - Delete Newer Report Revisions |
 | [1436](/elements/002-helium/acuranzo/migrations/acuranzo_1436.lua) | lookups | 1.0.0 | 2026-11-02 | 32 | ✗ | Lookup 053 (Report Object Types) repair for Reporting Phase 11 |
-| **361** | | | | **1950** | **361** | |
+| [1437](/elements/002-helium/acuranzo/migrations/acuranzo_1437.lua) | lookups | 1.0.0 | 2026-11-02 | 8 | ✗ | Lookup 054 (Report Object Attributes) fonts for Reporting Phase 12 |
+| **362** | | | | **1958** | **362** | |

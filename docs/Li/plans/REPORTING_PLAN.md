@@ -24,7 +24,7 @@ with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
 Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next Acuranzo file is 1437. The next caller-facing QueryRef is 173. Phase 12 is next.
+Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. The next Acuranzo file is 1438. Phase 13 is next.
 Phase 16 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
@@ -72,7 +72,7 @@ Andrew reports the apply.
 | 10 | Static text | Lithium UI | Medium | Complete |
 | 10-UI | Manager chrome | Lithium UI | Medium | Complete |
 | 11 | Lookup 053 repair | Helium, human apply | Medium | Complete |
-| 12 | Lookup 054 fonts | Helium, human apply | Easy | Not started |
+| 12 | Lookup 054 fonts | Helium, human apply | Easy | Complete |
 | 13 | Lookup 057 page sizes | Helium, human apply | Easy | Not started |
 | 14 | Property panel | Lithium UI | Medium | Not started |
 | 15 | Field items and a sample datasource | Lithium UI | Easy | Not started |
@@ -197,7 +197,7 @@ with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
 Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next Acuranzo file is 1437. The next caller-facing QueryRef is 173. Phase 12 is next.
+Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. The next Acuranzo file is 1438. Phase 13 is next.
 Phase 16 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
@@ -367,7 +367,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. A sidequest stays unnumbered unless he names it. Phase 10-UI is that name. It does not change the count of 72. |
-| **Done** | Phases 0–11 of 72 complete (2026-11-02). Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 16 has not started. |
+| **Done** | Phases 0–12 of 72 complete (2026-11-02). Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 16 has not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -2918,3 +2918,22 @@ keys 61–63 exist, and the v1 attribute lists match. Test 31 and Test 98
 pass. Phase 11 is complete. Phase 12 has not started and waits for
 Andrew to name it. The next Acuranzo file is 1437. The next
 caller-facing QueryRef is 173.
+
+### 2026-11-02 — Phase 12 packet
+
+Andrew named Phase 12 and added Vanadium Mono, so the phase goal now
+reads two families, one migration. `acuranzo_1437.lua` updates lookup
+054: key 15 lists Vanadium Sans, Vanadium Mono, then the existing faces,
+with hint `Default: Vanadium Sans`; key 4 lists Left, Center, Right; key
+17 lists the four v1 styles. No caller-facing QueryRef. Phase 12 is in
+progress until Andrew reports the apply. The next Acuranzo file is 1438.
+The next caller-facing QueryRef stays 173.
+
+### 2026-11-02 — Phase 12 closed
+
+Andrew reported `acuranzo_1437.lua` applied and confirmed lookup 054 in
+the Lookups manager. Phase 12 is complete. Phase 13 has not started and
+waits for Andrew to name it. The next Acuranzo file is 1438. The next
+caller-facing QueryRef is 173. Side fix the same day, outside the
+plan: Hydrogen `tests/lib/log_output.sh` 4.7.3 stores the ▇▇ icon glyph
+literally, so a C locale no longer prints `\u2587`.

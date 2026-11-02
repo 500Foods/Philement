@@ -102,8 +102,9 @@ QueryRef is 173.
 
 ### Goal
 
-Add Vanadium Sans to the report font list. One family, one migration.
-Do not apply it.
+Add Vanadium Sans and Vanadium Mono to the report font list. Two
+families, one migration. Do not apply it. (Amended 2026-11-02: Andrew
+added Vanadium Mono; the goal was one family.)
 
 ### Entry gate
 
@@ -112,21 +113,22 @@ Phase 14 starts. Re-check the next file number the day it is written.
 
 ### Work items
 
-- [ ] 12.1 Re-read the highest Acuranzo file. Do not edit
+- [x] 12.1 Re-read the highest Acuranzo file. Do not edit
        [`acuranzo_1087.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua)
        in place.
-- [ ] 12.2 One forward migration for lookup 054 only. The font list
-       gains Vanadium Sans. Existing faces stay, so an old row still
+- [x] 12.2 One forward migration for lookup 054 only. The font list
+       gains Vanadium Sans, then Vanadium Mono, ahead of the existing
+       faces. The hint default becomes Vanadium Sans. Existing faces stay, so an old row still
        resolves. Key 4's list becomes `Left`, `Center`, and `Right`.
        Key 17's list becomes `Normal`, `Bold`, `Italic`, and
-       `Bold + Italic`. Reverse removes the added face and restores
-       the previous JSON for keys 4 and 17.
-- [ ] 12.3 Hand the packet over. Record the file number after Andrew
+       `Bold + Italic`. Reverse restores the previous JSON for keys 4, 15,
+       and 17.
+- [x] 12.3 Hand the packet over. Record the file number after Andrew
        reports the apply.
 
 ### Done means
 
-Andrew reports Vanadium Sans on lookup 054, the faces that were
+Andrew reports Vanadium Sans and Vanadium Mono on lookup 054, the faces that were
 already there still resolve, and keys 4 and 17 list the v1 captions.
 
 ### Exit gate
@@ -135,7 +137,35 @@ Andrew's apply report.
 
 ### Status
 
-**not started**
+**complete — 2026-11-02.** Andrew reported
+[`acuranzo_1437.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1437.lua)
+applied and confirmed lookup 054 in the Lookups manager. Key 15 lists
+Vanadium Sans, Vanadium Mono, and the five existing faces, with hint
+`Default: Vanadium Sans`. Key 4 lists Left, Center, Right. Key 17 lists
+the four v1 styles. The next Acuranzo file is 1438. The next
+caller-facing QueryRef is 173.
+
+### Accomplished
+
+- One lookup-only packet with no caller-facing QueryRef. 1087 was not
+  edited in place. Existing faces stay, so old rows still resolve.
+- Vanadium Mono was added at Andrew's request (2026-11-02). The goal
+  was amended from one family to two.
+
+### Lessons learned
+
+- 1087's key 4 had no `List`, so the reverse restores a bare editor
+  row. 1087's key 17 carried the typo `Bold + Underlilne`; the reverse
+  restores it as stored.
+- PDF still uses Helvetica in v1. Both Vanadium faces show in HTML only
+  until embedding leaves Later.
+
+### Handoff
+
+- Phase 13 (lookup 057 page sizes) re-checks the next free Acuranzo file
+  (1438), QueryRef (173), and the lookup 057 max key on disk.
+- Lookups 053 and 054 are applied, so Phase 14 waits only on Phase 13.
+- Nothing is waiting on Andrew for Phase 12.
 
 ---
 
