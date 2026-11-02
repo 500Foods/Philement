@@ -29,11 +29,11 @@ the day the file is numbered.
 
 ### Work items
 
-- [ ] 11.1 Re-read
+- [x] 11.1 Re-read
        [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md) and the highest
        Acuranzo file, QueryRef, and lookup key. Take the next file
        number. Do not edit 1086 in place.
-- [ ] 11.2 One forward migration for lookup 053 only. Fix the `Iion`
+- [x] 11.2 One forward migration for lookup 053 only. Fix the `Iion`
        keys 7 and 16. Fix the unclosed tag on key 52. Insert Page
        Number (key 61), Page Count (key 62), and Parameter (key 63).
        Update the v1 attribute lists so static text, field text, field
@@ -45,7 +45,7 @@ the day the file is numbered.
        v1 attribute list. The `mask` string is the format. Do not add
        chart or barcode attribute rows. Reverse
        restores the previous JSON and deletes only the inserted keys.
-- [ ] 11.3 Hand the packet over. Record the file number in this
+- [x] 11.3 Hand the packet over. Record the file number in this
        phase's Status after Andrew reports the apply.
 
 ### Done means
@@ -61,7 +61,40 @@ does not mark this complete from a clean local lint alone.
 
 ### Status
 
-**not started**
+**complete — 2026-11-02.** Andrew reported
+[`acuranzo_1436.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1436.lua)
+applied and confirmed lookup 053 in the Lookups manager. Keys 7 and 16
+store `icon`. Key 52 closes its tag. Keys 61 Page Number, 62 Page Count,
+and 63 Parameter exist. The v1 attribute lists match. Test 31 and
+Test 98 pass. The next Acuranzo file is 1437. The next caller-facing
+QueryRef is 173.
+
+### Accomplished
+
+- One lookup-only packet with no caller-facing QueryRef. 1086 was not
+  edited in place.
+- Static text, Page Number, and Page Count carry
+  `[0, 1, 2, 3, 4, 5, 14, 15, 16, 17, 24, 29]`. Text is native to the
+  item (Andrew, 2026-11-02). Field, calculated, and aggregate text,
+  number, datetime, and field image add 7 (Field) and 8 (Datasource).
+  Parameter adds 8.
+- Lookup 054 keys 9–12 are on no list. Chart and barcode rows are
+  untouched. Reverse deletes 61–63 and restores the 1086 JSON.
+
+### Lessons learned
+
+- 1086 put lookup 054 ids 24 (Grid Background Color) and 29 (Link) on
+  every item list. 1436 kept them to stay minimal.
+- The icon typos only showed when reading the seed file. The designer
+  does not read lookup 053 yet, so the check is the Lookups manager.
+
+### Handoff
+
+- Phase 12 (lookup 054 fonts) re-checks the next free Acuranzo file
+  (1437), QueryRef (173), and lookup key on disk.
+- Phase 14 decides whether 054 ids 24 and 29 stay on the item lists.
+  The 053 packet is applied, so Phase 14's entry condition on it is met.
+- Nothing is waiting on Andrew for Phase 11.
 
 ---
 
