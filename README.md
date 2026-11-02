@@ -64,15 +64,15 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-11-01 15:45:32 UTC
+Last updated at 2026-11-02 21:32:53 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 JSON                           610            488              0        2134271
 C                             1899          77564          62441         334978
 Text                           403            400              0         178625
-Lua                            642          16741          10926         145487
-Markdown                       812          42530            276         136668
+Lua                            643          16783          10944         145712
+Markdown                       812          42540            276         136711
 JavaScript                     306          12234          16028          68550
 Bourne Shell                   240           9129         127092          54851
 SVG                             16             17             27          17470
@@ -92,7 +92,7 @@ YAML                             2              8             13             37
 Pascal                           2             11              2             31
 MSBuild script                   1              3              0             11
 -------------------------------------------------------------------------------
-SUM:                          5509         167521         234307        3107833
+SUM:                          5510         167573         234325        3108101
 -------------------------------------------------------------------------------
 506 Files were skipped (duplicate, binary, or without source code):
   css: 167
