@@ -73,7 +73,7 @@ describe('fit-width scale', () => {
 
   it('scales the page, the grid, and the rulers with one variable', () => {
     expect(css).toMatch(/transform:\s*scale\(var\(--reports-scale,\s*1\)\)/);
-    expect(css).toMatch(/width:\s*calc\(\(var\(--reports-ruler-size\) \+ var\(--reports-content-width\)\) \* var\(--reports-scale,\s*1\)\)/);
+    expect(css).toMatch(/width:\s*calc\(\(var\(--reports-ruler-size\) \+ var\(--reports-content-width\) \+ var\(--reports-ruler-right, 0px\)\) \* var\(--reports-scale,\s*1\)\)/);
     expect(css).toMatch(/height:\s*calc\(var\(--reports-stack-height\) \* var\(--reports-scale,\s*1\)\)/);
   });
 });

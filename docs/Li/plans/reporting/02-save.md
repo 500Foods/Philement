@@ -3,7 +3,7 @@
 # Reporting — Save
 
 **Parent:** [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md)
-**Phases:** 11–18
+**Phases:** 11–18, with labeled Phases 13b and 14b
 **Stop when:** The author can save a revision and open it again.
 
 The locks, the phase index, Phase 0, the backlog, and the Working Log
@@ -238,11 +238,103 @@ next caller-facing QueryRef is 173.
 
 ### Handoff
 
-- Phase 14 (property panel) re-checks the next free Acuranzo file
-  (1439), QueryRef (173), and decides whether 054 key 30 is dropped
-  from the report panel or fed from 057.
+- Phase 13b (section lookups) followed and is complete (1439–1441). Phase 14
+  then decides whether 054 key 30 is dropped from the report panel
+  or fed from 057.
 - Lookups 053, 054, and 057 are applied.
 - Nothing is waiting on Andrew for Phase 13.
+
+---
+
+## Phase 13b — Section lookups
+
+### Goal
+
+Hand Andrew the section lookups the property panel reads. Lookup
+074 names the lookup 053 palette groups. Lookup 075 names the
+lookup 054 attribute sections. Lookup 054 rows gain a numeric
+`section` key. Do not apply them.
+
+### Entry gate
+
+Phase 13 Status complete. Andrew named this labeled phase on
+2026-11-02. Re-check the next file number and the highest lookup id
+the day it is written (073 was the highest on 2026-11-02).
+
+### Work items
+
+- [x] 13b.1 One migration per lookup family. Lookup 074 (053 palette
+       groups): one row per 053 `value_int` group in use (0 hidden,
+       1 Static, 6 Bands, 7 System, and any other on disk), each with
+       `value_txt` label, `sort_seq`, and `collection` `{"icon": ...}`.
+       Register it in lookup 0 like
+       [`acuranzo_1090.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua).
+- [x] 13b.2 Lookup 075 (054 attribute sections): one row per 054
+       `Group` value in use, the same shape.
+- [x] 13b.3 Lookup 054: add `"section": <075 key>` to each row's
+       collection. Keep `Group`. Reverse restores the prior JSON.
+- [x] 13b.4 Ask Andrew for every label, icon, and order before
+       writing. Hand the packets over. Record the file numbers after
+       Andrew reports the apply.
+
+### Done means
+
+Andrew sees lookups 074 and 075 in the Lookups manager, and every
+054 row carries a `section` that names a 075 row.
+
+### Exit gate
+
+Andrew's apply report.
+
+### Status
+
+**complete — 2026-11-02.** Andrew reported
+[`acuranzo_1439.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1439.lua),
+[`acuranzo_1440.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1440.lua), and
+[`acuranzo_1441.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1441.lua) applied. The next Acuranzo
+file is 1442. The next caller-facing QueryRef is 173.
+
+### Accomplished
+
+- Lookup 074 Report Palette Groups (1439): lookup 0 registry row plus
+  keys 0–7, `key_idx` = the 053 `value_int`, icon in `collection`.
+  Order: Static 1 (`fa-cube`), Field 2 (`fa-database`), Calculated 3
+  (`fa-function`), Aggregate 4 (`fa-sigma`), System 7 (`fa-gear`),
+  Bands 6 (`fa-layer-group`), CrossTab 5 (`fa-table-cells`, hidden in
+  v1), Structural 0 (`fa-sitemap`, never on the palette).
+- Lookup 075 Report Attribute Sections (1440): registry row plus keys
+  1–9, the nine 054 `Group` strings: Report, Page Layout, Page
+  Margins, Object, Position, Fonts, Formatting, Grid, Ruler.
+- Lookup 054 (1441): keys 0–40 gained `"section": <075 key>`; `Group`
+  kept. Mapping: 1 Report 18–19; 2 Page Layout 30–34; 3 Page Margins
+  35–39; 4 Object 6, 7, 8, 13, 29; 5 Position 0–5, 14; 6 Fonts 15–17;
+  7 Formatting 9–12; 8 Grid 20–24, 40; 9 Ruler 25–28.
+- Andrew's answers: labels, icons, and order approved; Structural row
+  included for 074 key 0; 054 `sort_seq` left alone. Lookup 053 and
+  its lowercase `group` (the subtype) are unchanged. The Outline
+  navigator stays hard-coded in the panel, not a 075 row.
+
+### Lessons learned
+
+- 053 needs no column for its palette group: `value_int` already is
+  one, so 074 keys on it. 053's `group` string is a subtype, not the
+  palette group.
+- 1441 was built from 1087 with 1437's keys 4, 15, and 17 laid over,
+  so the reverse restores the live JSON, not the original 1087.
+- 054 editor oddities remain for Phase 14: keys 21 and 24 use `Text`
+  for colours while key 25 uses `Color`; keys 18–19 have `sort_seq` 0.
+
+### Handoff
+
+- Phase 14 (property panel, `LithiumProperties`) is next, in a fresh
+  chat. Its entry gate is met: 053, 054, 057, 074, and 075 are applied.
+- Group the panel by 054 `section` (075 key) and order sections by
+  075 `sort_seq`; fall back to `Group` only if `section` is missing.
+  Keep 054 `sort_seq` order within a section.
+- Open with Andrew in 14.4/14.8: 054 ids 24 and 29, key 30 (drop or
+  feed from 057), Color editor for keys 21 and 24, and where name and
+  title edit.
+- Nothing is waiting on Andrew for Phase 13b.
 
 ---
 
@@ -250,54 +342,388 @@ next caller-facing QueryRef is 173.
 
 ### Goal
 
-Edit the selected object from lookup 054, limited to the attribute
-list on its lookup 053 row. The panel is the Editor-page column
-named in Manager chrome in the parent. It stays hidden on the
-other pages.
+Edit the selected object, or the report and page when nothing is
+selected, in a shared `LithiumProperties` panel built on Tabulator.
+Rows come from lookup 054, limited to the attribute list on the
+selected type's lookup 053 row, grouped by lookup 075 sections. The
+panel sits left of the Editor canvas and right of the report table,
+with its own splitter (Manager chrome in the parent). It stays hidden on the other pages. The Property panel lock
+in the parent governs layout, ids, labels, and editors.
 
 ### Entry gate
 
-Phases 11, 12, and 13 are complete, including the applies.
+Phases 11, 12, 13, and 13b are complete, including the applies.
 
 ### Work items
 
-- [ ] 14.1 Load lookup ids 053, 054, and 057 with QueryRef 026
-       (Get Lookup, `LOOKUPID`). Do not read them from `lookups.js`.
-       That module's QueryRefs 053 and 054 are Get Themes (lookup 41)
-       and Get Icons (lookup 40). Leave those categories alone.
-       Cache the three report lookups on the manager.
-- [ ] 14.2 The panel lists the attributes advertised for the selected
-       `typeKey`. Editors follow lookup 054's `Editor` value for the
-       v1 set: text, number, list, boolean. An unknown editor toasts
-       and skips that row. Keys 9–12 are not on the lists. The mask
-       string is edited in work item 15.5 and is not a lookup row.
-- [ ] 14.3 Edits commit through the model. Undo reverts the panel and
-       the canvas. Page size picks a lookup 057 row and copies its
-       width, height, and margins into the definition.
-- [ ] 14.4 Browser: change the static text, the font size, and the
-       page size. Export. Import into a fresh session and see the
-       same panel values.
-- [ ] 14.5 An omitted key shows the Defaults table value and a note
+- [x] 14.1 Load lookup ids 053, 054, 057, 074, and 075 with QueryRef
+       026 (Get Lookup, `LOOKUPID`). Do not read them from
+       `lookups.js`. That module's QueryRefs 053 and 054 are Get
+       Themes (lookup 41) and Get Icons (lookup 40). Leave those
+       categories alone. Cache the report lookups on the manager.
+- [x] 14.2 `LithiumProperties` under `src/properties/`: a two-column
+       Tabulator with no header, rows grouped by section with icon
+       and collapse, a search box (label, section, id), a draggable
+       name/value splitter, condensed rows, and both sides centred
+       when a row wraps. It takes rows and editors as data and knows
+       nothing about reports.
+- [x] 14.3 One label resolver for rows: `lang` exact locale, then
+       language, then the plain label; list captions by position
+       under `lang`. The profile language wins over the browser.
+       Rows ship in English.
+- [x] 14.4 Editors follow lookup 054's `Editor`: Text, Number, List,
+       Boolean, and Color (Coloris, ported from Pavillion with its
+       zoom and swatches). `None` is read-only. An unknown editor
+       toasts and skips that row. Keys 9–12 are not on the lists.
+       The mask string is edited in work item 15.5 and is not a
+       lookup row. Decide 054 ids 24 and 29 and key 30 with Andrew.
+- [x] 14.5 `reports-panel.js` wires the component to the selection.
+       Empty selection shows the report and page properties. Edits
+       commit through the model, one Undo step each. Undo reverts the
+       panel and the canvas. Page size picks a lookup 057 row and
+       copies its width, height, and margins into the definition.
+       `reports.js` stays under 1000 lines.
+- [x] 14.6 An omitted key shows the Defaults table value and a note
        that the file omits it. Editing the control writes the key.
        A number item with `mask` `""` shows the plain-decimal rule.
        An item with no `font` shows the report font and says the
        file omits the override.
+- [x] 14.8 Outline section and placement. Put the panel left of the
+       canvas with its own splitter. Its first section lists the
+       report, the bands, and each band's items. Clicking an entry
+       selects it, and canvas selection highlights it. Remove
+       `.reports-summary` from `paintReportStage` and `reports.css`.
+       Ask Andrew whether name and title edit here, on the Report
+       page, or both.
+- [x] 14.7 Browser (after 14.8): select from the Outline, change the static text, the font size, a colour,
+       and the page size. Search, collapse, and drag the splitter.
+       Export. Import into a fresh session and see the same values.
 
 ### Done means
 
-The panel shows the effective value, including a default the file
-left out. The properties come from the lookups and the Defaults
-table.
+The panel sits left of the canvas, the summary under the canvas is
+gone, and the Outline selects bands and items. The panel shows the
+effective value in sections with icons, including
+a default the file left out, and edits undo. The properties come from
+the lookups and the Defaults table.
 
 ### Exit gate
 
-Lint, unit tests for "attribute list filters the panel", and the
-browser check against a migrated database (the new lookup rows have
-to be visible).
+Lint, unit tests for "attribute list filters the panel", the label
+resolver, and section grouping, and the browser check against a
+migrated database (the new lookup rows have to be visible).
 
 ### Status
 
-**not started**
+**complete — 2026-11-03.** Andrew closed the phase after the round-5
+browser checks and the band-drag ruler fix ("Lets wrap this phase").
+No migration was written for Phase 14; the next Acuranzo file is
+still 1442 and the next caller-facing QueryRef is still 173.
+
+Andrew continued into Phase 14 in the same Sitting after 13b closed
+(2026-11-02).
+
+Decisions locked by Andrew (2026-11-02):
+
+1. 054 key 24 (Grid Background Color) shows on the report/page only
+   (empty selection). Lithium drops 24 from item attribute lists
+   (`REPORT_ONLY_KEYS`). Deferred lookup-only cleanup: remove 24 from
+   the 053 item `attributes` lists. Not written.
+2. Key 29 Link is editable text (Lithium override of `Editor: None`).
+3. Key 30 Page Size fills from lookup 057 and ignores its own `List`.
+   Picking a row copies width, height, margins, and orientation.
+4. Keys 21 and 24 use the Color editor in Lithium by key. Deferred
+   cleanup: set their 054 `Editor` to `Color`. 1442 not written.
+5. Name and title edit in both the panel (empty selection) and the
+   Report page form. One document; each edit is one Undo step; each
+   surface repaints from the document.
+
+QueryRef: lookups load with QueryRef 26 (Get Lookup, the plan's
+"026"), the path the rest of Lithium uses. The lookup loader's
+QueryRef 34 is the Lookups manager list query; not used here.
+
+Done:
+
+- `src/managers/reports/report-lookups.js` loads 053, 054, 057, 074,
+  075 (a failed one comes back empty); cached on the manager.
+- `src/managers/reports/report-properties.js` (pure): attribute keys
+  per selection (053 item `attributes` minus 24; 053 key 9 names for
+  the report, with a fallback list), rows with effective value and
+  `omitted`, editor overrides, and `applyProperty` (report fields,
+  item box through `moveItem`/`resizeItem`, align, rotation, link,
+  item font override, static text body row).
+- `src/properties/lithium-properties.js`: Tabulator grid grouped by
+  section (sections.js), Text/Number/List/PageSize editors, Color via
+  `@melloware/coloris` (new dependency), italics for defaults.
+- `src/managers/reports/reports-panel.js` mixin: panel and Outline
+  left of the canvas with its own `LithiumSplitter`; Outline click
+  selects, canvas selection highlights; edits commit through
+  `_commitDocument`; read-only unless the record is in edit mode.
+- `.reports-summary` removed from `paintReportStage` and `reports.css`.
+  `reports.js` is 928 lines.
+- Tests: `tests/unit/report-properties.test.js` (attribute list filters
+  the panel, editor overrides, defaults, edits, undo steps, grouping
+  and Outline); shell, chrome, items, revisions tests moved from the
+  summary to the Outline. Full unit suite green; lint clean on the
+  touched files; `vite build` passes.
+
+Gaps closed (2026-11-02):
+
+- 14.2: search box (label, section caption, stable id), no header,
+  section icons from 075 `icon` in the group header, header click
+  collapses, name/value splitter on the name cell's edge (Tabulator
+  cell resize, since there is no header), condensed rows, and both
+  sides centred when a row wraps.
+- 14.4: Boolean is a checkbox. A 054 row with a `List` (Visible, key
+  20) stays a dropdown because the lookup says List. Number is a
+  decimal input; a length key keeps or adds the report unit and a bad
+  value toasts and leaves the file. An unknown editor toasts once
+  and skips the row. Field and Datasource show read-only until Phase
+  15. Coloris is the stock `@melloware/coloris`; Pavillion's source is
+  not in this repo, so its zoom and swatches are not ported. Zoom is
+  the Lithium-wide zoom item; swatches can follow with 14b.
+- 14.6: an omitted value shows the default in italics with the note
+  "Not in the file; default shown." An item with no font shows the
+  report font and says the file has no item override. A number item
+  (types 21, 29, 35, 61, 62) with mask `""` or none shows a read-only
+  Mask row with the plain-decimal rule.
+
+Chrome pass (2026-11-02, Andrew's first look):
+
+- Regression fixed. The polish pass put the panel rules outside
+  `@layer managers`, and set Tabulator cells to `display: flex`,
+  which is block-level, so a row's name and value cells stacked. Each
+  default also got a second visible note line, which read as extra
+  fields. Cells are now `inline-flex` inside the layer, and the note
+  is a tooltip on the italic default. Text and select editors commit
+  once (no double commit on Enter plus blur). Boolean is a Yes/No
+  select again, not a checkbox.
+- The panel is one framed object. A top bar (rounded top) holds
+  Search, Outline, Expand all, and Collapse all. Thin side lines in
+  the toolbar colour run down to a bottom bar (rounded bottom) with
+  Favourites and Hidden as stubs that toast "Phase 14b". Left margin
+  matches the toolbars; the right splitter has the same gutters as
+  the report list splitter.
+- Search sits above the Outline when on. The Outline toggles, scrolls,
+  and resizes vertically from a handle above the grid. Hidden regions
+  give their space to the grid.
+- Editors have no chrome: they edit in the cell.
+- Section headers have a caret (right closed, down open), the 075
+  icon, and a right-aligned count. Decision for this pass: the whole
+  header toggles, not only the caret. Open and closed sections
+  survive a repaint.
+
+Not done yet:
+
+- 14.7: Andrew's browser check. It is the only open item; Phase 14
+  stays In progress until it passes.
+- Second pass (2026-11-02): expand/collapse fix, band scope in both
+  directions, shared toggle class. Details are in the REPORTING_PLAN journal.
+- Third pass (2026-11-02): header spacing, refit on resize, divider
+  bar, search clear X. Details are in the REPORTING_PLAN journal.
+- Fourth pass (2026-11-02): Outline density, LithiumTable colours,
+  value width = inner width minus name width. Details are in the REPORTING_PLAN journal.
+- Split fix (2026-11-02): the name width sticks after a drag (redraw first, then widths).
+- Chrome pass done (Andrew, 2026-11-02). PP layout prefs persisted (width, name split, search and outline toggles, outline height, closed sections).
+- 14.7 closed by Andrew on 2026-11-03 after the tweak rounds below.
+
+### Accomplished
+
+- `LithiumProperties` (`src/properties/`): a shared, report-agnostic
+  Tabulator property grid grouped by lookup 075 sections, with search,
+  Outline, name/value splitter, Text/Number/List/Boolean/Color/PageSize
+  editors, italic defaults, and Undo through the model.
+- Chrome polish: one framed panel with top and bottom bars, tight
+  Expand/Collapse/Prev/Next buttons, carets and counts on section
+  headers, full-width headers when every section is closed, and the
+  same corner radius (`--border-radius-sm`) as the toolbars on the
+  panel bars, the editor stage, and the report sheet.
+- Layout prefs in localStorage: panel width (`PanelStateManager`),
+  name split, search and outline toggles, outline height, and closed
+  sections (`lithium_reports_props_prefs`).
+- Keyboard and navigation: Up/Down step the Outline; Tab and
+  Shift+Tab move between value editors and skip read-only rows;
+  Prev/Next in the bottom bar step the selection.
+- End of Report: a zero-height marker with its own Outline entry and
+  a PP section (read-only height).
+- Rulers on four sides: the Report's Ruler section saves
+  `rulers: { top, left, right, bottom }` in the definition (a side is
+  on unless `false`). Right and bottom ticks face the page. Clicking
+  a ruler selects the report. A session-only Ruler toolbar toggle
+  hides them all.
+- Crosshair toolbar toggle (session only) shows or hides the cursor
+  guide lines.
+- Band-expand fix: dragging a band edge now resizes and redraws the
+  right ruler as well as the left, so new ticks and numbers appear
+  during the drag.
+- Unit suite at close: 1383 passed, 12 skipped. ESLint and stylelint
+  add no new problems.
+
+### Lessons learned
+
+- New rules must sit inside `@layer managers`; unlayered
+  `lithium-toolbar.css` outranks the layer, so the tight button
+  padding needs `!important`.
+- Tabulator 6.7.1 `navigateNext` stops on a read-only row; Tab is
+  handled in a capture-phase keydown that commits, then edits the
+  next editable row.
+- End of Report is not a `.reports-band`, so it stays out of band
+  loops and selects through its own flag.
+- Any code that resizes one side ruler must resize every side ruler;
+  the right ruler was missed when it was added.
+- `--border-radius-sm` and `-md` are both 6px today; use `-sm` to
+  match the toolbars so a future change to either stays consistent.
+- `npm run icon:registry` errors at the end on the dist copy but still
+  updates `config/icons-dev.txt`.
+
+### Handoff
+
+- Phase 14b (property panel preferences) is next, in a fresh chat. Its
+  entry gate (Phase 14 complete) is now met. Do not start it until
+  Andrew names it.
+- 14b starts from: the Favourites and Hidden bottom-bar stubs (they
+  toast "Phase 14b"); layout prefs already in localStorage, which
+  14b.3 moves to the user profile per panel; and the Flatpickr date
+  editor (14b.4).
+- Open questions carried forward: with the left ruler off, the unit
+  corner shows on the bottom ruler only when the top is also off;
+  the deferred lookup-only cleanups (054 keys 21 and 24 `Editor` to
+  `Color`; drop key 24 from 053 item lists) are still unwritten.
+- Nothing is waiting on Andrew for Phase 14.
+
+## Phase 14b — Property panel preferences
+
+### Goal
+
+The panel remembers how each user likes it, and dates get an editor.
+
+### Entry gate
+
+Phase 14 Status complete. Andrew named this labeled phase on
+2026-11-02.
+
+### Work items
+
+- [x] 14b.1 Favourites and hidden properties, stored on the user
+       profile by panel id and row id. Favourites show first; hidden
+       rows have a show-hidden toggle.
+- [x] 14b.2 Reorder within a section by drag. The order is a profile
+       preference. Lookup `sort_seq` stays the default.
+- [x] 14b.3 Remember open sections and the splitter position per
+       panel on the profile.
+- [x] 14b.4 Date editor on the existing Flatpickr
+       (`shared/flatpickr-picker.js`). No new package.
+- [x] 14b.5 Write `docs/Li/LITHIUM-PROPS.md` for the component: rows,
+       sections, editors, the resolver, preferences, and how another
+       manager adopts it.
+- [x] 14b.6 Browser: favourite, hide, reorder, collapse, and resize,
+       then sign out and in and see the same panel.
+
+### Done means
+
+Preferences survive a new session, and a date property edits with
+Flatpickr.
+
+### Exit gate
+
+Lint, unit tests for preference storage by id, and Andrew's browser
+check.
+
+### Status
+
+**complete — 2026-11-03.** Andrew said "Pretty good. Let's close
+this phase." after his browser check. Work items 14b.1–14b.6 are
+checked. `npm test`: 81 files, 1397 passed, 12 skipped. ESLint is at
+the baseline (163 in src, 8 in tests). Stylelint is clean. The CSS and
+HTML are copied to `public/`.
+
+### Accomplished
+
+- Panel prefs live on the user profile (`window.lithiumSettings`,
+  synced to the account) at `24.props.designer`, keyed by panel id and
+  row id. The old `lithium_reports_props_prefs` blob and
+  `lithium_reports_props_width` are copied there once and removed.
+  With no profile service, prefs fall back to localStorage.
+- Right-click a row for checkable **Favourite** and **Hidden** items.
+  Rows always stay in their own section.
+- Bottom-bar filters: Favourites shows only favourites. Hidden off
+  drops hidden rows; Hidden on includes them in the regular list.
+- Hovering Favourites shows a right-justified star in the name cell of
+  favourite rows. Hovering Hidden, or turning it on, shows an
+  eye-slash on hidden rows. No other styling marks either.
+- Drag a row by its name to reorder within its section. A drop in
+  another section snaps back. Right-click Reset order returns to lookup
+  `sort_seq`.
+- Open sections, name width, outline height, the Search and Outline
+  toggles, and the panel width are remembered on the profile.
+- A `Date` editor on `shared/flatpickr-picker.js` stores `YYYY-MM-DD`.
+  No new package.
+- [`/docs/Li/LITHIUM-PROPS.md`](/docs/Li/LITHIUM-PROPS.md) documents
+  rows, sections, editors, the resolver, preferences, and adoption.
+
+### Lessons learned
+
+- The "user profile" in Lithium is GlobalSettingsService on
+  `window.lithiumSettings`. It is synced to the account at login, so
+  profile prefs need no new QueryRef or migration.
+- A separate Favourites section moved rows out of context. Andrew
+  preferred filters plus hover icons, with rows left in place.
+- Favourites and Hidden are not symmetric filters. Favourites
+  restricts the list, and Hidden includes rows. Ask about each toggle's
+  meaning rather than mirroring the first one.
+- Tabulator `movableRows` with `rowHandle` on the name column leaves
+  value cells free to edit. A drop across groups is undone by
+  repainting from the panel rows.
+- With `groupBy`, each section's name prefix is its sort key. Adding or
+  removing a synthetic section renumbers every other one, so tests that
+  pin section names change with it.
+
+### Handoff
+
+Phase 14b is complete. Do not start the next phase until Andrew names
+it. Phase 15 (field items and a sample datasource) is next in order,
+and Phase 16 has not started. Still deferred, and not part of 14b:
+setting Editor to Color on 054 keys 21 and 24, and dropping key 24
+from the 053 item lists. The code still maps both keys by name. No
+`Date` key exists in 054 yet. The next Acuranzo file is 1442. The next
+caller-facing QueryRef is 173.
+
+**2026-11-03 — `acuranzo_1442.lua` drafted, waiting for apply.** Andrew
+chose to do the cleanup before Phase 15. 1442 sets `Editor` to `Color`
+on 054 keys 21 and 24 and removes 24 from the `attributes` lists of 053
+keys 0, 16, 20–22, 24, 28, 29, 32, 34, 35, 38, 52, and 61–63. The
+reverse restores the 1441 and 1436 JSON. luacheck is clean. The Lithium
+special-cases for 21 and 24 stay until Andrew applies it. After apply:
+strip them, then check in the browser that Coloris opens and saves on
+keys 21, 24, and 25. The next Acuranzo file is 1443.
+
+**2026-11-03 — `acuranzo_1442.lua` applied.** Andrew reported it
+applied. Lithium now reads the Color editor from 054 `Editor` (the
+`COLOR_KEYS` override is gone) and takes item attribute lists from 053
+as-is (`REPORT_ONLY_KEYS` is gone). Coloris fix: the picker opens on
+click, not focus, so the Color editor now clicks its new input when it
+renders, and it commits on Coloris `close` as well as `change`, so
+closing without a change no longer leaves the cell stuck in edit.
+A chrome test checks the picker opens and the value saves once.
+`npm test`: 81 files, 1398 passed, 12 skipped. ESLint at baseline (163
+src, 8 tests). Stylelint clean. Browser check for keys 21, 24, and 25
+waits for Andrew. Phase 15 not started. The next Acuranzo file is 1443.
+The next caller-facing QueryRef is 173.
+
+**2026-11-03 — Retained colour swatches (Andrew: "swatches shown on all instances
+of the color picker", after Pavillion). New `src/shared/coloris-picker.js`
+is Lithium's one Coloris entry, ported from Pavillion's
+`ui/src/common/coloris.js`: swatches are the theme's
+`--lithium-picker-swatches` list (none defined yet) then the user's own,
+capped at 24, saved on the profile at `colorPicker.swatches`. Under the
+swatches a row holds + (add the current colour), − (remove a colour the
+user added) and ✕ (Coloris's close, moved there). Round swatches, Hex /
+RGB / HSL toggle. `src/styles/vendor-coloris.css` holds the styles. The
+property panel's Color editor now goes through it. New
+`coloris-picker.test.js` (5 tests). `npm test`: 82 files, 1403 passed,
+12 skipped. ESLint at baseline (163 src, 8 tests). Stylelint clean.
+Pavillion's Ctrl+wheel picker zoom is not ported. Phase 15 not started.
+No migration; next Acuranzo file 1443.
 
 ---
 
@@ -637,4 +1063,3 @@ It is the lookup 053 packet at the top of this file. Do
 not start Phase 11, Phase 16, or Phase 19 until he names
 one. Phase 10-UI is complete in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
-

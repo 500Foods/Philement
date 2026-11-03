@@ -1,0 +1,52 @@
+/*
+ * Coloris picker additions shared by every Lithium colour field.
+ * Imported by src/shared/coloris-picker.js. After Pavillion's picker:
+ * round swatches, then a row of + / − / ✕ buttons.
+ */
+
+.clr-picker {
+  display: flex;
+  flex-direction: column;
+}
+
+.clr-picker .clr-swatches button {
+  border-radius: 50%;
+}
+
+.clr-picker .clr-swatches button[data-user-swatch] {
+  box-shadow: 0 0 0 1px var(--border-color, #888);
+}
+
+.clr-picker .lithium-color-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  order: 3;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 0 8px;
+}
+
+.clr-picker .lithium-color-actions button {
+  display: grid;
+  position: static;
+  flex: none;
+  place-items: center;
+  order: 0;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid currentcolor;
+  border-radius: var(--border-radius, 8px);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+
+.clr-picker .lithium-color-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

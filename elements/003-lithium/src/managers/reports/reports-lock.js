@@ -19,6 +19,7 @@ export const reportLockMethods = {
       ? this.container.querySelector('.reports-manager')
       : null;
     if (root) root.dataset.editing = editing ? 'true' : 'false';
+    if (typeof this._paintPanel === 'function') this._paintPanel();
     const elements = this.elements || {};
     for (const key of ['metaName', 'metaTitle', 'metaSummary']) {
       if (elements[key]) elements[key].disabled = !editing;

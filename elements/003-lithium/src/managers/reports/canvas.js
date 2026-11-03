@@ -6,13 +6,15 @@
  * descriptor. Every measured band carries a left ruler that
  * starts at 0. Each band body
  * carries the section grid. `--reports-scale` on the canvas scales
- * that stack together.
+ * that stack together. The End of Report marker closes the stack: a
+ * strip with no page height. Each ruler side can be turned off; a
+ * bottom ruler sits under the marker and a right ruler beside each band.
  */
 
 import { BAND_STRIP_PX, paintReportBands } from './bands.js';
 import { gridSpec } from './grid.js';
 import { contentWidthPx, pageBox } from './model/units.js';
-import { RULER_SIZE, attachBandRulers } from './rulers.js';
+import { CLASSIC_SIDES, RULER_SIZE, attachBandRulers } from './rulers.js';
 import { formatViewScale } from './scale.js';
 
 function pageObject(doc) {
@@ -82,11 +84,33 @@ function px(value) {
   return `${value}px`;
 }
 
-function applyDesignVars(node, frame, stackPx, ruled) {
+/** CSS class of the End of Report marker. It is not a `.reports-band`. */
+export const END_MARKER_CLASS = 'reports-band-end';
+
+/** Strip-only marker after the last band. No page height. */
+export function endMarker() {
+  const end = document.createElement('section');
+  end.className = END_MARKER_CLASS;
+  end.setAttribute('aria-label', 'End of Report');
+  const strip = document.createElement('div');
+  strip.className = 'reports-band-strip';
+  const name = document.createElement('span');
+  name.className = 'reports-band-role';
+  name.textContent = 'End of Report';
+  strip.append(name);
+  end.append(strip);
+  return end;
+}
+
+function applyDesignVars(node, frame, stackPx, ruled, sides = CLASSIC_SIDES) {
   node.style.setProperty('--reports-content-width', px(frame.contentWidthPx));
   node.style.setProperty('--reports-stack-height', px(stackPx));
   node.style.setProperty('--reports-band-strip', px(BAND_STRIP_PX));
-  node.style.setProperty('--reports-ruler-size', ruled ? `${RULER_SIZE}px` : '0px');
+  // `--reports-ruler-size` stays the left column (0 when off); the bar
+  // thickness of the top and bottom rulers is `--reports-ruler-bar`.
+  node.style.setProperty('--reports-ruler-size', ruled && sides.left ? `${RULER_SIZE}px` : '0px');
+  node.style.setProperty('--reports-ruler-right', ruled && sides.right ? `${RULER_SIZE}px` : '0px');
+  node.style.setProperty('--reports-ruler-bar', `${RULER_SIZE}px`);
 }
 
 /**
@@ -96,9 +120,10 @@ function applyDesignVars(node, frame, stackPx, ruled) {
  * @param {object} doc
  * @param {string} [rulerUnit]
  * @param {number} [scale]
+ * @param {{ top: boolean, left: boolean, right: boolean, bottom: boolean }} [sides]
  * @returns {ReturnType<typeof pageFrame>}
  */
-export function paintReportPage(host, doc, rulerUnit, scale) {
+export function paintReportPage(host, doc, rulerUnit, scale, sides = CLASSIC_SIDES) {
   const frame = pageFrame(doc);
   host.replaceChildren();
   host.classList.remove('reports-canvas-fitted');
@@ -107,6 +132,8 @@ export function paintReportPage(host, doc, rulerUnit, scale) {
   host.style.removeProperty('--reports-content-width');
   host.style.removeProperty('--reports-stack-height');
   host.style.removeProperty('--reports-ruler-size');
+  host.style.removeProperty('--reports-ruler-right');
+  host.style.removeProperty('--reports-ruler-bar');
   host.style.removeProperty('--reports-scale');
   if (frame.omitted) {
     host.append(note('The file omits the page.'));
@@ -122,11 +149,15 @@ export function paintReportPage(host, doc, rulerUnit, scale) {
   const grid = gridSpec(doc);
   const frames = paintReportBands(page, doc, grid);
   if (grid.error) frame.gridError = grid.error;
-  const rulers = attachBandRulers(page, pageObject(doc), frame.contentWidthPx, rulerUnit);
+  page.append(endMarker());
+  const rulers = attachBandRulers(page, pageObject(doc), frame.contentWidthPx, rulerUnit, sides);
   if (rulers.error) frame.rulerError = rulers.error;
   const ruled = !rulers.error;
-  const stackPx = designStackHeight(frames, ruled);
-  applyDesignVars(page, frame, stackPx, ruled);
+  const stackPx = designStackHeight(frames, ruled && sides.top)
+    + BAND_STRIP_PX
+    + (ruled && sides.bottom ? RULER_SIZE : 0);
+  applyDesignVars(page, frame, stackPx, ruled, sides);
+  page.classList.toggle('reports-page-bottom-ruled', ruled && Boolean(sides.bottom));
   if (grid.error) host.append(note(grid.error));
   if (rulers.error) host.append(note(rulers.error));
   if (rulers.error) {
@@ -136,12 +167,12 @@ export function paintReportPage(host, doc, rulerUnit, scale) {
   const sheet = document.createElement('div');
   sheet.className = 'reports-sheet';
   sheet.id = 'reports-sheet';
-  applyDesignVars(sheet, frame, stackPx, true);
+  applyDesignVars(sheet, frame, stackPx, true, sides);
   const cursor = document.createElement('div');
   cursor.className = 'reports-cursor reports-cursor-x';
   cursor.hidden = true;
   sheet.append(page, cursor);
-  applyDesignVars(host, frame, stackPx, true);
+  applyDesignVars(host, frame, stackPx, true, sides);
   host.style.setProperty('--reports-scale', formatViewScale(scale));
   host.classList.add('reports-canvas-fitted');
   host.append(sheet);

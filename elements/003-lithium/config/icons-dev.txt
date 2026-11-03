@@ -36,6 +36,7 @@
 <fa fa-calendar></fa>
 <fa fa-camera></fa>
 <fa fa-caret-large-right></fa>
+<fa fa-caret-right></fa>
 <fa fa-chart-line></fa>
 <fa fa-chart-simple-horizontal></fa>
 <fa fa-check></fa>
@@ -54,6 +55,7 @@
 <fa fa-comments></fa>
 <fa fa-compress></fa>
 <fa fa-copy></fa>
+<fa fa-crosshairs></fa>
 <fa fa-cube></fa>
 <fa fa-database></fa>
 <fa fa-download></fa>
@@ -63,6 +65,7 @@
 <fa fa-exclamation-circle></fa>
 <fa fa-exclamation-triangle></fa>
 <fa fa-expand></fa>
+<fa fa-eye-slash></fa>
 <fa fa-eye></fa>
 <fa fa-face-disguise></fa>
 <fa fa-file-alt></fa>
@@ -131,6 +134,7 @@
 <fa fa-right></fa>
 <fa fa-rotate-left></fa>
 <fa fa-rotate-right></fa>
+<fa fa-ruler-combined></fa>
 <fa fa-search></fa>
 <fa fa-shield-halved></fa>
 <fa fa-sign-in-alt></fa>

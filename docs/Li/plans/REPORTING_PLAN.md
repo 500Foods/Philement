@@ -24,7 +24,7 @@ with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
 Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. The next Acuranzo file is 1439. Phase 14 is next.
+Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it.
 Phase 16 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
@@ -74,7 +74,9 @@ Andrew reports the apply.
 | 11 | Lookup 053 repair | Helium, human apply | Medium | Complete |
 | 12 | Lookup 054 fonts | Helium, human apply | Easy | Complete |
 | 13 | Lookup 057 page sizes | Helium, human apply | Easy | Complete |
-| 14 | Property panel | Lithium UI | Medium | Not started |
+| 13b | Section lookups | Helium, human apply | Easy | Complete |
+| 14 | Property panel | Lithium UI | Medium | Complete |
+| 14b | Property panel preferences | Lithium UI | Medium | Complete |
 | 15 | Field items and a sample datasource | Lithium UI | Easy | Not started |
 | 16 | One group level | Lithium UI | Easy | Not started |
 | 17 | Save and load packet | Helium, human apply | Medium | Complete |
@@ -138,8 +140,9 @@ Medium, and each one closes on a single behavior. Easy is a
 fixture, a probe, or a decision. Medium adds a designer surface
 or a browser pass. A sitting that ends early marks that phase in
 progress and keeps its number. Phase 10-UI is a labeled
-sidequest between 10 and 11. It is not an extra number in that
-count.
+sidequest between 10 and 11. Phases 13b and 14b are labeled
+phases added 2026-11-02 for the property panel. None of the
+three is an extra number in that count.
 
 A phase that hands a packet to a human is one sitting of agent work
 plus the wait for the apply. Its Status block records the wait.
@@ -197,7 +200,7 @@ with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
 Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. The next Acuranzo file is 1439. Phase 14 is next.
+Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it.
 Phase 16 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
@@ -367,7 +370,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. A sidequest stays unnumbered unless he names it. Phase 10-UI is that name. It does not change the count of 72. |
-| **Done** | Phases 0–13 of 72 complete (2026-11-02). Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 13 is complete (2026-11-02); lookup 057 has eight page sizes, with A4 and A3 landscape skipped by choice. Phase 16 has not started. |
+| **Done** | Phases 0–14 of 72 complete (2026-11-03), plus labeled Phase 13b (section lookups 074 and 075, applied); labeled Phase 14b (property panel preferences, complete 2026-11-03). Phase 14 closed after Andrew said "Lets wrap this phase". Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 13 is complete (2026-11-02); lookup 057 has eight page sizes, with A4 and A3 landscape skipped by choice. Phase 16 has not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -1672,7 +1675,8 @@ not a default.
 
 ### Designer rules
 
-- No new npm package for v1, except `@codemirror/lint` in Phase 35.
+- No new npm package for v1, except `@codemirror/lint` in Phase 35
+  and `@melloware/coloris` (the Pavillion colour picker) in Phase 14.
   Pointer events do the dragging and the resize. Zoom is a CSS
   variable on the canvas.
 - Palette and property editors read lookups 053, 054, and 057.
@@ -1850,9 +1854,15 @@ focused. A parse error toasts and leaves the definition. The
 write keeps the existing trail and does not put `history` back
 into the buffer.
 
-The property panel is Phase 14. It is a column on the right of
-the Editor page. It is hidden on the other pages, and it is
-hidden until that phase fills it. Chart and barcode options stay
+The property panel is Phase 14, built on the shared
+`LithiumProperties` component (see Property panel below). It is a
+column on the left of the Editor canvas, right of the report table,
+with its own splitter. It is hidden on the other pages, and it is
+hidden until that phase fills it. When it ships, the read-only
+summary below the canvas (`.reports-summary` from
+`paintReportStage`) is removed. Its page, margin, grid, and font
+facts become panel rows, and its band and item list becomes the
+panel's Outline section. Chart and barcode options stay
 beside it. The panel and the page-size control edit the same
 page keys.
 
@@ -1862,6 +1872,65 @@ Editor page does not show the JSON fold buttons.
 
 Selection, the view scale, and the ruler unit stay off the
 definition.
+
+### Property panel (Lock, 2026-11-02)
+
+- **Shared component.** `LithiumProperties` lives under
+  `/elements/003-lithium/src/properties/`, beside `src/tables/`
+  (`LithiumTable`). It is built on Tabulator and knows nothing about
+  reports. Reports wires it in `reports-panel.js`. Styles and other
+  managers may reuse it later.
+- **Layout.** One line per property: name, then value, with a
+  draggable splitter between the two columns. A multi-line name or
+  value centres both sides vertically. Rows are condensed. Sections
+  collapse, each with its icon. A search box filters by label, by
+  section, and by stable id. The panel width follows the same
+  splitter as the other Lithium panes.
+- **Placement.** Left of the Editor canvas and right of the report
+  table, inside the right pane, with its own `lithium-splitter`. The
+  table's collapse button does not collapse the panel. Canvas notes
+  that explain why nothing is drawn (page or grid errors) stay on the
+  canvas.
+- **Outline section.** The first section is a navigator, not property
+  rows: report, then each band, then its items, as in the old summary.
+  Clicking an entry selects that band or item on the canvas, and the
+  canvas selection highlights its entry. Report selects nothing and
+  shows the report and page properties.
+- **Name and title.** Open. Whether 054 keys 18–19 edit name and title
+  in the panel, on the Report page, or both on one model is not
+  locked. Ask Andrew in Phase 14.
+- **Sections.** Lookup 074 holds the 053 palette groups and lookup
+  075 holds the 054 attribute sections (Phase 13b; the ids are
+  re-checked on disk the day 13b is written). Each is plain rows:
+  `key_idx`, `value_txt` label, `sort_seq` order, and `collection`
+  with `icon` and optional `lang`. A 053 row's group is its existing
+  `value_int`. A 054 row gains a numeric `section` key in its
+  collection. `Group` stays until Lithium reads `section`.
+- **Icons.** Section icons live on 074 and 075. Per-row icons stay on
+  the item's own row as `icon` (053, 054, 057). The panel shows the
+  row icon when present, otherwise none.
+- **Ids, not labels.** Sections and properties are addressed by
+  `key_idx`. Favourites, hidden rows, order, and open sections store
+  ids. A label is display only.
+- **Labels and `lang`.** One resolver returns a display string from a
+  row: exact locale under `lang`, then the same language, then the
+  plain label (`Default`). Lists keep their stored values; a
+  `lang` entry may hold a `List` of captions matched by position.
+  The profile language wins over the browser language. v1 ships the
+  resolver and English rows; translating rows is Later.
+- **Empty selection** shows the report and page properties. Page size
+  picks a lookup 057 row.
+- **Editors.** Phase 14: Text, Number, List, Boolean, and Color
+  (Coloris, ported from Pavillion). Phase 14b: Date on the existing
+  Flatpickr (`shared/flatpickr-picker.js`). Field and Datasource are
+  Phase 15. `None` is read-only. An unknown editor toasts and skips
+  the row. Later editors (icon chooser, formula, image, chart,
+  barcode) plug into the same component.
+- **Commits** go through the report model, one Undo step per
+  committed edit.
+- **Preferences (Phase 14b).** Favourites, hidden properties, order
+  within a section, open sections, and the splitter position are
+  stored on the user profile, keyed by panel id and row id.
 
 ### Formula editor
 
@@ -2132,6 +2201,10 @@ Pull one of these into a numbered phase only by amending this file.
 | Conditional formatting | Text color, background, or font overrides driven by a field value or a formula. A style rule is a condition plus a set of property changes. v1 renders unstyled values. |
 | Data filtering | The query's parameters decide which rows come back. A report-side filter expression stays here. v1 renders every row it was given. |
 | Detail row sorting | The query owns order. v1 also sorts one group by its key. A designer sort of the detail rows stays here. |
+| Property panel icon chooser | An icon editor for `icon` values. Phase 14 shows icons; choosing one waits. |
+| Lithium-wide zoom | Named Ctrl+wheel zooms per surface, after Pavillion's Zooms lock, with a zoom page in the User Profile. The property panel is one target. |
+| LithiumProperties in other managers | Styles and others reuse the component after Phase 14b. |
+| Row translations | The resolver ships in Phase 14. Filling `lang` on lookup rows, and lookup 047's `en-US` seed bug, wait here. |
 | Template inheritance | A base definition that another definition extends, overriding bands or items by id. v1 definitions are standalone. |
 
 ## Working log
@@ -2956,3 +3029,260 @@ good. Phase 13 is complete. A4 and A3 landscape were skipped by
 Andrew's choice and can come in a later lookup-only file. Phase 14 has
 not started and waits for Andrew to name it. The next Acuranzo file is
 1439. The next caller-facing QueryRef is 173.
+
+### 2026-11-02 — Property panel weave
+
+With Andrew, amended the plan for the property panel. Added the
+Property panel lock: a shared Tabulator `LithiumProperties`
+component, sections and icons from lookup data, ids rather than
+labels, a `lang` label resolver where the profile language wins,
+and Coloris as the one new v1 package. Added labeled Phase 13b
+(section lookups 074 and 075 plus a `section` key on 054) and
+Phase 14b (favourites, hidden rows, order, remembered state, Date
+editor, LITHIUM-PROPS docs). Phase 14 now needs 13b. The icon
+chooser, Lithium-wide zoom, reuse in other managers, and row
+translations went to Later. No code changed. The next Acuranzo
+file is 1439.
+
+### 2026-11-02 — Property panel placement
+
+Andrew placed the property panel left of the canvas and right of the
+report table, with its own splitter. The below-canvas summary goes
+when the panel ships. Its band and item list becomes the panel's
+Outline section (Phase 14.8). Name and title ownership stays open.
+
+### 2026-11-02 — Phase 13b packet
+
+Andrew approved the 074/075 labels, icons, and order, the Structural
+row for 074 key 0, and leaving 054 `sort_seq` alone. Re-checked disk:
+lookups 074 and 075 and files 1439–1441 were free. Wrote
+`acuranzo_1439.lua` (lookup 074 Report Palette Groups: lookup 0
+registry row plus keys 0–7, `key_idx` = 053 `value_int`, icon in
+`collection`), `acuranzo_1440.lua` (lookup 075 Report Attribute
+Sections: registry row plus keys 1–9, the nine 054 `Group` strings),
+and `acuranzo_1441.lua` (adds `"section": <075 key>` to 054 keys 0–40,
+keeps `Group`; reverse restores the 1087 JSON as amended by 1437).
+Lookup 053 and its lowercase `group` are unchanged. Outline stays
+hard-coded in the panel. Key 24 stays in Grid. Phase 13b is in
+progress until Andrew reports the apply. The next Acuranzo file is
+1442. The next caller-facing QueryRef stays 173.
+
+### 2026-11-02 — Phase 13b closed
+
+Andrew reported `acuranzo_1441.lua` applied, the last of the 1439–1441
+packet. Phase 13b is complete: lookup 074 (palette groups, keys 0–7
+with Structural) and lookup 075 (attribute sections, keys 1–9) exist,
+and every 054 row carries a `section` with `Group` kept. 054
+`sort_seq`, 053, and its `group` string are unchanged; the Outline
+stays hard-coded in the panel. Phase 14 (property panel) is next in a
+fresh chat; its entry gate is met. The next Acuranzo file is 1442. The
+next caller-facing QueryRef is 173.
+
+### 2026-11-02 — Phase 14 started
+
+Andrew chose to continue into Phase 14 in the same Sitting after 13b
+closed. Added `src/properties/sections.js` (section grouping by 054
+`section`, `Group` fallback, 075 `sort_seq` order; the `lang` label and
+list-caption resolver) with unit tests. No panel UI yet. Four decisions
+wait on Andrew: 054 key 24, key 29, key 30, the colour editor for keys
+21 and 24, and name/title ownership. No migrations. The next Acuranzo
+file is 1442. The next caller-facing QueryRef is 173.
+
+### 2026-11-02 — Phase 14 decisions locked, panel built
+
+Andrew locked five decisions: key 24 is report/page only (Lithium drops
+it from item lists); key 29 Link is text; key 30 fills from 057; keys
+21 and 24 use the Color editor in Lithium; name and title edit in both
+the panel and the Report page form, one Undo step each. Deferred
+lookup-only cleanup (not written): drop 24 from the 053 item lists and
+set the 21/24 `Editor` to `Color`. Lookups load through QueryRef 26
+(the plan's 026). Built `report-lookups.js`, `report-properties.js`,
+`reports-panel.js`, and `src/properties/lithium-properties.js`; the
+Outline and panel sit left of the canvas and `.reports-summary` is
+gone. Added `@melloware/coloris`. 14.1, 14.3, 14.5, 14.8 ticked; 14.2,
+14.4, 14.6 partial; 14.7 waits on Andrew's browser check. No
+migrations. The next Acuranzo file is 1442. The next caller-facing
+QueryRef is 173.
+
+### 2026-11-02 — Property panel chrome pass
+
+Andrew's first look. Fixed the polish-pass regression: the panel CSS
+sat outside `@layer managers` and made Tabulator cells block-level
+(`display: flex`), so name and value stacked, and visible default
+notes read as extra rows. Added a framed panel (top bar with Search,
+Outline, Expand all, Collapse all; bottom bar with 14b Favourites and
+Hidden stubs), a resizable scrolling Outline, chrome-free editors,
+carets, and right-aligned counts. Caret shown; the whole section
+header stays clickable. Phase 14 stays in progress on 14.7.
+
+### 2026-11-02 — Property panel second pass
+
+The Expand all and Collapse all buttons only reached the first
+section. Each Tabulator `group.show()`/`hide()` rebuilds the groups,
+so the rest of one `getGroups()` loop acted on stale groups. Each group
+is now looked up again before it is toggled. Bands can now be
+selected in both directions: the selection has a band scope
+(`_bandScope`, `selectionScope()`), so the Outline highlights a band
+row and the panel shows the band's rows (Height until 053 lists more).
+Toggles use the shared `.lithium-nav-btn-active` class (Search,
+Outline, Grid, Snap). Static is a plain button like Text. Other
+changes: a black gutter behind the right splitter, the stage closer to
+it, `--space-2` between stacked toolbars, the value column refitted on
+resize, and tighter section headers. Phase 14 stays in progress on
+14.7.
+
+### 2026-11-02 — Property panel third pass
+
+- **Wide section-header spacing:** caused by the Tabulator theme rule
+  `.tabulator-row.tabulator-group span { margin-left: 10px }`, which
+  applies to every header span. The panel now overrides it.
+- **Name/value split:** a column resize or a container resize now runs
+  a full `redraw(true)`, unless a cell is being edited. This refits the
+  value column and re-measures rows whose names wrap.
+- **Outline divider:** now a 6px bar in the frame colour, and the bar
+  is the drag target.
+- **Search:** has a manual clear X (the `lithium-header-filter-clear`
+  class).
+- **Backgrounds and gaps:** the area around the panel uses
+  `--bg-secondary` to match the table. The editor gap matches the gap
+  around the panel.
+
+Phase 14 is still In progress on 14.7.
+
+### 2026-11-02 — Property panel fourth pass
+
+- **Outline:** rows use `--font-size-us` (9px) with 0px top and bottom
+  padding.
+- **Colours:** the grid uses LithiumTable's colours. Rows are
+  `--bg-row-odd` and `--bg-row-even`. Section headers are
+  `--accent-alt-secondary` with a `--bg-row-border` top and bottom
+  border and `--text-primary` text.
+- **Value width:** fixed. A Tabulator drag changes only the name
+  column, so the value column never followed it live. On release,
+  `fitColumns` re-split the width by `widthGrow`. The table now uses
+  `fitData` with `resizableColumnFit` (live), and `_fitValue` sets
+  value = holder `clientWidth` − name width (floor 60) on build,
+  release and container resize.
+
+Phase 14 is still In progress on 14.7.
+
+### 2026-11-02 — Name/value split sticks
+
+The split snapped back after a drag. With `fitData`,
+`table.redraw(true)` calls `reinitializeColumnWidths`, which puts both
+columns back to their definition widths (120 and 160). `_refit` ran
+`_fitValue` before the redraw, so the redraw undid it. The dragged name
+width is now stored (`_nameWidth`, set on `columnResized`). `_refit`
+runs the redraw first, then puts the name width back, then sets
+value = holder `clientWidth` − name (floor 60), then calls
+`normalizeHeight()` on each row. Phase 14 is still In progress.
+
+Props splitter gutter is now `--bg-primary` with no vertical margin, so it reads black like the left navigator gutter. Hover and drag still use `--accent-primary`.
+
+The gutter now follows Andrew's model. `.reports-editor-split` is `--bg-primary`, and `.reports-props` (its margin is now padding) and `.reports-stage` are `--bg-secondary`. The splitter is transparent with no margin, so the dark band runs the full height between the toolbar and the footer.
+
+### 2026-11-02 — PP chrome done; layout prefs persisted
+
+Andrew says the chrome tweaks are finished ("the UI looks lovely"). The PP
+layout is now saved to localStorage, on each change:
+- The PP frame width goes through `PanelStateManager('lithium_reports_props')`
+  (the same pattern as the list panel).
+- The other settings are one JSON blob, `lithium_reports_props_prefs`, holding
+  `{ showSearch, showOutline, nameWidth, outlineHeight, closedSections[] }`.
+  `LithiumProperties` takes it in as `state` and reports changes through
+  `onStateChange`.
+- Search text is not saved; no other Lithium filter keeps its text.
+- Closed sections are stored by section caption, so the choice holds across
+  objects and now also across reloads.
+
+These prefs can count toward 14b or stay in 14. Gate 14.7 looks met, but
+Phase 14 stays In progress until Andrew says to close it.
+
+### 2026-11-03 — PP and editor tweak pass (Phase 14 still In progress)
+
+Client-only; no migration. Property panel: Up/Down step the outline;
+Tab/Shift+Tab move between value editors and skip read-only rows (the
+Object/type row no longer traps Tab); the bottom bar gains right-aligned
+Prev/Next (`fa-angle-up`/`fa-angle-down`); expand/collapse/prev/next use
+tighter padding; group headers keep full width when every section is closed.
+Report editor: an End of Report marker (no height) with its own outline entry
+and PP section; the sheet rounds the corners of the first and last elements;
+a Ruler toggle beside Grid and Snap (session only); a Ruler section on the
+Report with top/left/right/bottom Booleans stored as `doc.rulers` (a side is
+on unless `false`); clicking any ruler selects the Report. Vitest 1381 passed
+(1372 before, plus 9 new). Phase 14 stays In progress until Andrew says to
+close it.
+
+### 2026-11-03 — Rounding, inward ruler ticks, Crosshair toggle (Phase 14 still In progress)
+
+After the round-5 browser check: the editor stage, the report sheet and page
+clip, and the PP top/bottom bars now use `--border-radius-sm`, the same
+variable `lithium-toolbar.css` uses for the toolbars above them (no new
+radii). Right-ruler ticks start at its left edge and bottom-ruler ticks at its
+top edge, both facing the page; labels follow. A fourth toggle after Grid,
+Snap, and Ruler, labelled **Crosshair** (the name the code already uses for
+the `.reports-cursor` lines), shows or hides the cursor guide lines; session
+only, like Grid and Ruler. Vitest 1383 passed. Phase 14 stays In progress.
+
+### 2026-11-03 — Right ruler grows during a band drag (Phase 14 still In progress)
+
+While a band edge was dragged, only the left ruler was resized and redrawn,
+so the right ruler showed the highlight but no new ticks or numbers past its
+old length. `_moveBandDrag` now resizes every side ruler in the band (left and
+right). The bottom ruler runs across the page width, which a band drag does
+not change, so it was not affected. Vitest 1383 passed.
+
+### 2026-11-03 — Phase 14 complete
+
+Andrew closed Phase 14 ("Lets wrap this phase"). Shipped: the shared
+`LithiumProperties` panel; chrome polish and shared toolbar rounding
+(`--border-radius-sm`); layout prefs in localStorage; Outline arrow keys,
+Tab between editors, Prev/Next; the End of Report marker; rulers on four
+sides saved as `doc.rulers` with inward right/bottom ticks, a Ruler toggle,
+and ruler click selects the report; a Crosshair toggle; and the band-drag
+right ruler fix. No migration; next Acuranzo file 1442, next QueryRef 173.
+Unit suite 1383 passed. Accomplished, Lessons learned, and Handoff are in
+[`reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md). Next: Phase
+14b (property panel preferences), in a fresh chat, when Andrew names it.
+
+### 2026-11-03 — acuranzo_1442 drafted (054 Color, 053 key 24)
+
+Phase 14b closed. Andrew chose to do the deferred lookup cleanup before
+Phase 15. Drafted `acuranzo_1442.lua`: 054 keys 21 and 24 get `Editor:
+Color`, and 054 key 24 leaves the 053 item `attributes` lists. The
+reverse restores 1441/1436 JSON. Waiting for Andrew to apply. After
+apply: remove the Lithium special-cases for 21/24 and verify Coloris
+opens and saves on keys 21, 24, and 25. The next Acuranzo file is 1443.
+The next caller-facing QueryRef is 173.
+
+### 2026-11-03 — acuranzo_1442 applied; Color editor from lookup
+
+Andrew reported it
+applied. Lithium now reads the Color editor from 054 `Editor` (the
+`COLOR_KEYS` override is gone) and takes item attribute lists from 053
+as-is (`REPORT_ONLY_KEYS` is gone). Coloris fix: the picker opens on
+click, not focus, so the Color editor now clicks its new input when it
+renders, and it commits on Coloris `close` as well as `change`, so
+closing without a change no longer leaves the cell stuck in edit.
+A chrome test checks the picker opens and the value saves once.
+`npm test`: 81 files, 1398 passed, 12 skipped. ESLint at baseline (163
+src, 8 tests). Stylelint clean. Browser check for keys 21, 24, and 25
+waits for Andrew. Phase 15 not started. The next Acuranzo file is 1443.
+The next caller-facing QueryRef is 173.
+
+### 2026-11-03 — Retained colour swatches on the Coloris picker
+
+Retained colour swatches (Andrew: "swatches shown on all instances
+of the color picker", after Pavillion). New `src/shared/coloris-picker.js`
+is Lithium's one Coloris entry, ported from Pavillion's
+`ui/src/common/coloris.js`: swatches are the theme's
+`--lithium-picker-swatches` list (none defined yet) then the user's own,
+capped at 24, saved on the profile at `colorPicker.swatches`. Under the
+swatches a row holds + (add the current colour), − (remove a colour the
+user added) and ✕ (Coloris's close, moved there). Round swatches, Hex /
+RGB / HSL toggle. `src/styles/vendor-coloris.css` holds the styles. The
+property panel's Color editor now goes through it. New
+`coloris-picker.test.js` (5 tests). `npm test`: 82 files, 1403 passed,
+12 skipped. ESLint at baseline (163 src, 8 tests). Stylelint clean.
+Pavillion's Ctrl+wheel picker zoom is not ported. Phase 15 not started.
+No migration; next Acuranzo file 1443.

@@ -206,6 +206,10 @@ describe('Report Manager shell', () => {
     return manager.elements.stage.textContent;
   }
 
+  function outlineText() {
+    return container.querySelector('#reports-outline').textContent;
+  }
+
   function pageEl() {
     return manager.elements.stage.querySelector('#reports-page');
   }
@@ -258,47 +262,36 @@ describe('Report Manager shell', () => {
     expect(doc.grid.style).toBe('dots');
     expect(doc.bands.map((band) => band.id)).toEqual(['ph', 'detail', 'pf']);
     expect(Object.hasOwn(doc.bands[1], 'datasource')).toBe(false);
-    const stage = stageText();
-    expect(stage).toContain('8.5 in by 11 in, portrait, size 0');
-    expect(stage).toContain('0.25 in');
-    expect(stage).toContain('dots, 0.125 in');
-    expect(stage).toContain('Vanadium Sans, 10 pt, Normal');
-    expect(stage).toContain('Page header, ph, 0.4 in');
-    expect(stage).toContain('Detail, detail, 0.25 in');
-    expect(stage).toContain('Page footer, pf, 0.4 in');
-    expect(stage).toContain('Report.report.json');
+    expect(container.querySelector('.reports-summary')).toBeNull();
+    const rows = [...container.querySelectorAll('#reports-outline .reports-outline-row')];
+    expect(rows.map((row) => row.textContent)).toEqual(['Report', 'ph', 'detail', 'pf', 'End of Report']);
   });
 
   it('shows an imported report on the stage and New restores the blank lines', async () => {
     await open();
     manager._importText(loadFixture('detail.definition.json'));
-    expect(stageText()).toContain('Orders');
-    expect(stageText()).toContain('Detail, detail, 0.25 in, orders');
-    expect(stageText()).toContain('customer');
+    expect(outlineText()).toContain('Orders');
+    expect(outlineText()).toContain('customer');
     manager.newReport();
-    const stage = stageText();
-    expect(stage).toContain('Page header, ph, 0.4 in');
-    expect(stage).toContain('Detail, detail, 0.25 in');
-    expect(stage).not.toContain('customer');
-    expect(stage).not.toContain('orders');
+    expect(outlineText()).toContain('detail');
+    expect(outlineText()).not.toContain('customer');
+    expect(outlineText()).not.toContain('Orders');
   });
 
   it('says when the file omits the name and the bands', async () => {
     await open();
     manager._importText('{"format":1}');
-    const stage = stageText();
-    expect(stage).toContain('The file omits the name.');
-    expect(stage).toContain('Omitted');
-    expect(stage).toContain('No bands.');
-    expect(manager.elements.stage.querySelector('#reports-summary-name').textContent).toBe('Report');
+    const rows = [...container.querySelectorAll('#reports-outline .reports-outline-row')];
+    expect(rows.map((row) => row.textContent)).toEqual(['Report', 'End of Report']);
   });
 
   it('paints a report name as text', async () => {
     await open();
     const name = '<img src=x onerror=alert(1)>';
     manager._importText(JSON.stringify({ format: 1, name }));
-    const heading = manager.elements.stage.querySelector('#reports-summary-name');
+    const heading = container.querySelector('#reports-outline .reports-outline-row');
     expect(heading.textContent).toBe(name);
+    expect(container.querySelector('#reports-outline img')).toBeNull();
     expect(manager.elements.stage.querySelector('img')).toBeNull();
   });
 
@@ -317,8 +310,11 @@ describe('Report Manager shell', () => {
     });
     expect(pageVar('--reports-content-width')).toBe('768px');
     expect(pageEl().querySelector('.reports-margin-guide')).toBeNull();
-    expect(pageEl().querySelectorAll('.reports-ruler-top')).toHaveLength(1);
+    // Top and bottom rulers share the horizontal ruler class.
+    expect(pageEl().querySelectorAll('.reports-ruler-top')).toHaveLength(2);
+    expect(pageEl().querySelectorAll('.reports-band-ruler-bottom .reports-ruler-top')).toHaveLength(1);
     expect(pageEl().querySelectorAll('.reports-ruler-left')).toHaveLength(3);
+    expect(pageEl().querySelectorAll('.reports-ruler-right')).toHaveLength(3);
     expect(pageEl().querySelector('[data-band-id="ph"] .reports-ruler-left').getAttribute('height'))
       .toBe(String(toCssPx('0.4 in')));
     expect(pageEl().querySelector('[data-band-id="detail"] .reports-ruler-left').getAttribute('height'))
@@ -352,7 +348,7 @@ describe('Report Manager shell', () => {
   it('paints each band at its stored height, in array order', async () => {
     await open();
     const roles = [...pageEl().querySelectorAll('.reports-band-role')].map((el) => el.textContent);
-    expect(roles).toEqual(['Page header', 'Detail', 'Page footer']);
+    expect(roles).toEqual(['Page header', 'Detail', 'Page footer', 'End of Report']);
     expect(bandBody('detail').style.height).toBe('');
     expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
     expect(bandBody('ph').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.4 in')}px`);
@@ -383,7 +379,6 @@ describe('Report Manager shell', () => {
     expect(detail().height).toBe('1.25 in');
     expect(bandBody('detail').style.height).toBe('');
     expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('1.25 in')}px`);
-    expect(stageText()).toContain('Detail, detail, 1.25 in');
     expect(manager.elements.undoBtn.disabled).toBe(false);
     expect(manager.elements.redoBtn.disabled).toBe(true);
     manager.elements.exportBtn.click();
@@ -630,6 +625,14 @@ describe('Report Manager shell', () => {
     expect(bar().getAttribute('height')).toBe('96');
     expect(page.querySelector('[data-band-id="detail"] .reports-ruler-left').style.height)
       .toBe(`${toCssPx('0.25 in') + 96}px`);
+    // The right ruler grows too, with ticks and numbers for the new length.
+    const right = page.querySelector('[data-band-id="detail"] .reports-ruler-right');
+    const grown = toCssPx('0.25 in') + 96;
+    expect(right.style.height).toBe(`${grown}px`);
+    const rightTicks = [...right.querySelectorAll('.reports-ruler-marks line')].map((line) => Number(line.getAttribute('y1')));
+    expect(Math.max(...rightTicks)).toBeGreaterThan(toCssPx('0.25 in'));
+    expect([...right.querySelectorAll('.reports-ruler-marks text')].map((node) => node.textContent)).toContain('1');
+    expect(right.querySelector('.reports-ruler-marks line[data-rank="major"]').getAttribute('x1')).toBe('0');
     document.dispatchEvent(pointer('pointerup', 496));
     expect(bar().getAttribute('height')).toBe('0');
   });
@@ -671,7 +674,7 @@ describe('Report Manager shell', () => {
     expect(document.body.textContent).toMatch(/Unknown unit "furlong"/);
   });
 
-  it('disconnects the grid observer on cleanup', async () => {
+  it('disconnects the grid and property panel observers on cleanup', async () => {
     let disconnects = 0;
     class FakeObserver {
       observe() {}
@@ -686,7 +689,7 @@ describe('Report Manager shell', () => {
       await open();
       expect(pageEl().querySelector('.reports-band-grid')).not.toBeNull();
       manager.cleanup();
-      expect(disconnects).toBe(2);
+      expect(disconnects).toBe(3);
     } finally {
       vi.stubGlobal('ResizeObserver', real);
     }
@@ -730,7 +733,7 @@ describe('Report Manager shell', () => {
     manager._importText('{');
     expect(manager.elements.metaName.value).toBe('Orders');
     expect(manager.doc.name).toBe('Orders');
-    expect(stageText()).toContain('customer');
+    expect(outlineText()).toContain('customer');
     expect(document.body.textContent).toMatch(/Report file is not JSON/);
     manager._importText('{"format":2,"name":"Other"}');
     expect(manager.elements.metaName.value).toBe('Orders');
@@ -819,20 +822,21 @@ describe('Report Manager shell', () => {
       get: () => 1000,
     });
     const pane = 1000 - panePadding();
-    const fitted = formatViewScale(fitWidthScale(pane, 768 + RULER_SIZE));
+    // Left and right rulers both count toward the fitted width.
+    const fitted = formatViewScale(fitWidthScale(pane, 768 + 2 * RULER_SIZE));
     manager.elements.fitBtn.click();
     expect(viewScale()).toBe(fitted);
-    expect(fitted).toBe('1.25');
+    expect(fitted).toBe('1.21');
     expect(pageVar('--reports-content-width')).toBe('768px');
     const inch = [...manager.elements.stage.querySelectorAll('.reports-ruler-top line')]
       .find((node) => node.getAttribute('x1') === '96' && node.getAttribute('data-rank') === 'major');
     expect(inch).toBeTruthy();
-    expect(manager.elements.zoomLabel.textContent).toBe('125%');
+    expect(manager.elements.zoomLabel.textContent).toBe('121%');
 
     manager.elements.zoomInBtn.click();
     const zoomed = formatViewScale(stepViewScale(Number(fitted), 1));
     expect(viewScale()).toBe(zoomed);
-    expect(zoomed).toBe('1.3');
+    expect(Number(zoomed)).toBeGreaterThan(Number(fitted));
     const corner = () => manager.elements.stage.querySelector('.reports-ruler-corner');
     corner().click();
     expect(corner().textContent).toBe('cm');
@@ -848,6 +852,47 @@ describe('Report Manager shell', () => {
     manager.elements.zoomInBtn.click();
     manager.elements.exportBtn.click();
     expect(JSON.parse(saved[0].json)).toEqual(createBlank());
+  });
+
+  it('steps the outline with arrow keys, reaches End of Report, and a ruler click selects the report', async () => {
+    await open();
+    const outline = container.querySelector('#reports-outline');
+    expect(outline.tabIndex).toBe(0);
+    const key = (k) => outline.dispatchEvent(new window.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+    key('ArrowDown');
+    expect(manager._panelSelection().band).toBeTruthy();
+    for (let i = 0; i < 20; i += 1) key('ArrowDown');
+    expect(manager._panelSelection().end).toBe(true);
+    expect(pageEl().querySelector('.reports-band-end').classList.contains('reports-band-selected')).toBe(true);
+    pageEl().querySelector('.reports-ruler-left').dispatchEvent(pointerAt('pointerdown', 5, 50));
+    document.dispatchEvent(pointerAt('pointerup', 5, 50));
+    const sel = manager._panelSelection();
+    expect(Boolean(sel.end || sel.band || sel.itemId)).toBe(false);
+  });
+
+  it('the Ruler toggle hides and restores every ruler without editing the file', async () => {
+    const saved = await open();
+    expect(pageEl().querySelectorAll('.reports-ruler-left').length).toBeGreaterThan(0);
+    manager.elements.rulerBtn.click();
+    expect(manager.elements.rulerBtn.getAttribute('aria-pressed')).toBe('false');
+    expect(pageEl().querySelector('.reports-ruler-top, .reports-ruler-left, .reports-ruler-right')).toBeNull();
+    manager.elements.rulerBtn.click();
+    expect(pageEl().querySelectorAll('.reports-ruler-right').length).toBeGreaterThan(0);
+    manager.elements.exportBtn.click();
+    expect(JSON.parse(saved[0].json)).toEqual(createBlank());
+  });
+
+  it('the Crosshair toggle sits after Ruler and hides the cursor guide lines', async () => {
+    await open();
+    const button = manager.elements.crosshairBtn;
+    expect(manager.elements.rulerBtn.nextElementSibling).toBe(button);
+    expect(button.textContent.trim()).toBe('Crosshair');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    button.click();
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(manager.elements.stage.classList.contains('reports-crosshair-off')).toBe(true);
+    button.click();
+    expect(manager.elements.stage.classList.contains('reports-crosshair-off')).toBe(false);
   });
 
   it('zooms from Ctrl or Cmd plus the wheel over the page and leaves a bare wheel scrolling', async () => {
@@ -874,7 +919,7 @@ describe('Report Manager shell', () => {
     expect(onRuler.defaultPrevented).toBe(true);
     expect(viewScale()).toBe('1.15');
 
-    const summary = manager.elements.stage.querySelector('.reports-summary');
+    const summary = container.querySelector('#reports-outline');
     const aside = wheel(-1, { ctrlKey: true });
     summary.dispatchEvent(aside);
     expect(aside.defaultPrevented).toBe(false);

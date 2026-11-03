@@ -48,6 +48,7 @@ import { watchBandGrids } from './grid.js';
 import { defaultBandId, itemBox, markReportSelection } from './items.js';
 import { addItem, cloneItem, deleteItem } from './model/document.js';
 import { bindReportCursor, nextRulerUnit, RULER_SIZE, rulerUnit } from './rulers.js';
+import { rulerSides } from './report-properties.js';
 import {
   fitWidthScale, formatViewScale, readViewScale, stepViewScale, viewScaleLabel,
   wheelViewScaleDirection, wheelZoomHeld,
@@ -58,6 +59,7 @@ import { ReportJsonPage, reportJsonEdit, reportJsonText } from './reports-json.j
 import { reportDropMethods } from './reports-drop.js';
 import { reportLockMethods } from './reports-lock.js';
 import { reportPageMethods } from './reports-pages.js';
+import { reportPanelMethods } from './reports-panel.js';
 import { reportPointerMethods } from './reports-pointer.js';
 import { bindRevisionControls, reportRevisionMethods, unbindRevisionControls } from './reports-revisions.js';
 import { mountReportList } from './reports-table.js';
@@ -67,92 +69,24 @@ import {
   openReportText,
   reportDisplayName,
   reportDownloadName,
-  reportOutline,
   saveReportFile,
 } from './reports-file.js';
 
 const TEMPLATE = '/src/managers/reports/reports.html';
 const REPORTS_MANAGER_ID = '24';
 
-function appendFact(list, label, value) {
-  const term = document.createElement('dt');
-  term.textContent = label;
-  const detail = document.createElement('dd');
-  detail.textContent = value;
-  list.append(term, detail);
-}
-
 /** Paint the open definition and its page into the stage. */
-export function paintReportStage(stage, doc, rulerUnit, scale) {
-  const outline = reportOutline(doc);
+export function paintReportStage(stage, doc, rulerUnit, scale, sides) {
   const body = document.createElement('div');
   body.className = 'reports-stage-body';
   const canvas = document.createElement('div');
   canvas.className = 'reports-canvas';
-  const frame = paintReportPage(canvas, doc, rulerUnit, scale);
+  const frame = paintReportPage(canvas, doc, rulerUnit, scale, sides);
   const notes = [...canvas.querySelectorAll('.reports-page-note')];
   for (const entry of notes) entry.remove();
   if (canvas.childElementCount > 0) body.append(...notes, canvas);
   else body.append(...notes);
 
-  const root = document.createElement('div');
-  root.className = 'reports-summary';
-
-  const name = document.createElement('h2');
-  name.className = 'reports-summary-name';
-  name.id = 'reports-summary-name';
-  name.textContent = outline.name;
-  root.append(name);
-
-  const fileName = document.createElement('p');
-  fileName.className = 'reports-summary-file';
-  fileName.textContent = outline.fileName;
-  root.append(fileName);
-
-  if (outline.nameOmitted) {
-    const note = document.createElement('p');
-    note.className = 'reports-summary-note';
-    note.textContent = 'The file omits the name.';
-    root.append(note);
-  }
-
-  const facts = document.createElement('dl');
-  facts.className = 'reports-summary-facts';
-  appendFact(facts, 'Page', outline.pageText);
-  appendFact(facts, 'Margins', outline.marginText);
-  appendFact(facts, 'Grid', outline.gridText);
-  appendFact(facts, 'Font', outline.fontText);
-  root.append(facts);
-
-  if (outline.bands.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'reports-summary-note';
-    empty.textContent = 'No bands.';
-    root.append(empty);
-  } else {
-    const bands = document.createElement('ul');
-    bands.className = 'reports-summary-bands';
-    for (const band of outline.bands) {
-      const row = document.createElement('li');
-      const label = document.createElement('span');
-      label.className = 'reports-band-label';
-      label.textContent = band.line;
-      row.append(label);
-      if (band.items.length > 0) {
-        const items = document.createElement('ul');
-        for (const item of band.items) {
-          const itemRow = document.createElement('li');
-          itemRow.textContent = item;
-          items.append(itemRow);
-        }
-        row.append(items);
-      }
-      bands.append(row);
-    }
-    root.append(bands);
-  }
-
-  body.append(root);
   stage.replaceChildren(body);
   return frame;
 }
@@ -177,6 +111,9 @@ export default class ReportsManager {
     this._paneWatch = null;
     this._selectedBandId = '';
     this._selectedItemId = '';
+    this._bandScope = false;
+    this._endScope = false;
+    this._rulersOn = true;
     this._page = 'editor';
     this._category = 'static';
     this._json = null;
@@ -201,6 +138,7 @@ export default class ReportsManager {
     this._bind();
     if (!this._listening) return;
     await mountReportList(this);
+    this._mountPanel();
     this.setRecordEditing(false);
     this.showPage('editor');
   }
@@ -252,6 +190,8 @@ export default class ReportsManager {
       cloneBtn: this.container.querySelector('#reports-clone-btn'),
       snapBtn: this.container.querySelector('#reports-snap-btn'),
       gridBtn: this.container.querySelector('#reports-grid-btn'),
+      rulerBtn: this.container.querySelector('#reports-ruler-btn'),
+      crosshairBtn: this.container.querySelector('#reports-crosshair-btn'),
       staticBtn: this.container.querySelector('#reports-static-btn'),
       categories: this.container.querySelector('#reports-categories'),
       itemsToolbar: this.container.querySelector('#reports-items-toolbar'),
@@ -365,6 +305,8 @@ export default class ReportsManager {
     stage.addEventListener('pointerdown', this._onPointerDown);
     this._bindSnap();
     this._bindGrid();
+    this._bindRuler();
+    this._bindCrosshair();
     this._registerKeys();
     this._watchPane();
     this._listening = true;
@@ -441,7 +383,14 @@ export default class ReportsManager {
   _fitScale(doc) {
     const frame = pageFrame(doc);
     if (!frame || frame.omitted || frame.error || !(frame.contentWidthPx > 0)) return 1;
-    return fitWidthScale(this._paneWidth(), frame.contentWidthPx + RULER_SIZE);
+    const sides = this._rulerSides(doc);
+    const bars = (sides.left ? RULER_SIZE : 0) + (sides.right ? RULER_SIZE : 0);
+    return fitWidthScale(this._paneWidth(), frame.contentWidthPx + bars);
+  }
+
+  /** Ruler sides shown: the definition's Ruler section, gated by the toolbar toggle. */
+  _rulerSides(doc) {
+    return rulerSides(doc, this._rulersOn !== false);
   }
 
   _currentScale(doc) {
@@ -540,6 +489,7 @@ export default class ReportsManager {
     if (this.reportTable) this.reportTable.destroy();
     this.reportTable = null;
     if (this.splitter) this.splitter.destroy();
+    this._dropPanel();
     this.splitter = null;
     if (!this._listening) return;
     const {
@@ -578,6 +528,8 @@ export default class ReportsManager {
     stage.removeEventListener('pointerdown', this._onPointerDown);
     this._unbindSnap();
     this._unbindGrid();
+    this._unbindRuler();
+    this._unbindCrosshair();
     unregisterShortcut('reports-undo');
     unregisterShortcut('reports-redo');
     unregisterShortcut('reports-delete');
@@ -609,6 +561,8 @@ export default class ReportsManager {
     this._scaleChosen = false;
     this._selectedBandId = '';
     this._selectedItemId = '';
+    this._bandScope = false;
+    this._endScope = false;
     this.history = history;
     this._showDocument(history.document);
   }
@@ -624,6 +578,7 @@ export default class ReportsManager {
         doc,
         this._rulerDisplay,
         this._currentScale(doc),
+        this._rulerSides(doc),
       );
       const message = frame.error || frame.gridError || frame.rulerError;
       if (message) {
@@ -639,6 +594,7 @@ export default class ReportsManager {
     this._syncHistory();
     this._syncZoom();
     this._paintMeta();
+    this._paintPanel();
     this._syncRowName();
     this._refreshJson();
   }
@@ -783,8 +739,12 @@ export default class ReportsManager {
   }
 
   _markSelection() {
-    markReportSelection(this.elements.stage, this._selectedBandId, this._selectedItemId);
+    if (this._selectedItemId) this._endScope = false;
+    const stage = this.elements.stage;
+    markReportSelection(stage, this._endScope ? '' : this._selectedBandId, this._selectedItemId);
+    stage?.querySelector?.('.reports-band-end')?.classList.toggle('reports-band-selected', Boolean(this._endScope));
     this._syncItems();
+    this._paintPanel();
   }
 
   _syncItems() {
@@ -987,4 +947,5 @@ Object.assign(
   reportDropMethods,
   reportPageMethods,
   reportRevisionMethods,
+  reportPanelMethods,
 );

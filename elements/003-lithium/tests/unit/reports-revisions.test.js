@@ -16,6 +16,10 @@ import {
 import { REPORT_GET_QUERY, REPORT_INSERT_QUERY, reportSaveParams, reportUserId } from '../../src/managers/reports/reports-save.js';
 import ReportsManager from '../../src/managers/reports/reports.js';
 
+vi.mock('../../src/managers/reports/report-lookups.js', () => ({
+  loadPanelLookups: async () => ({}),
+}));
+
 vi.mock('../../src/shared/conduit.js', () => ({
   authQuery: vi.fn(),
 }));

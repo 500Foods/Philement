@@ -57,6 +57,7 @@
     "@floating-ui/dom": "^1.7.6",
     "@johnnymorganz/stylua": "^2.6.0",
     "@lezer/highlight": "^1.2.3",
+    "@melloware/coloris": "^0.25.1",
     "country-flag-icons": "^1.6.15",
     "dompurify": "^3.3.2",
     "flatpickr": "^4.6.13",

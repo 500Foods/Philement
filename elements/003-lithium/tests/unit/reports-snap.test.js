@@ -145,7 +145,7 @@ describe('Report Manager snap', () => {
 
     manager.elements.snapBtn.click();
     expect(manager.elements.snapBtn.getAttribute('aria-pressed')).toBe('false');
-    expect(manager.elements.snapBtn.classList.contains('active')).toBe(false);
+    expect(manager.elements.snapBtn.classList.contains('lithium-nav-btn-active')).toBe(false);
     const again = page().querySelector('[data-band-id="detail"] .reports-band-edge');
     again.dispatchEvent(pointer('pointerdown', 0, 100));
     document.dispatchEvent(pointer('pointermove', 0, 110));

@@ -177,12 +177,14 @@ describe('Report Manager chrome', () => {
     expect(itemButtons.indexOf('reports-snap-btn')).toBeLessThan(itemButtons.indexOf('reports-clone-btn'));
     expect(itemButtons.indexOf('reports-clone-btn')).toBeLessThan(itemButtons.indexOf('reports-delete-btn'));
     expect(manager.elements.snapBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(manager.elements.snapBtn.classList.contains('active')).toBe(true);
+    expect(manager.elements.snapBtn.classList.contains('lithium-nav-btn-active')).toBe(true);
     expect(manager.elements.snapBtn.disabled).toBe(false);
     expect(manager.elements.gridBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(manager.elements.gridBtn.classList.contains('active')).toBe(true);
+    expect(manager.elements.gridBtn.classList.contains('lithium-nav-btn-active')).toBe(true);
     expect(items.querySelector('.reports-toolbar-gap')).not.toBeNull();
-    expect(manager.elements.snapBtn.nextElementSibling.classList.contains('reports-toolbar-gap')).toBe(true);
+    expect(manager.elements.snapBtn.nextElementSibling).toBe(manager.elements.rulerBtn);
+    expect(manager.elements.rulerBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(manager.elements.crosshairBtn.nextElementSibling.classList.contains('reports-toolbar-gap')).toBe(true);
     expect(manager.elements.editorTab.classList.contains('active')).toBe(true);
     expect(container.querySelector('#reports-page-report').hidden).toBe(true);
     expect(container.querySelector('#reports-new-btn')).toBeNull();
@@ -314,10 +316,10 @@ describe('Report Manager chrome', () => {
     manager.elements.editorTab.click();
     expect(manager.doc.name).toBe('From JSON');
     expect(manager.doc.history.undo).toHaveLength(1);
-    expect(manager.elements.stage.textContent).toContain('From JSON');
+    expect(manager.container.querySelector('#reports-outline').textContent).toContain('From JSON');
     manager.elements.undoBtn.click();
     expect(manager.doc.name).toBe('Report');
-    expect(manager.elements.stage.textContent).not.toContain('From JSON');
+    expect(manager.container.querySelector('#reports-outline').textContent).not.toContain('From JSON');
   });
 
   it('toasts a bad JSON buffer once and leaves the definition', async () => {

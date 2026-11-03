@@ -46,7 +46,7 @@
 }
 
 .reports-right-panel > .lithium-toolbar + .lithium-toolbar {
-  margin-top: 1px;
+  margin-top: var(--space-2);
 }
 
 .reports-manager[data-editing='false'] .reports-band-edge,
@@ -79,18 +79,8 @@
   align-items: center;
 }
 
-.reports-category-btn[aria-pressed='true'],
-.reports-grid-btn[aria-pressed='true'],
-.reports-snap-btn[aria-pressed='true'] {
-  background-color: var(--accent-focus);
-  color: var(--text-focus);
-}
-
-.reports-category-btn[aria-pressed='true']:hover,
-.reports-grid-btn[aria-pressed='true']:hover,
-.reports-snap-btn[aria-pressed='true']:hover {
-  background-color: var(--accent-success-hover, #4caf50);
-}
+/* Grid/Snap/Search/Outline toggles use the shared .lithium-nav-btn-active
+   (tables/lithium-table.css). Static is a plain button like Text. */
 
 .reports-toolbar-gap {
   flex: 0 0 var(--space-2);
@@ -209,6 +199,8 @@
   overflow: auto;
   scrollbar-gutter: stable;
   background-color: var(--bg-secondary);
+  /* Same corner as the toolbars above it (lithium-toolbar.css). */
+  border-radius: var(--border-radius-sm);
 }
 
 .reports-stage-body {
@@ -216,7 +208,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-4);
-  padding: var(--space-4);
+  /* Same gap as around the property panel (top space-2, sides space-3). */
+  padding: var(--space-2) var(--space-3);
 }
 
 .reports-canvas {
@@ -225,7 +218,7 @@
 }
 
 .reports-canvas-fitted {
-  width: calc((var(--reports-ruler-size) + var(--reports-content-width)) * var(--reports-scale, 1));
+  width: calc((var(--reports-ruler-size) + var(--reports-content-width) + var(--reports-ruler-right, 0px)) * var(--reports-scale, 1));
   height: calc(var(--reports-stack-height) * var(--reports-scale, 1));
 }
 
@@ -233,7 +226,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: calc(var(--reports-ruler-size) + var(--reports-content-width));
+  width: calc(var(--reports-ruler-size) + var(--reports-content-width) + var(--reports-ruler-right, 0px));
   height: var(--reports-stack-height);
   transform: scale(var(--reports-scale, 1));
   transform-origin: top left;
@@ -255,10 +248,19 @@
 
 .reports-sheet {
   --reports-ruler-size: 28px;
+  --reports-ruler-bar: 28px;
 
   position: relative;
   flex-shrink: 0;
+  border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-md);
+}
+
+/* Round whatever is first and last on screen (top ruler or first band;
+   bottom ruler or End of Report) by clipping the page to the sheet. */
+.reports-sheet > .reports-page {
+  overflow: clip;
+  border-radius: var(--border-radius-sm);
 }
 
 .reports-ruler-corner,
@@ -274,7 +276,7 @@
   align-items: center;
   justify-content: center;
   width: var(--reports-ruler-size);
-  height: var(--reports-ruler-size);
+  height: var(--reports-ruler-bar, var(--reports-ruler-size));
   min-width: 0;
   min-height: 0;
   margin: 0;
@@ -324,14 +326,61 @@
 
 .reports-ruler-top {
   width: var(--reports-content-width);
-  height: var(--reports-ruler-size);
+  height: var(--reports-ruler-bar, var(--reports-ruler-size));
   border-bottom: var(--border-width) solid #c8c8c8;
 }
 
 .reports-ruler-left {
+  grid-row: 1;
+  grid-column: 1;
   width: var(--reports-ruler-size);
   height: var(--reports-band-height);
   border-right: var(--border-width) solid #c8c8c8;
+}
+
+.reports-ruler-right {
+  grid-row: 1;
+  grid-column: 3;
+  width: var(--reports-ruler-right, 0px);
+  height: var(--reports-band-height);
+  border-left: var(--border-width) solid #c8c8c8;
+}
+
+/* Blank end of a top or bottom ruler where no corner button sits. */
+.reports-ruler-end {
+  box-sizing: border-box;
+  height: var(--reports-ruler-bar, 28px);
+  background-color: #ececec;
+  border-bottom: var(--border-width) solid #c8c8c8;
+}
+
+.reports-band-ruler-bottom {
+  display: grid;
+  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width) var(--reports-ruler-right, 0px);
+  width: calc(var(--reports-ruler-size) + var(--reports-content-width) + var(--reports-ruler-right, 0px));
+}
+
+.reports-band-ruler-bottom > .reports-ruler-top,
+.reports-band-ruler-bottom > .reports-ruler-end,
+.reports-band-ruler-bottom > .reports-ruler-corner {
+  border-top: var(--border-width) solid #c8c8c8;
+  border-bottom: 0;
+}
+
+/* End of Report: a strip only, no page height. Not a .reports-band. */
+.reports-band-end {
+  display: flex;
+  flex-direction: column;
+  width: calc(var(--reports-ruler-size) + var(--reports-content-width) + var(--reports-ruler-right, 0px));
+  cursor: pointer;
+}
+
+.reports-band-end.reports-band-selected > .reports-band-strip {
+  box-shadow: inset 3px 0 0 var(--accent-info);
+}
+
+.reports-page-bottom-ruled > .reports-band-end > .reports-band-strip {
+  border-bottom: 0;
 }
 
 .reports-cursor {
@@ -339,6 +388,10 @@
   z-index: 3;
   pointer-events: none;
   background-color: var(--accent-info);
+}
+
+.reports-crosshair-off .reports-cursor {
+  display: none;
 }
 
 .reports-cursor-x {
@@ -366,12 +419,16 @@
 .reports-band {
   display: flex;
   flex-direction: column;
-  width: calc(var(--reports-ruler-size, 28px) + var(--reports-content-width));
+  width: calc(var(--reports-ruler-size, 28px) + var(--reports-content-width) + var(--reports-ruler-right, 0px));
 }
 
 .reports-band-headed {
   display: grid;
-  grid-template-columns: var(--reports-ruler-size) minmax(0, var(--reports-content-width));
+  grid-template-columns: var(--reports-ruler-size) minmax(0, var(--reports-content-width)) var(--reports-ruler-right, 0px);
+}
+
+.reports-band-headed > .reports-band-strip {
+  grid-column: 2 / -1;
 }
 
 .reports-band-headed > .reports-band-ruler-top,
@@ -433,13 +490,19 @@
 
 .reports-band-ruler-top {
   display: grid;
-  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width);
+  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width) var(--reports-ruler-right, 0px);
 }
 
 .reports-band-measure {
   position: relative;
   display: grid;
-  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width);
+  grid-template-columns: var(--reports-ruler-size) var(--reports-content-width) var(--reports-ruler-right, 0px);
+}
+
+/* Fixed columns so a hidden left ruler leaves the body in place. */
+.reports-band:not(.reports-band-plain) > .reports-band-measure > .reports-band-body {
+  grid-row: 1;
+  grid-column: 2;
 }
 
 .reports-band-plain .reports-band-measure {
@@ -561,48 +624,363 @@
   color: var(--text-secondary);
 }
 
-.reports-summary {
-  max-width: 40rem;
+/* ── Property panel (Phase 14) ──────────────────────────────────────────
+   One framed object: top bar (rounded top), thin side lines, bottom bar
+   (rounded bottom). Left margin matches the toolbars above; the splitter
+   on its right has the same gutters as the report list splitter. */
+
+.reports-editor-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  /* The parent is the gutter colour; the PP and stage paint over it, so
+     only the splitter column shows --bg-primary, edge to edge. */
+  background-color: var(--bg-primary);
 }
 
-.reports-summary-name {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-xl);
-  font-weight: 600;
+.reports-props {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 280px;
+  min-width: 180px;
+  max-width: 600px;
+  min-height: 0;
+  /* Padding, not margin, so the gap around the frame is --bg-secondary. */
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-secondary);
+}
+
+.reports-props-splitter {
+  align-self: stretch;
+  margin: 0;
+  background-color: transparent;
+}
+
+.reports-props-splitter:hover,
+.reports-props-splitter.lithium-splitter-resizing {
+  background-color: var(--accent-primary);
+}
+
+.reports-outline-list {
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+}
+
+.reports-outline-row {
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-us);
+  overflow: hidden;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.reports-outline-depth-1 {
+  padding-left: calc(var(--space-2) + 12px);
+}
+
+.reports-outline-depth-2 {
+  padding-left: calc(var(--space-2) + 24px);
+}
+
+.reports-outline-selected {
+  background-color: var(--accent-focus);
+  color: var(--text-focus);
+}
+
+.lithium-properties {
+  --props-frame: var(--accent-alt-primary);
+}
+
+.lithium-properties .lithium-properties-bar {
+  margin: 0;
+  outline: none;
+  background-color: var(--props-frame);
+}
+
+.lithium-properties .lithium-properties-bar-top,
+.lithium-properties .lithium-properties-bar-top > *:first-child,
+.lithium-properties .lithium-properties-bar-top > *:last-child {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.lithium-properties .lithium-properties-bar-top {
+  border-top-left-radius: var(--border-radius-sm);
+  border-top-right-radius: var(--border-radius-sm);
+}
+
+.lithium-properties .lithium-properties-bar-bottom,
+.lithium-properties .lithium-properties-bar-bottom > *:first-child,
+.lithium-properties .lithium-properties-bar-bottom > *:last-child {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.lithium-properties .lithium-properties-bar-bottom {
+  border-bottom-left-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+.lithium-properties-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 2px solid var(--props-frame);
+  border-left: 2px solid var(--props-frame);
+  background-color: var(--bg-primary);
+}
+
+.lithium-properties-search-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  margin: var(--space-1);
+}
+
+.lithium-properties-search-wrap .lithium-properties-search-clear {
+  top: 50%;
+}
+
+.lithium-properties-search {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 2px 22px 2px 6px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.lithium-properties-outline {
+  flex: 0 0 auto;
+  height: 120px;
+  min-height: 32px;
+  overflow: auto;
+}
+
+/* The divider is the hit target: a solid bar in the frame colour, as
+   thick as a splitter (6px). No separate slider chrome. */
+.lithium-properties-outline-sizer {
+  flex: 0 0 6px;
+  background-color: var(--props-frame);
+  cursor: row-resize;
+}
+
+.lithium-properties-outline-sizer:hover,
+.lithium-properties-outline-sizing {
+  background-color: var(--accent-primary);
+}
+
+.lithium-properties-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.lithium-properties [hidden] {
+  display: none;
+}
+
+.lithium-properties .tabulator {
+  width: 100%;
+  border: none;
+  background-color: transparent;
+}
+
+/* LithiumTable colours (tables/lithium-table.css rows,
+   styles/vendor-fixes-tabulator.css group rows). */
+.lithium-properties .tabulator-row.tabulator-row-odd {
+  background: var(--bg-row-odd);
+}
+
+.lithium-properties .tabulator-row.tabulator-row-even {
+  background: var(--bg-row-even);
+}
+
+/* Condensed rows; inline cells (never block: block cells stack) with
+   both sides centred when one wraps. */
+.lithium-properties .tabulator-row .tabulator-cell {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 1px 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Invisible editor chrome: edit in the cell as-is. */
+.lithium-properties .tabulator-row .tabulator-cell.tabulator-editing {
+  border-right: 1px solid var(--bg-row-border);
+  box-shadow: inset 0 -1px 0 var(--accent-primary);
+}
+
+.lithium-properties .tabulator-cell.tabulator-editing > input:not([type='checkbox']),
+.lithium-properties .tabulator-cell.tabulator-editing > select {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.lithium-properties .tabulator-cell.tabulator-editing > select option {
+  background-color: var(--bg-primary);
   color: var(--text-primary);
 }
 
-.reports-summary-file,
-.reports-summary-note {
-  margin: 0 0 var(--space-3);
+/* Section header: caret, icon, caption, right-aligned count. The whole
+   header toggles; Tabulator's own arrow is replaced by the caret. */
+.lithium-properties .tabulator-row.tabulator-group {
+  /* Full width even when every section is collapsed: with no data rows
+     the table shrinks to the header text (about half the panel). */
+  box-sizing: border-box;
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 1px 4px !important;
+  border: 1px solid var(--bg-row-border) !important;
+  border-right: none !important;
+  border-left: none !important;
+  background: var(--accent-alt-secondary) !important;
+  cursor: pointer;
+}
+
+.lithium-properties .tabulator-row.tabulator-group span {
+  /* Tabulator's theme gives every group-header span margin-left: 10px;
+     that, not our padding, was the wide edge/caret/icon/title spacing. */
+  margin-left: 0 !important;
+  color: var(--text-primary) !important;
+}
+
+.lithium-properties .tabulator-row.tabulator-group span.lithium-properties-count {
+  margin-left: auto !important;
+}
+
+.lithium-properties .tabulator-group .tabulator-arrow {
+  display: none;
+}
+
+.lithium-properties-caret {
+  display: inline-flex;
+  justify-content: center;
+  width: 8px;
+  margin-right: 3px;
+  transition: transform 0.15s ease;
+}
+
+.lithium-properties .tabulator-group-visible .lithium-properties-caret {
+  transform: rotate(90deg);
+}
+
+.lithium-properties-icon {
+  margin-right: 3px;
+}
+
+.lithium-properties-count {
+  margin-left: auto;
+  padding-left: var(--space-1);
   color: var(--text-secondary);
 }
 
-.reports-summary-facts {
-  display: grid;
-  grid-template-columns: 6rem 1fr;
-  gap: var(--space-1) var(--space-3);
-  margin: 0 0 var(--space-4);
+.lithium-properties-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
 
-.reports-summary-facts dt {
-  margin: 0;
-  color: var(--text-primary);
-}
-
-.reports-summary-facts dd {
-  margin: 0;
+.lithium-properties-default {
+  font-style: italic;
   color: var(--text-secondary);
 }
 
-.reports-summary-bands {
-  margin: 0;
-  padding-left: var(--space-4);
+.lithium-properties-chip {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--text-secondary);
+}
+
+.lithium-properties .tabulator-tableholder > .tabulator-table {
+  min-width: 100%;
+}
+
+/* Paired bar buttons (expand/collapse, prev/next): tighter padding.
+   !important: lithium-toolbar.css is unlayered and outranks this layer. */
+.lithium-properties-btn.lithium-properties-btn-tight {
+  padding: 0 var(--space-1) !important;
+}
+
+.reports-outline:focus-visible {
+  outline: 1px solid var(--accent-info);
+  outline-offset: -1px;
+}
+
+.reports-outline-end {
+  font-style: italic;
+}
+
+}
+
+/* Phase 14b: name-cell marks, shown only while the bar button is hovered
+   (Hidden also while its filter is on). No other favourite/hidden styling. */
+.lithium-properties-name-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 4px;
+}
+
+.lithium-properties-name-wrap .lithium-properties-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lithium-properties-mark {
+  display: none;
+  flex: 0 0 auto;
+  margin-left: auto;
   color: var(--text-secondary);
 }
 
-.reports-band-label {
-  color: var(--text-primary);
+.lithium-properties-show-favourite .lithium-properties-mark-favourite,
+.lithium-properties-show-hidden .lithium-properties-mark-hidden,
+.lithium-properties-hidden-on .lithium-properties-mark-hidden {
+  display: inline-flex;
 }
 
+.lithium-properties .tabulator-row .tabulator-cell[tabulator-field="label"] {
+  cursor: grab;
+}
+
+.lithium-properties-date {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 2px;
+}
+
+.lithium-properties-date input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lithium-properties-date-btn {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--border-radius-xs);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
 }

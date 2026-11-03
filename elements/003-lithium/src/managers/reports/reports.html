@@ -95,6 +95,14 @@
         <fa fa-magnet></fa>
         <span>Snap</span>
       </button>
+      <button type="button" class="lithium-toolbar-btn reports-ruler-btn" id="reports-ruler-btn" title="Show the rulers" aria-pressed="true">
+        <fa fa-ruler-combined></fa>
+        <span>Ruler</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn reports-crosshair-btn" id="reports-crosshair-btn" title="Show the cursor crosshair" aria-pressed="true">
+        <fa fa-crosshairs></fa>
+        <span>Crosshair</span>
+      </button>
       <div class="reports-toolbar-gap" aria-hidden="true"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-clone-btn" title="Clone the selected item" disabled>
         <fa fa-copy></fa>
@@ -123,7 +131,13 @@
         </form>
       </div>
       <div class="reports-page-pane" id="reports-page-editor" data-reports-page="editor">
-        <div class="reports-stage" id="reports-stage"></div>
+        <div class="reports-editor-split">
+          <aside class="reports-props" id="reports-props" aria-label="Properties">
+            <nav class="reports-outline" id="reports-outline" aria-label="Outline"></nav>
+          </aside>
+          <div class="lithium-splitter reports-props-splitter" id="reports-props-splitter"></div>
+          <div class="reports-stage" id="reports-stage"></div>
+        </div>
       </div>
       <div class="reports-page-pane" id="reports-page-revisions" data-reports-page="revisions" hidden>
         <form class="reports-revisions" id="reports-revisions">

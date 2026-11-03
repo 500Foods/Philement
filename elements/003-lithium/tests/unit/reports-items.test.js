@@ -317,7 +317,7 @@ describe('Report Manager static text', () => {
     expect(pageEl().querySelectorAll('.reports-item')).toHaveLength(1);
     expect(bandEl('detail').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
       .toBe(`${toCssPx('0.25 in')}px`);
-    expect(manager.elements.stage.textContent).toContain('customer');
+    expect(manager.container.querySelector('#reports-outline').textContent).toContain('customer');
 
     manager.loadReport({
       format: 1,

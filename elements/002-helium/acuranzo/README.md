@@ -396,4 +396,8 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1436](/elements/002-helium/acuranzo/migrations/acuranzo_1436.lua) | lookups | 1.0.0 | 2026-11-02 | 32 | ✗ | Lookup 053 (Report Object Types) repair for Reporting Phase 11 |
 | [1437](/elements/002-helium/acuranzo/migrations/acuranzo_1437.lua) | lookups | 1.0.0 | 2026-11-02 | 8 | ✗ | Lookup 054 (Report Object Attributes) fonts for Reporting Phase 12 |
 | [1438](/elements/002-helium/acuranzo/migrations/acuranzo_1438.lua) | lookups | 1.0.0 | 2026-11-02 | 6 | ✗ | Lookup 057 (Report Page Sizes) for Reporting Phase 13 |
-| **363** | | | | **1964** | **363** | |
+| [1439](/elements/002-helium/acuranzo/migrations/acuranzo_1439.lua) | lookups | 1.0.0 | 2026-11-02 | 13 | ✗ | Lookup 074 (Report Palette Groups) for Reporting Phase 13b |
+| [1440](/elements/002-helium/acuranzo/migrations/acuranzo_1440.lua) | lookups | 1.0.0 | 2026-11-02 | 14 | ✗ | Lookup 075 (Report Attribute Sections) for Reporting Phase 13b |
+| [1441](/elements/002-helium/acuranzo/migrations/acuranzo_1441.lua) | lookups | 1.0.0 | 2026-11-02 | 84 | ✗ | Lookup 054 (Report Object Attributes) sections for Reporting Phase 13b |
+| [1442](/elements/002-helium/acuranzo/migrations/acuranzo_1442.lua) | lookups | 1.0.0 | 2026-11-03 | 38 | ✗ | Lookup 054 Color editors and lookup 053 key 24 cleanup (Reporting, after Phase 14b) |
+| **367** | | | | **2113** | **367** | |

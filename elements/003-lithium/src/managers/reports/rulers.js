@@ -25,6 +25,9 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Thickness of the ruler bar, in CSS pixels. The mouse line starts after it. */
 export const RULER_SIZE = 28;
 
+/** Top and left only: the layout before per-side rulers, kept as the default. */
+export const CLASSIC_SIDES = Object.freeze({ top: true, left: true, right: false, bottom: false });
+
 const SCALES = {
   in: { minor: 0.125, medium: 0.5, major: 1 },
   cm: { minor: 0.1, medium: 0.5, major: 1 },
@@ -176,20 +179,20 @@ export function rulerSpec(page, widthPx, heightPx, chosen) {
   };
 }
 
-function drawTicks(svg, ticks, axis) {
+function drawTicks(svg, ticks, axis, inward = false) {
   for (const tick of ticks) {
     const line = svgEl('line');
     const start = TICK_START[tick.rank];
     if (axis === 'x') {
       line.setAttribute('x1', String(tick.px));
       line.setAttribute('x2', String(tick.px));
-      line.setAttribute('y1', String(start));
-      line.setAttribute('y2', String(RULER_SIZE));
+      line.setAttribute('y1', String(inward ? 0 : start));
+      line.setAttribute('y2', String(inward ? RULER_SIZE - start : RULER_SIZE));
     } else {
       line.setAttribute('y1', String(tick.px));
       line.setAttribute('y2', String(tick.px));
-      line.setAttribute('x1', String(start));
-      line.setAttribute('x2', String(RULER_SIZE));
+      line.setAttribute('x1', String(inward ? 0 : start));
+      line.setAttribute('x2', String(inward ? RULER_SIZE - start : RULER_SIZE));
     }
     line.setAttribute('data-rank', tick.rank);
     svg.append(line);
@@ -198,13 +201,13 @@ function drawTicks(svg, ticks, axis) {
     text.textContent = tick.label;
     if (axis === 'x') {
       text.setAttribute('x', String(tick.px - LABEL_GAP));
-      text.setAttribute('y', String(TICK_START.major));
+      text.setAttribute('y', String(inward ? RULER_SIZE - TICK_START.major : TICK_START.major));
       text.setAttribute('text-anchor', 'end');
-      text.setAttribute('dominant-baseline', 'text-before-edge');
+      text.setAttribute('dominant-baseline', inward ? 'text-after-edge' : 'text-before-edge');
     } else {
-      text.setAttribute('x', String(TICK_START.major));
+      text.setAttribute('x', String(inward ? RULER_SIZE - TICK_START.major : TICK_START.major));
       text.setAttribute('y', String(tick.px - LABEL_GAP));
-      text.setAttribute('text-anchor', 'start');
+      text.setAttribute('text-anchor', inward ? 'end' : 'start');
     }
     svg.append(text);
   }
@@ -243,11 +246,20 @@ function spanLayer(axis, key) {
   return { defs, bar };
 }
 
-function rulerSvg(className, ticks, axis, lengthPx, key, unit) {
+/**
+ * Right and bottom rulers face the page: ticks start at the inner
+ * edge (left for the right ruler, top for the bottom ruler).
+ */
+function isInward(svg) {
+  return svg.classList.contains('reports-ruler-right') || svg.dataset.inward === 'true';
+}
+
+function rulerSvg(className, ticks, axis, lengthPx, key, unit, inward = false) {
   const svg = svgEl('svg');
   svg.classList.add('reports-ruler', className);
   svg.setAttribute('aria-hidden', 'true');
   if (unit) svg.dataset.unit = unit;
+  if (inward) svg.dataset.inward = 'true';
   const along = axis === 'x' ? lengthPx : RULER_SIZE;
   const across = axis === 'x' ? RULER_SIZE : lengthPx;
   svg.setAttribute('width', String(along));
@@ -262,7 +274,7 @@ function rulerSvg(className, ticks, axis, lengthPx, key, unit) {
   const span = spanLayer(axis, key);
   const marks = svgEl('g');
   marks.classList.add('reports-ruler-marks');
-  drawTicks(marks, ticks, axis);
+  drawTicks(marks, ticks, axis, inward);
   const invert = marks.cloneNode(true);
   invert.classList.add('reports-ruler-marks-invert');
   invert.setAttribute('clip-path', `url(#${spanId(key)})`);
@@ -296,7 +308,7 @@ export function setRulerLength(svg, lengthPx) {
   const invert = svg.querySelector('.reports-ruler-marks-invert');
   if (!marks) return;
   marks.replaceChildren();
-  drawTicks(marks, rulerTicks(lengthPx, unit), across ? 'x' : 'y');
+  drawTicks(marks, rulerTicks(lengthPx, unit), across ? 'x' : 'y', isInward(svg));
   if (!invert) return;
   invert.replaceChildren(...[...marks.childNodes].map((node) => node.cloneNode(true)));
 }
@@ -366,7 +378,7 @@ function clearRulerSlots(page) {
  * @param {string} [chosen]
  * @returns {{ error?: string, unit?: string }}
  */
-export function attachBandRulers(page, docPage, contentWidthPx, chosen) {
+export function attachBandRulers(page, docPage, contentWidthPx, chosen, sides = CLASSIC_SIDES) {
   const across = rulerAxis(docPage, contentWidthPx, chosen);
   if (across.error) {
     clearRulerSlots(page);
@@ -386,7 +398,7 @@ export function attachBandRulers(page, docPage, contentWidthPx, chosen) {
       slot.remove();
       continue;
     }
-    if (!topped) {
+    if (!topped && sides.top) {
       const top = document.createElement('div');
       top.className = 'reports-band-ruler-top';
       const strip = band.querySelector('.reports-band-strip');
@@ -398,16 +410,46 @@ export function attachBandRulers(page, docPage, contentWidthPx, chosen) {
       band.insertBefore(pad, strip || measure);
       band.classList.add('reports-band-headed');
       top.append(
-        cornerButton(across.unit),
+        sides.left ? cornerButton(across.unit) : rulerPad(),
         rulerSvg('reports-ruler-top', across.ticks, 'x', contentWidthPx, 'x', across.unit),
       );
+      if (sides.right) top.append(rulerPad());
       topped = true;
     }
     const key = lefts === 0 ? 'y' : `y-${lefts}`;
+    if (sides.left) slot.replaceWith(rulerSvg('reports-ruler-left', down.ticks, 'y', height, key, down.unit));
+    else slot.remove();
+    if (sides.right) {
+      const measure = band.querySelector('.reports-band-measure');
+      measure?.append(rulerSvg('reports-ruler-right', down.ticks, 'y', height, `r${key}`, down.unit, true));
+    }
     lefts += 1;
-    slot.replaceWith(rulerSvg('reports-ruler-left', down.ticks, 'y', height, key, down.unit));
   }
-  return { unit: across.unit };
+  if (sides.bottom) {
+    const bottom = document.createElement('div');
+    bottom.className = 'reports-band-ruler-bottom';
+    bottom.append(
+      sides.left && !topped ? cornerButton(across.unit) : rulerPad(),
+      rulerSvg('reports-ruler-top', across.ticks, 'x', contentWidthPx, 'xb', across.unit, true),
+    );
+    if (sides.right) bottom.append(rulerPad());
+    page.append(bottom);
+  }
+  return { unit: across.unit, topped };
+}
+
+/** Blank square at a ruler end where no corner button sits. */
+function rulerPad() {
+  const pad = document.createElement('div');
+  pad.className = 'reports-ruler-end';
+  pad.setAttribute('aria-hidden', 'true');
+  return pad;
+}
+
+/** Left offset of the content inside the sheet: the left ruler width. */
+function leftOffset(sheet) {
+  const raw = Number.parseFloat(sheet && sheet.style ? sheet.style.getPropertyValue('--reports-ruler-size') : '');
+  return Number.isFinite(raw) ? raw : RULER_SIZE;
 }
 
 function sheetOf(node) {
@@ -440,7 +482,7 @@ export function placeReportCursor(page, x, y, band) {
     const width = contentWidthPx(sheet);
     const inside = Number.isFinite(x) && x >= 0 && (!(width > 0) || x <= width);
     vertical.hidden = !inside;
-    if (inside) vertical.style.left = `${RULER_SIZE + x}px`;
+    if (inside) vertical.style.left = `${leftOffset(sheet) + x}px`;
   }
   for (const line of sheet.querySelectorAll('.reports-cursor-y')) {
     const owner = line.closest('.reports-band');
@@ -473,7 +515,7 @@ export function pageSpan(itemRect, pageRect, scale) {
 function bandBodyFrom(node) {
   if (!node || !node.closest) return null;
   if (node.classList && node.classList.contains('reports-band-body')) return node;
-  const ruler = node.closest('.reports-ruler-left');
+  const ruler = node.closest('.reports-ruler-left, .reports-ruler-right');
   if (ruler) {
     const band = ruler.closest('.reports-band');
     return band ? band.querySelector('.reports-band-body') : null;
@@ -496,7 +538,7 @@ export function trackReportCursor(page, event, origin) {
   const rect = sheet.getBoundingClientRect();
   const scale = readViewScale(page);
   const factor = scale > 0 ? scale : 1;
-  const x = (event.clientX - rect.left) / factor - RULER_SIZE;
+  const x = (event.clientX - rect.left) / factor - leftOffset(sheet);
   if (!Number.isFinite(x)) return;
   const body = bandBodyFrom(origin) || bandBodyFrom(event.target);
   let band = null;
@@ -521,7 +563,7 @@ function spanTargets(node, axis) {
   if (axis === 'x') return [...sheet.querySelectorAll('.reports-ruler-top')];
   const band = node && node.closest ? node.closest('.reports-band') : null;
   const root = band || sheet;
-  return [...root.querySelectorAll('.reports-ruler-left')];
+  return [...root.querySelectorAll('.reports-ruler-left, .reports-ruler-right')];
 }
 
 /**
@@ -577,12 +619,13 @@ export function bindReportCursor(page) {
     const rect = sheet.getBoundingClientRect();
     const scale = readViewScale(page);
     const factor = scale > 0 ? scale : 1;
-    const x = (event.clientX - rect.left) / factor - RULER_SIZE;
+    const left = leftOffset(sheet);
+    const x = (event.clientX - rect.left) / factor - left;
     const ySheet = (event.clientY - rect.top) / factor;
     const width = contentWidthPx(sheet);
     const height = rect.height / factor;
     const pastRight = width > 0 ? x > width : x > rect.width / factor;
-    if (x < -RULER_SIZE || ySheet < 0 || pastRight || (height > 0 && ySheet > height)) {
+    if (x < -left || ySheet < 0 || pastRight || (height > 0 && ySheet > height)) {
       hideReportCursor(page);
       return;
     }

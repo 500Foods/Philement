@@ -2,7 +2,8 @@
  * Pointer editing for the report page.
  * A band edge resizes the band. An item moves, and its corner
  * resizes it. Both commit on pointerup. A band click selects
- * that band and clears the item.
+ * that band and clears the item. A ruler click selects the report;
+ * the End of Report marker selects itself.
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -18,7 +19,7 @@ import { toCssPx } from './model/units.js';
 function setToolbarToggle(button, on) {
   if (!button) return;
   button.setAttribute('aria-pressed', on ? 'true' : 'false');
-  button.classList.toggle('active', on);
+  button.classList.toggle('lithium-nav-btn-active', on);
 }
 
 export const reportPointerMethods = {
@@ -58,6 +59,51 @@ export const reportPointerMethods = {
       this._syncGridVisible();
     };
     button.addEventListener('click', this._onGrid);
+  },
+
+  /** Ruler toggle: session only, like Grid. Off hides every side. */
+  _bindRuler() {
+    const button = this.elements.rulerBtn;
+    if (!button) return;
+    if (this._rulersOn === undefined) this._rulersOn = true;
+    setToolbarToggle(button, this._rulersOn);
+    this._onRuler = () => {
+      this._rulersOn = !this._rulersOn;
+      setToolbarToggle(button, this._rulersOn);
+      if (this.doc) this._showDocument(this.doc);
+    };
+    button.addEventListener('click', this._onRuler);
+  },
+
+  _syncCrosshair() {
+    const stage = this.elements && this.elements.stage;
+    if (stage) stage.classList.toggle('reports-crosshair-off', this._crosshairOn === false);
+    setToolbarToggle(this.elements && this.elements.crosshairBtn, this._crosshairOn !== false);
+  },
+
+  /** Crosshair toggle: session only, like Grid. Off hides the cursor guide lines. */
+  _bindCrosshair() {
+    const button = this.elements.crosshairBtn;
+    if (!button) return;
+    if (this._crosshairOn === undefined) this._crosshairOn = true;
+    this._syncCrosshair();
+    this._onCrosshair = () => {
+      this._crosshairOn = !this._crosshairOn;
+      this._syncCrosshair();
+    };
+    button.addEventListener('click', this._onCrosshair);
+  },
+
+  _unbindCrosshair() {
+    const button = this.elements && this.elements.crosshairBtn;
+    if (button && this._onCrosshair) button.removeEventListener('click', this._onCrosshair);
+    this._onCrosshair = null;
+  },
+
+  _unbindRuler() {
+    const button = this.elements && this.elements.rulerBtn;
+    if (button && this._onRuler) button.removeEventListener('click', this._onRuler);
+    this._onRuler = null;
   },
 
   _unbindGrid() {
@@ -109,6 +155,21 @@ export const reportPointerMethods = {
     const stage = this.elements.stage;
     const target = event.target;
     if (!target || !target.closest || !stage || !stage.contains(target)) return;
+    if (target.closest('.reports-ruler-corner')) return;
+    if (target.closest('.reports-ruler, .reports-band-ruler-top, .reports-band-ruler-bottom, .reports-band-ruler-pad')) {
+      this._selectedItemId = '';
+      this._bandScope = false;
+      this._endScope = false;
+      this._markSelection();
+      return;
+    }
+    if (target.closest('.reports-band-end')) {
+      this._selectedItemId = '';
+      this._bandScope = false;
+      this._endScope = true;
+      this._markSelection();
+      return;
+    }
     const itemEl = target.closest('.reports-item');
     if (itemEl) {
       if (!this._recordEditing) {
@@ -127,6 +188,8 @@ export const reportPointerMethods = {
     if (bandEl && bandEl.dataset.bandId) {
       this._selectedBandId = bandEl.dataset.bandId;
       this._selectedItemId = '';
+      this._bandScope = true;
+      this._endScope = false;
       this._markSelection();
     }
   },
@@ -317,8 +380,9 @@ export const reportPointerMethods = {
     const next = dragBandHeight(this._drag.startPx, (event.clientY - this._drag.startY) / scale);
     this._drag.previewPx = next;
     this._drag.body.style.height = `${next}px`;
-    const ruler = this._drag.bandEl && this._drag.bandEl.querySelector('.reports-ruler-left');
-    setRulerLength(ruler, next);
+    // Both side rulers grow with the band (left and, when shown, right).
+    const rulers = this._drag.bandEl ? this._drag.bandEl.querySelectorAll('.reports-ruler-left, .reports-ruler-right') : [];
+    for (const ruler of rulers) setRulerLength(ruler, next);
     const spacing = this._snapSpacing();
     if (spacing > 0) {
       this._showBandSnap(this._drag.body, next, snapBandHeight(next, spacing, toCssPx('0.15 in')));
