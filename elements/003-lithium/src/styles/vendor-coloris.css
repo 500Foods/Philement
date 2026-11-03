@@ -5,8 +5,9 @@
  */
 
 .clr-picker {
-  display: flex;
-  flex-direction: column;
+  /* Keep Coloris's own wrapping row so the preview circle and the hex
+     field share one line, as in Pavillion. */
+  flex-flow: row wrap;
 }
 
 .clr-picker .clr-swatches button {
@@ -38,15 +39,33 @@
   height: 28px;
   margin: 0;
   padding: 0;
-  border: 1px solid currentcolor;
+  border: 1px solid #fff;
   border-radius: var(--border-radius, 8px);
   background: transparent;
-  color: inherit;
+  color: #fff;
   cursor: pointer;
   user-select: none;
 }
 
 .clr-picker .lithium-color-actions button:disabled {
-  opacity: 0.45;
+  /* Mid grey: clearly dimmer than white, still readable on the dark face. */
+  border-color: #9a9a9a;
+  color: #9a9a9a;
   cursor: default;
+}
+
+.clr-picker .lithium-color-actions svg,
+.clr-picker .lithium-color-actions .icon {
+  width: 14px;
+  height: 14px;
+  color: inherit;
+  fill: currentcolor;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Smaller text so a full rgb(...) or hsl(...) value fits while editing. */
+.clr-picker input.clr-color {
+  padding: 0 8px;
+  font-size: 12px;
 }

@@ -12,6 +12,7 @@ import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+import { AuditInfoFooter } from '../../core/audit-info-footer.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
@@ -133,6 +134,48 @@ function wireFooter(manager) {
     fillerTitle: 'Reports',
   });
   manager.editHelper.wireFooterButtons(footer.saveBtn, footer.cancelBtn, footer.dummyBtn);
+  wireAuditFooter(manager);
+}
+
+function auditSet(id, at) {
+  return id !== undefined && id !== null && id !== '' && Number(id) !== 0
+    && at !== undefined && at !== null && at !== '';
+}
+
+/**
+ * Audit view of a report row. Each save appends a revision, so
+ * updated_id stays 0 and the saver is created_id. Use updated_* when
+ * set, otherwise created_*. Null when neither pair is set.
+ * @param {object|null|undefined} data
+ * @returns {object|null}
+ */
+export function reportAuditRow(data) {
+  if (!data || typeof data !== 'object') return null;
+  const useUpdated = auditSet(data.updated_id, data.updated_at);
+  if (!useUpdated && !auditSet(data.created_id, data.created_at)) return null;
+  return {
+    ...data,
+    created_by: data.created_by ?? data.created_id,
+    updated_id: useUpdated ? data.updated_id : data.created_id,
+    updated_at: useUpdated ? data.updated_at : data.created_at,
+  };
+}
+
+/**
+ * Audit button after save/cancel, as in Query Manager. The table
+ * gets a thin adapter so row selection shows the fallback view.
+ * @param {object} manager
+ */
+function wireAuditFooter(manager) {
+  if (manager.auditFooter) manager.auditFooter.destroy();
+  const footer = new AuditInfoFooter(manager);
+  footer.init();
+  if (!footer.auditButton) return;
+  manager.auditFooter = footer;
+  manager.updateAuditFooter = (data) => footer.update(reportAuditRow(data));
+  if (manager.reportTable) {
+    manager.reportTable.auditFooter = { update: (data) => manager.updateAuditFooter(data) };
+  }
 }
 
 /**

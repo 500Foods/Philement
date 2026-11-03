@@ -314,7 +314,10 @@ describe('Report Manager static text', () => {
     expect(node.dataset.fontStyle).toBe('Bold');
     expect(node.style.getPropertyValue('--reports-item-font-family')).toContain('Courier New');
     expect(node.style.getPropertyValue('--reports-item-font-size')).toBe(`${toCssPx('12 pt')}px`);
-    expect(pageEl().querySelectorAll('.reports-item')).toHaveLength(1);
+    expect(pageEl().querySelectorAll('.reports-item')).toHaveLength(2);
+    const fieldNode = pageEl().querySelector('.reports-item-field');
+    expect(fieldNode.textContent).toBe('customer');
+    expect(fieldNode.dataset.unbound).toBe('false');
     expect(bandEl('detail').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
       .toBe(`${toCssPx('0.25 in')}px`);
     expect(manager.container.querySelector('#reports-outline').textContent).toContain('customer');

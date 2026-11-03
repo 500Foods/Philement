@@ -57,6 +57,7 @@ import { createHistory } from './model/history.js';
 import { definitionMeta, withDefinitionMeta } from './reports-meta.js';
 import { ReportJsonPage, reportJsonEdit, reportJsonText } from './reports-json.js';
 import { reportDropMethods } from './reports-drop.js';
+import { REPORT_CATEGORIES, loadCategory, reportFieldMethods, saveCategory } from './reports-fields.js';
 import { reportLockMethods } from './reports-lock.js';
 import { reportPageMethods } from './reports-pages.js';
 import { reportPanelMethods } from './reports-panel.js';
@@ -287,6 +288,9 @@ export default class ReportsManager {
     textBtn.addEventListener('click', this._onText);
     this._bindTextDrop();
     staticBtn.addEventListener('click', this._onStatic);
+    this._bindFields();
+    this._category = loadCategory();
+    this._showCategory(this._category);
     reportTab.addEventListener('click', this._onReport);
     editorTab.addEventListener('click', this._onEditor);
     jsonTab.addEventListener('click', this._onJson);
@@ -486,6 +490,9 @@ export default class ReportsManager {
     this._dropPane();
     if (this._json) this._json.destroy();
     this._json = null;
+    if (this.auditFooter) this.auditFooter.destroy();
+    this.auditFooter = null;
+    this.updateAuditFooter = null;
     if (this.reportTable) this.reportTable.destroy();
     this.reportTable = null;
     if (this.splitter) this.splitter.destroy();
@@ -509,6 +516,7 @@ export default class ReportsManager {
     textBtn.removeEventListener('click', this._onText);
     this._unbindTextDrop();
     staticBtn.removeEventListener('click', this._onStatic);
+    this._unbindFields();
     reportTab.removeEventListener('click', this._onReport);
     editorTab.removeEventListener('click', this._onEditor);
     jsonTab.removeEventListener('click', this._onJson);
@@ -753,6 +761,7 @@ export default class ReportsManager {
     if (this.elements.textBtn) this.elements.textBtn.disabled = !editing || !this._selectedBandId;
     if (this.elements.deleteBtn) this.elements.deleteBtn.disabled = !editing || !live;
     if (this.elements.cloneBtn) this.elements.cloneBtn.disabled = !editing || !live;
+    this._syncFieldButtons(editing);
   }
 
   _failEdit(error, fallback) {
@@ -811,14 +820,16 @@ export default class ReportsManager {
   }
 
   /**
-   * Category buttons change the third toolbar. Static is the only
-   * category in this shell. The definition is left alone.
+   * Category buttons change the third toolbar: Static shows Text,
+   * Field shows Text / Number / Datetime fields and the sample data
+   * buttons. The definition is left alone.
    * @param {string} name
    */
   selectCategory(name) {
-    if (name !== 'static') return;
-    this._category = 'static';
-    if (this.elements.staticBtn) this.elements.staticBtn.setAttribute('aria-pressed', 'true');
+    if (!REPORT_CATEGORIES.includes(name)) return;
+    this._category = name;
+    this._showCategory(name);
+    saveCategory(name);
   }
 
   _openJson() {
@@ -933,6 +944,7 @@ export default class ReportsManager {
 
   _exportReport() {
     if (!this.doc) return;
+    if (!this._checkFieldBindings()) return;
     const json = definitionText(this.doc);
     const filename = reportDownloadName(this.doc);
     this.saveFile(filename, json);
@@ -945,6 +957,7 @@ Object.assign(
   reportPointerMethods,
   reportLockMethods,
   reportDropMethods,
+  reportFieldMethods,
   reportPageMethods,
   reportRevisionMethods,
   reportPanelMethods,

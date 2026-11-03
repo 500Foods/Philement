@@ -129,6 +129,10 @@ describe('report list save and open', () => {
       name: 'Report',
       summary: 'Notes',
       category: '',
+      created_id: expect.any(Number),
+      created_at: expect.any(String),
+      updated_id: 0,
+      updated_at: null,
     });
     expect(manager._openReportId).toBe(4);
     expect(manager._openRevision.rev_id).toBe(3);

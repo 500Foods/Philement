@@ -14,15 +14,18 @@
 
 import { bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
 import { parseLength } from './model/units.js';
+import { datasourceNames } from './reports-sample.js';
 
 export const REPORT_TYPE_KEY = 9;
 const TEXT_KEYS = new Set([29]);
 const PAGE_SIZE_KEY = 30;
 /** Number keys that hold a length; the rest are plain numbers. */
 const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38]);
-/** Editors this phase knows. Field and Datasource are Phase 15. */
-export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None']);
-const LATER_EDITORS = new Set(['Field', 'Datasource']);
+/** Editors the panel knows. Field and Datasource (Phase 15) become Lists. */
+export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None', 'Field', 'Datasource']);
+/** Items that take a mask string (Phase 15.5 edits it). */
+const MASK_ITEM_TYPES = new Set([5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
+export const DEFAULT_MASK_NOTE = 'No mask: the Value format default applies.';
 /** Number items that take a mask: field, calculated, aggregate, page number, page count. */
 const NUMBER_TYPES = new Set([21, 29, 35, 61, 62]);
 export const MASK_ROW_ID = 'mask';
@@ -359,6 +362,27 @@ export function attributeKeys(doc, sel, lookups) {
   return keys;
 }
 
+/**
+ * Choices for a Field or Datasource row. Field lists the session
+ * sample's columns; Datasource lists the definition's `datasources`.
+ * The current value stays listed. Null when the row is not a binding.
+ */
+function bindingChoices(editor, doc, lookups, current) {
+  let names;
+  if (editor === 'Field') names = (lookups && lookups.sampleColumns) || [];
+  else if (editor === 'Datasource') names = datasourceNames(doc);
+  else return null;
+  const list = [...names];
+  if (typeof current === 'string' && current !== '' && !list.includes(current)) list.unshift(current);
+  return list;
+}
+
+/** A binding with nothing to pick from is typed as Text. */
+function bindingEditor(editor, choices) {
+  if (!choices) return editor;
+  return choices.length ? 'List' : 'Text';
+}
+
 function editorFor(key, collection) {
   if (TEXT_KEYS.has(key)) return 'Text';
   if (key === PAGE_SIZE_KEY) return 'PageSize';
@@ -389,10 +413,11 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     const field = fields[key];
     const read = field ? field.get(doc, sel) : { value: '', omitted: true };
     const editor = editorFor(key, collection);
-    if (!KNOWN_EDITORS.has(editor) && !LATER_EDITORS.has(editor)) {
+    if (!KNOWN_EDITORS.has(editor)) {
       unknown.push({ key, editor });
       continue;
     }
+    const choices = bindingChoices(editor, doc, lookups, read.value);
     rows.push({
       id: String(key),
       key,
@@ -400,20 +425,22 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       value: read.value,
       omitted: read.omitted,
       note: read.omitted ? (read.note || OMITTED_NOTE) : '',
-      editor: LATER_EDITORS.has(editor) ? 'None' : editor,
-      list: editor === 'List' && Array.isArray(collection.List) ? collection.List : null,
+      editor: bindingEditor(editor, choices),
+      list: choices || (editor === 'List' && Array.isArray(collection.List) ? collection.List : null),
       section: collection.section ?? null,
       group: collection.Group || '',
-      readOnly: !field || editor === 'None' || LATER_EDITORS.has(editor),
+      readOnly: !field || editor === 'None',
     });
   }
   if (isItem) {
     const { item } = findSelected(doc, sel);
-    const isNumber = NUMBER_TYPES.has(Number(item.typeKey));
-    if (isNumber && (!own(item, 'mask') || item.mask === '')) {
+    const typeKey = Number(item.typeKey);
+    if (MASK_ITEM_TYPES.has(typeKey)) {
+      const empty = !own(item, 'mask');
       rows.push({
-        id: MASK_ROW_ID, key: null, label: 'Mask', value: 'Plain decimal', omitted: true,
-        note: PLAIN_DECIMAL_NOTE, editor: 'None', list: null, section: 7, group: 'Formatting', readOnly: true,
+        id: MASK_ROW_ID, key: null, label: 'Mask', value: empty ? '' : item.mask, omitted: empty,
+        note: empty ? (NUMBER_TYPES.has(typeKey) ? PLAIN_DECIMAL_NOTE : DEFAULT_MASK_NOTE) : '',
+        editor: 'Text', list: null, section: 7, group: 'Formatting', readOnly: false,
       });
     }
   }
@@ -435,6 +462,10 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
   if (rowId === TEXT_ROW_ID) {
     if (!isItem) throw new Error('Text needs a selected item.');
     return editItem(doc, sel, (item) => { item.text = String(value); });
+  }
+  if (rowId === MASK_ROW_ID) {
+    if (!isItem) throw new Error('Mask needs a selected item.');
+    return editItem(doc, sel, (item) => { item.mask = String(value ?? '').trim(); });
   }
   const scope = selectionScope(doc, sel);
   if (scope === 'end') throw new Error('End of Report has no editable properties.');

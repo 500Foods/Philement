@@ -45,7 +45,9 @@ describe('Phase 14 gaps', () => {
     const rows = propertyRows(doc, { bandId: 'detail', itemId: 'n1' }, lookups);
     const mask = rows.find((row) => row.id === MASK_ROW_ID);
     expect(mask.note).toBe(PLAIN_DECIMAL_NOTE);
-    expect(mask.readOnly).toBe(true);
+    expect(mask.readOnly).toBe(false);
+    expect(applyProperty(doc, { bandId: 'detail', itemId: 'n1' }, MASK_ROW_ID, ' #,##0.00 ')
+      .bands.find((b) => b.id === 'detail').items.find((i) => i.id === 'n1').mask).toBe('#,##0.00');
     const text = addItem(createBlank(), 'detail', { typeKey: 0, id: 't1', mask: '' });
     expect(propertyRows(text, { bandId: 'detail', itemId: 't1' }, lookups).some((row) => row.id === MASK_ROW_ID)).toBe(false);
   });

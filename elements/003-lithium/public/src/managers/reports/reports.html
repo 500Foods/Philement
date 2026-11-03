@@ -67,6 +67,10 @@
         <fa fa-cube></fa>
         <span>Static</span>
       </button>
+      <button type="button" class="lithium-toolbar-btn reports-category-btn" id="reports-field-btn" title="Database fields" aria-pressed="false">
+        <fa fa-database></fa>
+        <span>Field</span>
+      </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-undo-btn" title="Undo" data-shortcut-id="reports-undo" disabled>
         <fa fa-rotate-left></fa>
@@ -82,9 +86,29 @@
       </button>
     </div>
     <div class="lithium-toolbar" id="reports-items-toolbar" data-reports-page="editor">
-      <button type="button" class="lithium-toolbar-btn" id="reports-text-btn" title="Add static text to the selected band" draggable="true">
+      <button type="button" class="lithium-toolbar-btn" id="reports-text-btn" title="Add static text to the selected band" draggable="true" data-reports-category="static">
         <fa fa-font-case></fa>
         <span>Text</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-text-btn" title="Add a text field to the selected band" data-reports-category="field" data-type-key="20" hidden>
+        <fa fa-font></fa>
+        <span>Text</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-number-btn" title="Add a number field to the selected band" data-reports-category="field" data-type-key="21" hidden>
+        <fa fa-hashtag></fa>
+        <span>Number</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-datetime-btn" title="Add a date and time field to the selected band" data-reports-category="field" data-type-key="24" hidden>
+        <fa fa-calendar-days></fa>
+        <span>Datetime</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-sample-btn" title="Import sample data (JSON array). Session only, never exported." data-reports-category="field" hidden>
+        <fa fa-file-import></fa>
+        <span>Sample</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-sample-paste-btn" title="Paste sample data (JSON array) from the clipboard. Session only, never exported." data-reports-category="field" hidden>
+        <fa fa-clipboard></fa>
+        <span>Paste</span>
       </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn reports-grid-btn" id="reports-grid-btn" title="Show the grid" aria-pressed="true">
@@ -167,5 +191,6 @@
       </div>
     </div>
     <input type="file" class="reports-file-input" id="reports-import-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+    <input type="file" class="reports-file-input" id="reports-sample-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
   </div>
 </div>

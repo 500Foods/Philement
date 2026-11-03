@@ -598,6 +598,15 @@
   outline-offset: -1px;
 }
 
+.reports-item-field {
+  color: #1d4e89;
+}
+
+.reports-item-field[data-unbound='true'] {
+  color: #8a8a8a;
+  font-style: italic;
+}
+
 .reports-item-text {
   display: block;
   overflow: hidden;
@@ -983,4 +992,16 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
+}
+
+/* Element group buttons are radio-style: the chosen one stays lit. */
+#reports-categories .reports-category-btn[aria-pressed='true'],
+#reports-categories .reports-category-btn[aria-pressed='true']:hover {
+  color: #1a1a1a;
+  background-color: var(--accent-toggle);
+}
+
+#reports-categories .reports-category-btn[aria-pressed='true'] i,
+#reports-categories .reports-category-btn[aria-pressed='true'] svg {
+  color: #1a1a1a;
 }

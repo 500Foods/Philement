@@ -190,7 +190,7 @@ describe('Report Manager chrome', () => {
     expect(container.querySelector('#reports-new-btn')).toBeNull();
     expect(container.querySelector('#reports-page-size')).toBeNull();
     expect(container.querySelector('.reports-properties')).toBeNull();
-    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(1);
+    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(2);
     expect(container.querySelector('#reports-text-btn')).not.toBeNull();
 
     manager.elements.jsonTab.click();

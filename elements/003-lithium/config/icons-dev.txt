@@ -47,6 +47,7 @@
 <fa fa-chevrons-left></fa>
 <fa fa-chevrons-right></fa>
 <fa fa-circle-question></fa>
+<fa fa-clipboard></fa>
 <fa fa-clock></fa>
 <fa fa-code></fa>
 <fa fa-cog></fa>
@@ -82,6 +83,7 @@
 <fa fa-flower-tulip></fa>
 <fa fa-folder-open></fa>
 <fa fa-font-case></fa>
+<fa fa-font></fa>
 <fa fa-gear-complex></fa>
 <fa fa-gears></fa>
 <fa fa-globe></fa>
@@ -89,6 +91,7 @@
 <fa fa-graduation-cap></fa>
 <fa fa-grip-dots-vertical></fa>
 <fa fa-hand></fa>
+<fa fa-hashtag></fa>
 <fa fa-highlighter></fa>
 <fa fa-history></fa>
 <fa fa-id-badge></fa>

@@ -24,7 +24,7 @@ with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
 Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it.
+Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
 Phase 16 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
@@ -77,7 +77,7 @@ Andrew reports the apply.
 | 13b | Section lookups | Helium, human apply | Easy | Complete |
 | 14 | Property panel | Lithium UI | Medium | Complete |
 | 14b | Property panel preferences | Lithium UI | Medium | Complete |
-| 15 | Field items and a sample datasource | Lithium UI | Easy | Not started |
+| 15 | Field items and a sample datasource | Lithium UI | Easy | Complete |
 | 16 | One group level | Lithium UI | Easy | Not started |
 | 17 | Save and load packet | Helium, human apply | Medium | Complete |
 | 18 | Revisions in the manager | Lithium UI | Medium | Complete |
@@ -200,7 +200,7 @@ with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
 Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it.
+Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
 Phase 16 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
@@ -370,7 +370,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. A sidequest stays unnumbered unless he names it. Phase 10-UI is that name. It does not change the count of 72. |
-| **Done** | Phases 0–14 of 72 complete (2026-11-03), plus labeled Phase 13b (section lookups 074 and 075, applied); labeled Phase 14b (property panel preferences, complete 2026-11-03). Phase 14 closed after Andrew said "Lets wrap this phase". Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 13 is complete (2026-11-02); lookup 057 has eight page sizes, with A4 and A3 landscape skipped by choice. Phase 16 has not started. |
+| **Done** | Phases 0–15 of 72 complete (2026-11-03), plus labeled Phase 13b (section lookups 074 and 075, applied); labeled Phase 14b (property panel preferences, complete 2026-11-03). Phase 14 closed after Andrew said "Lets wrap this phase". Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 13 is complete (2026-11-02); lookup 057 has eight page sizes, with A4 and A3 landscape skipped by choice. Phase 15 is complete (2026-11-03): Andrew confirmed fields, sample, band floor, and the audit footer. Phase 16 has not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -3286,3 +3286,56 @@ property panel's Color editor now goes through it. New
 12 skipped. ESLint at baseline (163 src, 8 tests). Stylelint clean.
 Pavillion's Ctrl+wheel picker zoom is not ported. Phase 15 not started.
 No migration; next Acuranzo file 1443.
+
+### 2026-11-03 — Coloris swatches wrapped; Phase 15 started
+
+Coloris swatches and polish are done (Andrew: "ok for now"). Fixes after
+his browser check: Coloris's own wrapping layout restored so the preview
+circle and value field share a row; + / − / ✕ white when enabled and
+#9a9a9a when disabled; value field at 12px so rgb()/hsl() fit.
+
+Phase 15 is In progress. First slice: `src/managers/reports/reports-sample.js`
+(`parseSample` gives rows and union-of-keys columns, `datasourceNames`,
+`fieldItemLabel`, `unboundFields`, `FIELD_TYPES` 20/21/24) and
+`tests/unit/reports-sample.test.js` (6 tests). `addItem` already gives
+mask types an empty `mask`. Next: Field category on the second toolbar
+with Text / Number / Datetime on the third, a sample-data import, canvas
+paint of field labels, the Field editor list, and the export refusal.
+ESLint at baseline (163 src, 8 tests).
+
+### 2026-11-03 — Phase 15 code complete; browser check pending
+
+Field category on the second toolbar; Text / Number / Datetime fields,
+Sample import and Paste on the third. Session-only sample (never in the
+definition or export) feeds the panel's Field list; Datasource lists
+`datasources`. Fields paint their bound name, or a grey italic caption
+when unbound. Export refuses unbound fields with a toast. Mask is
+editable on mask types. New `reports-fields.js` mixin. 84 files, 1413
+passed, 12 skipped; ESLint baseline; stylelint clean. 15.1–15.3 and 15.5
+checked; 15.4 (browser) waits for Andrew. Phase stays In progress.
+
+
+### 2026-11-03 — Phase 15 follow-ups: group toggle, band floor, audit draft
+
+Element group buttons (Static / Field) are radio-style and lit with
+`--accent-toggle` when chosen. The choice is saved on the profile at
+`reports.category` (default Static) and restored on load. `resizeBand`
+now refuses to go below the bottom of the band's lowest item
+(`bandContentBottom`), for both the drag and the panel Height row.
+Reports footer audit info needs QueryRef #165 to return the audit
+columns: draft `acuranzo_1443.lua` written, waiting for Andrew to apply;
+the footer is not wired yet. 85 files, 1417 passed, 12 skipped; ESLint
+baseline; stylelint clean. Phase stays In progress.
+
+2026-11-03 — Andrew applied `acuranzo_1443.lua`. Reports footer now
+wires `AuditInfoFooter` after save/cancel (Query Manager pattern), fed
+through `reportAuditRow`: `updated_*` when set, else `created_*`. Row
+selection and save both refresh it. 84 files, 1418 passed; ESLint
+baseline; stylelint clean on src. Phase 15 stays In progress; browser
+check is Andrew's.
+
+2026-11-03 — Phase 15 complete. Andrew checked fields, the sample
+datasource, the band content floor, and the audit footer in the
+browser: "Everything looks good. I think we're ready to wrap Phase
+15." 15.4 passes. Phase 16 (one group level) is next and has not
+started.

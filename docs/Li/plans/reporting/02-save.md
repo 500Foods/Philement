@@ -81,6 +81,12 @@ QueryRef is 173.
 - Lookup 054 keys 9–12 are on no list. Chart and barcode rows are
   untouched. Reverse deletes 61–63 and restores the 1086 JSON.
 
+- Follow-ups (2026-11-03): element group buttons are radio-style, lit
+  when chosen, saved at `reports.category` on the profile (default
+  Static). Band resize stops at the bottom of the band's lowest item.
+  Reports footer audit info waits on draft migration `acuranzo_1443.lua`
+  (QueryRef #165 returns created/updated id and time); not wired yet.
+
 ### Lessons learned
 
 - 1086 put lookup 054 ids 24 (Grid Background Color) and 29 (Link) on
@@ -723,6 +729,8 @@ property panel's Color editor now goes through it. New
 `coloris-picker.test.js` (5 tests). `npm test`: 82 files, 1403 passed,
 12 skipped. ESLint at baseline (163 src, 8 tests). Stylelint clean.
 Pavillion's Ctrl+wheel picker zoom is not ported. Phase 15 not started.
+
+**2026-11-03 — Coloris wrapped, Phase 15 started.** Swatches and picker polish done after Andrew's browser check (row layout, white / #9a9a9a buttons, 12px value field). Phase 15 In progress: `reports-sample.js` (sample parse, columns, datasource names, field labels, unbound list) with 6 tests. UI wiring next.
 No migration; next Acuranzo file 1443.
 
 ---
@@ -739,20 +747,20 @@ Phase 14 Status complete.
 
 ### Work items
 
-- [ ] 15.1 A session-only sample JSON datasource. The operator pastes
+- [x] 15.1 A session-only sample JSON datasource. The operator pastes
        or imports an array of objects. Column names are the union of
        keys. This JSON is not part of the definition export.
-- [ ] 15.2 Add field text, number, and datetime items. The property
+- [x] 15.2 Add field text, number, and datetime items. The property
        panel's Field editor lists those column names. Datasource
        names come from the definition's `datasources` array.
-- [ ] 15.3 The canvas label is the field name. An empty binding shows
+- [x] 15.3 The canvas label is the field name. An empty binding shows
         the type caption and a toast when the operator exports, and
         export is refused for that item. Compose will warn later. The
         designer does not invent a value. (Per `LITHIUM-INS.md` rule 1,
         no silent fallback — the operator must pick or fill a binding.)
-- [ ] 15.4 Browser: bind `customer`, export, confirm `field` and
+- [x] 15.4 Browser: bind `customer`, export, confirm `field` and
        `typeKey` 20, reload, and see the binding.
-- [ ] 15.5 Number and datetime items edit a `mask` string. The
+- [x] 15.5 Number and datetime items edit a `mask` string. The
        canvas label stays the field name. An empty mask means the
        default in Value format. Export round-trips `mask`.
 
@@ -765,9 +773,57 @@ exported definition. Empty bindings block export with a toast.
 
 Lint, unit tests, and the browser check.
 
+### Accomplished
+
+- Second toolbar: Field category (`fa-database`) after Static. Third
+  toolbar swaps by `data-reports-category`: Field shows Text (20),
+  Number (21), Datetime (24), Sample (import a JSON file) and Paste
+  (clipboard). `selectCategory('static'|'field')`.
+- `reports-sample.js`: `parseSample` (array of objects; columns are the
+  union of keys, first seen), `datasourceNames`, `fieldItemLabel`,
+  `unboundFields`, `FIELD_TYPES`. `reports-fields.js` is the manager
+  mixin: field buttons, `loadSample` / `sampleColumns`, export check.
+- The sample lives on the manager (`_sample`) for the session only. It
+  is never written to the definition, so export and save cannot carry it.
+- Canvas paints field items with the bound name, or the type caption in
+  grey italic when unbound (`data-unbound`).
+- Property panel: 054 `Editor` Field becomes a List of sample columns
+  (the current value stays listed; typed Text when no sample is loaded);
+  Datasource lists the definition's `datasources`. Mask is an editable
+  Text row for every mask type (empty: number shows the plain-decimal
+  note, datetime the Value-format default note). Mask is trimmed.
+- Export with any unbound field is refused with an error toast naming
+  the count and the first item.
+- Tests: `reports-sample.test.js` (6), `reports-fields.test.js` (4);
+  updated items/chrome/gaps tests. 84 files, 1413 passed, 12 skipped.
+  ESLint baseline (163 src, 8 tests); stylelint clean.
+
+- Follow-up (audit footer): with `acuranzo_1443.lua` applied, the
+  Reports footer now carries `AuditInfoFooter` after save/cancel, as in
+  Query Manager. `reportAuditRow` shows `updated_*` when set, otherwise
+  `created_*` (each save is a new revision, so the saver is
+  `created_id`). Save refreshes the row and footer. Test:
+  `reports-audit-footer.test.js` (4). 84 files, 1418 passed.
+
+### Browser check for Andrew (15.4)
+
+Field → Number or Datetime on Detail; Export is refused while unbound.
+Sample or Paste a JSON array (e.g. `[{"customer":"A","total":3}]`), pick
+`customer` in Field, export, confirm `field` and `typeKey`, reload, and
+see the binding. Set a Mask and confirm it round-trips.
+
 ### Status
 
-**not started**
+**complete — 2026-11-03.** Andrew checked fields, the sample, the band
+floor, and the audit footer (after `acuranzo_1443.lua`): "Everything
+looks good." 84 files, 1418 passed; ESLint baseline.
+
+### Lessons learned
+
+- Reports save appends a revision, so `updated_id` stays 0. The footer
+  shows `updated_*` when set and falls back to `created_*`.
+- QueryRef 165 needed the audit columns (1443) before the footer could
+  show anything; check list queries for audit columns before wiring.
 
 ---
 

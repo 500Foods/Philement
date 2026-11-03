@@ -181,6 +181,28 @@ function clampBandHeight(length, unit) {
   return storedLength(length, unit);
 }
 
+/**
+ * Bottom of the lowest item in a band, in inches (0 when empty).
+ * A band may not be resized shorter than this.
+ * @param {object} band
+ * @returns {number}
+ */
+export function bandContentBottom(band) {
+  let bottom = 0;
+  for (const item of Array.isArray(band?.items) ? band.items : []) {
+    const box = item?.box;
+    if (!box) continue;
+    try {
+      const top = parseLength(convertLength(box.top ?? '0 in', 'in')).value;
+      const h = parseLength(convertLength(box.height ?? '0 in', 'in')).value;
+      if (Number.isFinite(top + h)) bottom = Math.max(bottom, top + h);
+    } catch {
+      // unreadable box: it sets no floor.
+    }
+  }
+  return bottom;
+}
+
 function bandIds(doc) {
   if (!Array.isArray(doc.bands)) return new Set();
   return new Set(doc.bands.map((band) => band.id));
@@ -437,7 +459,13 @@ export function moveBand(doc, id, index) {
 export function resizeBand(doc, id, height) {
   const next = clone(doc);
   const band = findBand(next, id);
-  band.height = clampBandHeight(height, documentUnit(next));
+  const unit = documentUnit(next);
+  let clamped = clampBandHeight(height, unit);
+  const floor = bandContentBottom(band);
+  if (floor > 0 && parseLength(convertLength(clamped, 'in')).value < floor - 1e-9) {
+    clamped = storedLength(`${floor} in`, unit);
+  }
+  band.height = clamped;
   return next;
 }
 

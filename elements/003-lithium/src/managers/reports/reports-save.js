@@ -261,6 +261,10 @@ export async function saveListedReport(manager, row) {
         name: definitionMeta(manager.doc).name,
         summary: storedText(rowData(row).summary),
         category: params.STRING.CATEGORY,
+        created_id: saved.created_id ?? reportUserId(manager.app),
+        created_at: saved.created_at ?? new Date().toISOString(),
+        updated_id: saved.updated_id ?? 0,
+        updated_at: saved.updated_at ?? null,
       });
     }
   } finally {
@@ -279,6 +283,7 @@ export async function saveListedReport(manager, row) {
   };
   log(Subsystems.CONDUIT, Status.INFO,
     `[Reports] Saved report ${saved.report_id} revision ${saved.rev_id}`);
+  if (typeof manager.updateAuditFooter === 'function') manager.updateAuditFooter(rowData(row));
   if (typeof manager.refreshRevisions === 'function') manager.refreshRevisions();
 }
 

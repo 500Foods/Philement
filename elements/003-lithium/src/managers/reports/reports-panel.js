@@ -200,7 +200,9 @@ export const reportPanelMethods = {
     );
     const editing = Boolean(this._recordEditing);
     const unknown = [];
-    const rows = propertyRows(this.doc, this._panelSelection(), this._lookups || {}, labelOf, unknown)
+    const rows = propertyRows(
+      this.doc, this._panelSelection(), { ...(this._lookups || {}), sampleColumns: this.sampleColumns?.() || [] }, labelOf, unknown,
+    )
       .map((row) => (editing ? row : { ...row, readOnly: true }));
     this._props.setRows(rows);
     this._toastUnknown(unknown);
