@@ -173,7 +173,8 @@ caller-facing QueryRef is 173.
 
 ### Goal
 
-Fix the Letter landscape label and add the missing page sizes. One
+Fix the Letter landscape label and add the missing page sizes
+(Legal and Tabloid both orientations, A4 and A3 portrait). One
 family, one migration. Do not apply it.
 
 ### Entry gate
@@ -184,18 +185,24 @@ day it is written.
 
 ### Work items
 
-- [ ] 13.1 Re-read the highest Acuranzo file. Do not edit
+- [x] 13.1 Re-read the highest Acuranzo file. Do not edit
        [`acuranzo_1090.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua)
        in place.
-- [ ] 13.2 One forward migration for lookup 057 only. Relabel key 1
-       as US Letter landscape. Insert Legal portrait, A4, and Tabloid.
-       Reverse restores the label and deletes only the inserted keys.
-- [ ] 13.3 Hand the packet over. Record the file number after Andrew
+- [x] 13.2 One forward migration for lookup 057 only,
+       `acuranzo_1438.lua`. Relabel key 1 `US Letter Landscape`.
+       Insert keys 2–7: `US Legal Portrait` (8.5 × 14 in),
+       `US Legal Landscape`, `Tabloid Portrait` (11 × 17 in),
+       `Tabloid Landscape`, `A4 Portrait` (210 × 297 mm), and
+       `A3 Portrait` (297 × 420 mm). Margins 0.25 in or 6 mm. Page
+       Size strings `US Legal`, `Tabloid`, `A4`, `A3`; `Tabloid` and
+       `A3` are not yet in lookup 054 key 30 and may need a later add.
+       Reverse restores the label and deletes only keys 2–7.
+- [x] 13.3 Hand the packet over. Record the file number after Andrew
        reports the apply.
 
 ### Done means
 
-Andrew reports a correctly labeled Letter landscape row and the three
+Andrew reports a correctly labeled Letter landscape row and the six
 new page sizes.
 
 ### Exit gate
@@ -204,7 +211,38 @@ Andrew's apply report.
 
 ### Status
 
-**not started**
+**complete — 2026-11-02.** Andrew reported
+[`acuranzo_1438.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1438.lua)
+applied and the lookup 057 checks good. Key 1 reads US Letter
+Landscape. Keys 2–7 hold US Legal and Tabloid in portrait and
+landscape and A4 and A3 portrait. The next Acuranzo file is 1439. The
+next caller-facing QueryRef is 173.
+
+### Accomplished
+
+- One lookup-only packet with no caller-facing QueryRef. 1090 was not
+  edited in place. Keys 0 and 1 keep their geometry.
+- The goal was widened at Andrew's request (2026-11-02) from portrait
+  Legal, A4, and Tabloid to Legal and Tabloid in both orientations plus
+  A4 and A3 portrait.
+- A4 and A3 landscape were skipped by Andrew's choice. A later
+  lookup-only file can add them as keys 8 and up.
+
+### Lessons learned
+
+- 1090's key 1 label `US Letter Legal` hid a Letter landscape row; the
+  JSON, not the label, is the source of truth when repairing a lookup.
+- Lookup 054 key 30 lists page-size names separately from 057 and
+  lacks `Tabloid` and `A3`. Nothing in Lithium reads it for page size;
+  057 and `page.sizeKey` drive the control.
+
+### Handoff
+
+- Phase 14 (property panel) re-checks the next free Acuranzo file
+  (1439), QueryRef (173), and decides whether 054 key 30 is dropped
+  from the report panel or fed from 057.
+- Lookups 053, 054, and 057 are applied.
+- Nothing is waiting on Andrew for Phase 13.
 
 ---
 
