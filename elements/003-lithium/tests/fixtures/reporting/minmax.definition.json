@@ -1,0 +1,76 @@
+{
+  "format": 1,
+  "name": "Min and max",
+  "title": "Min and max",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": { "left": "0.25 in", "right": "0.25 in", "top": "0.25 in", "bottom": "0.25 in" }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+  "datasources": [
+    {
+      "name": "orders",
+      "kind": "json",
+      "shape": "list",
+      "rows": [
+        { "group": "Number", "amount": 3, "when": null },
+        { "group": "Number", "amount": null, "when": null },
+        { "group": "Number", "amount": 1, "when": null },
+        { "group": "Number", "amount": 2, "when": null },
+        { "group": "Date", "amount": null, "when": "2026-03-02" },
+        { "group": "Date", "amount": null, "when": "2026-01-15" },
+        { "group": "Date", "amount": null, "when": null },
+        { "group": "Date", "amount": null, "when": "2026-02-01" }
+      ]
+    }
+  ],
+  "bands": [
+    { "id": "ph", "typeKey": 13, "height": "0.15 in", "items": [] },
+    {
+      "id": "gh",
+      "typeKey": 14,
+      "field": "group",
+      "height": "0.25 in",
+      "items": [
+        { "id": "group-name", "typeKey": 20, "field": "group", "box": { "left": "0 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" } },
+        { "id": "gh-min-amount", "typeKey": 35, "op": "min", "field": "amount", "mask": "#,##0.00", "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" } },
+        { "id": "gh-max-amount", "typeKey": 35, "op": "max", "field": "amount", "mask": "#,##0.00", "box": { "left": "2.8 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" } },
+        { "id": "gh-min-when", "typeKey": 38, "op": "min", "field": "when", "mask": "yyyy-MM-dd", "box": { "left": "4.2 in", "top": "0 in", "width": "1.4 in", "height": "0.2 in" } },
+        { "id": "gh-max-when", "typeKey": 38, "op": "max", "field": "when", "mask": "yyyy-MM-dd", "box": { "left": "5.8 in", "top": "0 in", "width": "1.4 in", "height": "0.2 in" } }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "height": "0.25 in",
+      "datasource": "orders",
+      "items": [
+        { "id": "amount", "typeKey": 21, "field": "amount", "mask": "#,##0.00", "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" } }
+      ]
+    },
+    {
+      "id": "gf",
+      "typeKey": 16,
+      "height": "0.25 in",
+      "items": [
+        { "id": "gf-min-amount", "typeKey": 35, "op": "min", "field": "amount", "mask": "#,##0.00", "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" } },
+        { "id": "gf-max-amount", "typeKey": 35, "op": "max", "field": "amount", "mask": "#,##0.00", "box": { "left": "2.8 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" } },
+        { "id": "gf-min-when", "typeKey": 38, "op": "min", "field": "when", "mask": "yyyy-MM-dd", "box": { "left": "4.2 in", "top": "0 in", "width": "1.4 in", "height": "0.2 in" } },
+        { "id": "gf-max-when", "typeKey": 38, "op": "max", "field": "when", "mask": "yyyy-MM-dd", "box": { "left": "5.8 in", "top": "0 in", "width": "1.4 in", "height": "0.2 in" } }
+      ]
+    },
+    { "id": "pf", "typeKey": 17, "height": "0.15 in", "items": [] }
+  ]
+}

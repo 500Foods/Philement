@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is in progress (2026-11-04). Andrew named it and left Phases 33–37 as they are. `acuranzo_1458.lua` is written and not applied. Leave `acuranzo_1455.lua`, `acuranzo_1456.lua`, and `acuranzo_1457.lua` as written. The next free Acuranzo file is **1459**. QueryRef **175** stays unused. No new lookup. Phase 39 has not started. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1465**. QueryRef **175** stays unused. No new lookup. Phases 44a and 44b are written in [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md) and have not started. The next conversation is Phase 44a. Do not start it here. Phase 45 has not started. Do not start it. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -103,13 +103,15 @@ Andrew reports the apply.
 | 35 | Formula check | Lithium UI + Lua | Easy | Not started |
 | 36 | Number and datetime formula | Helium amendment | Medium | Not started |
 | 37 | Formula runtime errors | Helium amendment | Easy | Not started |
-| 38 | Count, unique, and sum | Helium + designer | Medium | In progress |
-| 39 | Page totals | Helium + designer | Medium | Not started |
-| 40 | Average and weighted | Helium amendment | Medium | Not started |
-| 41 | Median | Helium amendment | Medium | Not started |
-| 42 | Mode | Helium amendment | Medium | Not started |
-| 43 | Min and max | Helium amendment | Medium | Not started |
-| 44 | First and last | Helium amendment | Medium | Not started |
+| 38 | Count, unique, and sum | Helium + designer | Medium | Complete |
+| 39 | Page totals | Helium + designer | Medium | Complete |
+| 40 | Average and weighted | Helium amendment | Medium | Complete |
+| 41 | Median | Helium amendment | Medium | Complete |
+| 42 | Mode | Helium amendment | Medium | Complete |
+| 43 | Min and max | Helium amendment | Medium | Complete |
+| 44 | First and last | Helium amendment | Medium | Complete |
+| 44a | Static shapes | Helium + designer | Medium | Not started |
+| 44b | Shape fill and gradient | Helium + designer | Medium | Not started |
 | 45 | Group-key function | Helium + designer | Medium | Not started |
 | 46 | Page-break predicate | Helium + designer | Easy | Not started |
 | 47 | Line-break predicate | Helium + designer | Easy | Not started |
@@ -144,8 +146,9 @@ fixture, a probe, or a decision. Medium adds a designer surface
 or a browser pass. A sitting that ends early marks that phase in
 progress and keeps its number. Phase 10-UI is a labeled
 sidequest between 10 and 11. Phases 13b and 14b are labeled
-phases added 2026-11-02 for the property panel. None of the
-three is an extra number in that count.
+phases added 2026-11-02 for the property panel. Phases 44a and
+44b are labeled phases added 2026-11-04 for static shapes.
+None of these is an extra number in that count.
 
 A phase that hands a packet to a human is one sitting of agent work
 plus the wait for the apply. Its Status block records the wait.
@@ -164,6 +167,7 @@ They do not replace it.
 | 35 | See a syntax error in the formula editor. |
 | 36 | See a pack-date code and a masked number. |
 | 44 | Put the built-in totals on a footer. |
+| 44b | Draw a static shape in the HTML preview, including a fill and a gradient. |
 | 49 | Download CSV. |
 | 54 | See a barcode in the preview. A PDF barcode is a raster until Phase 71. |
 | 71 | Get charts and barcodes as vectors in the PDF. |
@@ -204,7 +208,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is in progress (2026-11-04). Andrew named it and left Phases 33–37 as they are. `acuranzo_1458.lua` is written and not applied. Leave `acuranzo_1455.lua`, `acuranzo_1456.lua`, and `acuranzo_1457.lua` as written. The next free Acuranzo file is **1459**. QueryRef **175** stays unused. No new lookup. Phase 39 has not started. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1465**. QueryRef **175** stays unused. No new lookup. Phases 44a and 44b are written in [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md) and have not started. The next conversation is Phase 44a. Do not start it here. Phase 45 has not started. Do not start it. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -470,7 +474,8 @@ third toolbar. Manager chrome, below, is that shell.
 ## Out of scope until a later plan
 
 - Crosstabs, subreports, packages, shapes, and memos. The lookup rows
-    can stay. The palette hides them. Chart keys 42 and 44, and barcode
+    can stay. The palette hides them. Static shapes are Phases 44a and
+    44b. Memos stay here. Chart keys 42 and 44, and barcode
     keys 43 and 45, are v1.
 - Chart interactivity. The exported chart is static SVG or a PDF
     vector object; hover, zoom, and tooltips are a later idea.
@@ -2221,7 +2226,7 @@ Pull one of these into a numbered phase only by amending this file.
 
 | Topic | Why it waits |
 | --- | --- |
-| Memos and shapes | Each is a `typeKey` with its own box behavior. Images are Phases 50–52. |
+| Memos | Lookup 053 key 25 is Static Shape. Keys 26, 33, 39, and 53 stay hidden. Shapes moved to Phases 44a and 44b in [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md). Memos stay unnumbered. Images are Phases 50–52. |
 | Other barcode keys | Phase 54 places lookup 053 keys 43 and 45. Aggregate, calculated, and crosstab barcode keys stay hidden. |
 | Chart kinds beyond the v1 set | Pie is in v1. Phase 63 extends the port. Anything past bar, stacked bar, line, dual-axis, combos, and pie is a port extension plus a panel pass. |
 | Chart interactivity | Hover, zoom, and tooltips need scripted SVG, and the exports are static files. |
@@ -3941,3 +3946,206 @@ caller-facing QueryRef 175.
   Do not mark Phase 38 complete until he reports that preview.
   Do not start Phase 39 in that report unless the same message
   names it.
+
+### 2026-11-04 — Phase 38 complete
+
+- Andrew said it works well. He said 1457 has been applied and
+  the aggregate functions were tested with no issues found. He
+  did not name `acuranzo_1458.lua`. He did not quote East
+  `30.00`, the report `42.00`, the four sum warns, or that the
+  header matches the footer. The packet for this phase is
+  `acuranzo_1458.lua`. `acuranzo_1457.lua` is the Phase 29 query
+  script. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua`
+  as written. Next free file **1459**. QueryRef **175** unused.
+  No new lookup. No new QueryRef.
+- Work item 38.4 is checked. A named function still prints blank
+  until Phase 33. His phrase "aggregate functions" is the four
+  field ops this phase reduces.
+- Phase 39 (Page totals) was previewed and not started. A page
+  header or page footer shows the sum of the detail rows placed
+  on that page. The page header and the page footer share that
+  window. The fixture spans two pages so the page sum differs
+  from the report sum. The entry gate is Phase 38 and Phase 21.
+  Both are complete. Today a type 35 item on a page band prints
+  blank, and the designer allows bands 12, 14, 16, and 18 only.
+  The next packet would be a new file **1459**. It was not
+  written. Phase 40 waits on Phase 39.
+- **Next:** Phase 39 in
+  [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md),
+  in a new conversation. Do not start it here. Phases 30–37 stay
+  on the temporary skip (custom functions, PDFs, barcodes, and
+  charts).
+
+### 2026-11-04 — Phase 39 in progress
+
+- Andrew said "please continue" after the Phase 39 peek. Phase
+  38 and Phase 21 are complete. Phases 33–37 stay on the skip.
+- `acuranzo_1459.lua` copies the 1458 `Reports.Render` body.
+  Reverse restores that body. Leave `acuranzo_1455.lua` through
+  `acuranzo_1458.lua` as written. No new QueryRef. No new lookup.
+  Next free file **1460**. QueryRef **175** unused.
+- A page header and a page footer reduce the detail rows placed
+  on that page. They share one total. `count`, `filled`,
+  `unique`, and `sum` use those rows. The text is filled after
+  the page list exists. The designer allows bands 12, 13, 14,
+  16, 17, and 18. A detail band is refused.
+- The fixture is `pagetotals.definition.json` and
+  `pagetotals.sources.json`. Page height `2 in`, margins `0 in`,
+  detail `0.5 in`, chrome bands `0.25 in`. Page 1 is count
+  `2.00` and sum `30.00`. Page 2 is count `1.00` and sum
+  `7.00`. The report sum is `37.00`. Grouped, totals, detail,
+  page number, and static compose match the 1458 body.
+- `luacheck` on 1459 reported 0 warnings. Lua 5.5.1 probe
+  passed. `npm test` was 93 files, 1472 passed, 12 skipped.
+  `npm run lint` and `npm run lint:css` exited 0.
+- **Next:** Andrew applies `acuranzo_1459.lua`, regenerates the
+  payload, and restarts Hydrogen. Then import the page-totals
+  definition and Run Preview HTML. The page header matches the
+  page footer, and the page sum differs from the report sum.
+  Do not mark Phase 39 complete until he reports that preview.
+  Do not start Phase 40 unless the same message names it.
+
+### 2026-11-04 — Phase 39 complete
+
+- Andrew said the latest migration applied is 1459, and that
+  aggregate functions in page headers and footers work as
+  indicated. He did not quote page 1 `30.00`, page 2 `7.00`,
+  the report `37.00`, the counts `2.00` and `1.00`, or the
+  names Ann, Bo, and Cy. The packet is `acuranzo_1459.lua`.
+  Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as
+  written. Next free file **1460**. QueryRef **175** unused.
+  No new lookup. No new QueryRef.
+- Work item 39.3 is checked. A named function still prints blank
+  until Phase 33. His phrase "aggregate functions" is the field
+  ops on a page header and a page footer.
+- Phase 40 (Average and weighted) was previewed and not started.
+  `avg` and `mean` are the same arithmetic mean. `weighted`
+  stores `weight` as a field and divides the sum of field times
+  weight by the sum of the weights. A non-numeric value warns
+  and is skipped. A zero sum of weights, or no numeric pair
+  left, prints blank and adds one warn. An empty result is
+  blank. The picker still offers `count`, `filled`, `unique`,
+  and `sum`. The next packet would be a new file **1460**. It
+  was not written. Phase 41 waits on Phase 40.
+- **Next:** Phase 40 in
+  [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md),
+  in a new conversation. Do not start it here. Phases 30–37
+  stay on the temporary skip (custom functions, PDFs, barcodes,
+  and charts).
+
+### 2026-11-04 — Phases 40, 41, and 42 in progress
+
+- Andrew named Phases 40, 41, and 42 together. Phase 39 is
+  complete. Phases 33–37 stay on the skip. Phase 43 has not
+  started.
+- `acuranzo_1460.lua` copies the 1459 body. `avg` and `mean`
+  are the arithmetic mean. `weighted` stores `weight`. Reverse
+  restores the 1459 body. `acuranzo_1461.lua` adds `median`.
+  An even count is the mean of the two central numbers. Reverse
+  restores the 1460 body. `acuranzo_1462.lua` adds `mode`. A
+  tie keeps the smallest value under Lua `<` and warns. Text
+  mode uses lookup 053 key 34. Reverse restores the 1461 body.
+  Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as
+  written. No new QueryRef. No new lookup. Next free file
+  **1463**. QueryRef **175** unused.
+- The mean fixture is amount/weight `10/1`, `20/1`, `30/3`.
+  Avg and mean are `20.00`. Weighted is `24.00`. The log is
+  empty. The median fixture is Odd `20.00` and Even `25.00`.
+  The mode fixture is Labels `A` and Numbers `1.00`, with one
+  tie warning. A named function still prints blank until Phase
+  33.
+- `luacheck` on 1460, 1461, and 1462 reported 0 warnings. The
+  Lua 5.5.1 probe passed, including grouped, totals, page
+  totals, detail, page number, and static against the 1459
+  body. `npm test` was 93 files, 1476 passed, 12 skipped.
+  `npm run lint` and `npm run lint:css` exited 0.
+- **Next:** Andrew applies `acuranzo_1460.lua`, then
+  `acuranzo_1461.lua`, then `acuranzo_1462.lua`. He regenerates
+  the payload, restarts Hydrogen, imports each fixture, and
+  runs Preview HTML. Do not mark the phases complete until he
+  reports that. Do not start Phase 43.
+
+### 2026-11-04 — Phases 40, 41, and 42 complete
+
+- Andrew said Phases 40, 41, and 42 are fully operational and
+  confirmed the values returned. He did not name
+  `acuranzo_1460.lua`, `acuranzo_1461.lua`, or
+  `acuranzo_1462.lua`. He did not quote Avg `20.00`, Mean
+  `20.00`, Weighted `24.00`, Odd `20.00`, Even `25.00`,
+  Labels `A`, or Numbers `1.00`. On his eight amounts the
+  mode tie printed -17.25. The median of 42.00 and 89.99 is
+  65.995, and a `#,##0.00` mask prints 66.00. That check is
+  the apply report. Leave `acuranzo_1455.lua` through
+  `acuranzo_1462.lua` as written. Next free file **1463**.
+  QueryRef **175** unused. No new lookup. No new QueryRef.
+- Work items 40.2, 41.2, and 42.2 are checked. A named
+  function still prints blank until Phase 33.
+- Phase 43 (Min and max) was previewed and not started.
+  Numbers compare as numbers. A datetime is a civil string
+  or a unix number. The first non-null value picks the kind.
+  A later value of the other kind warns once and is skipped.
+  A number uses key 35. A datetime uses key 38. Text uses
+  key 34 and Lua `<`. The fixture binds fields. The next
+  packet would be a new file **1463**. It was not written.
+  Phase 44 waits on Phase 43.
+- **Next:** Phase 43 in
+  [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md),
+  in a new conversation. Do not start it here. Phases 33–37,
+  45–48, PDFs, barcodes, and charts stay on the temporary
+  skip.
+
+### 2026-11-04 — Phases 43 and 44 in progress
+
+- Andrew named Phases 43 and 44 together. Phase 42 is complete.
+  Naming both waives Phase 44's written gate. He also described
+  Static shapes: line, rectangle, or ellipse, a line side, stroke,
+  fill including a gradient, stacking by `band.items` order, raise
+  and lower, and outline drag and drop. That stays on the Later
+  row. No shape migration was written. Phase 45 has not started.
+- `acuranzo_1463.lua` adds `min` and `max`. Reverse restores the
+  1462 body. `acuranzo_1464.lua` adds `first` and `last`. Reverse
+  restores the 1463 body. Leave `acuranzo_1455.lua` through
+  `acuranzo_1462.lua` as written. No new QueryRef. No new lookup.
+  Next free file **1465**. QueryRef **175** unused.
+- The min and max fixture prints `1.00`, `3.00`, `2026-01-15`,
+  and `2026-03-02`. The log is empty. The first and last fixture
+  prints `10.00`, `7.00`, `2026-03-02`, and `2026-01-01`. The
+  null in the middle is skipped. The log is empty. A named
+  function still prints blank until Phase 33.
+- `luacheck` on 1463 and 1464 reported 0 warnings. The Lua 5.5.1
+  probe passed, including page totals, grouped, totals, detail,
+  page number, static, mean, median, and mode against the 1462
+  body. `npm test` was 93 files, 1477 passed, 12 skipped.
+  `npm run lint` exited 0. `npm run lint:css` exited 0.
+  `templates:copy` copied 139 templates.
+- **Next:** Andrew applies `acuranzo_1463.lua`, then
+  `acuranzo_1464.lua`. He regenerates the payload, restarts
+  Hydrogen, imports each fixture, and runs Preview HTML. Do not
+  mark the phases complete until he reports that. Do not start
+  Phase 45.
+
+### 2026-11-04 — Phases 43 and 44 complete
+
+- Andrew said Phases 43 and 44 look good. He did not name
+  `acuranzo_1463.lua` or `acuranzo_1464.lua`. He did not quote
+  min `1.00`, max `3.00`, `2026-01-15`, `2026-03-02`, first
+  `10.00`, last `7.00`, `2026-03-02`, or `2026-01-01`. That
+  check is the apply report. Leave `acuranzo_1455.lua` through
+  `acuranzo_1464.lua` as written. Next free file **1465**.
+  QueryRef **175** unused. No new lookup.
+- Work items 43.1, 43.2, 44.1, and 44.2 are checked. A named
+  function still prints blank until Phase 33.
+- He asked to rename the property row `Op` to `Summarize`, to
+  sort the list, and to capitalize the entries. The list is
+  `AGGREGATE_OPS` in the designer, not a lookup. Sorting lookup
+  054 does not reorder it. Stored codes stay lowercase because
+  the script matches `min`, `max`, `first`, and `last`. The
+  label and the capitals were left as he previewed them.
+- Phases 44a (Static shapes) and 44b (Shape fill and gradient)
+  are written in
+  [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md)
+  and have not started. They are not extra numbers in the 0–71
+  count. Memos stay on the Later row.
+- **Next:** Phase 44a in that file, in a new conversation. Do
+  not start it here. Do not start Phase 45. Phases 33–37,
+  45–48, PDFs, barcodes, and charts stay on the temporary skip.

@@ -1,0 +1,111 @@
+{
+  "format": 1,
+  "name": "Median",
+  "title": "Median",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "orders",
+      "kind": "json",
+      "shape": "list",
+      "rows": [
+        { "group": "Odd", "amount": 10 },
+        { "group": "Odd", "amount": 30 },
+        { "group": "Odd", "amount": 20 },
+        { "group": "Even", "amount": 10 },
+        { "group": "Even", "amount": 40 }
+      ]
+    }
+  ],
+  "bands": [
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.15 in",
+      "items": []
+    },
+    {
+      "id": "gh",
+      "typeKey": 14,
+      "field": "group",
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "group-name",
+          "typeKey": 20,
+          "field": "group",
+          "box": { "left": "0 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        },
+        {
+          "id": "gh-median",
+          "typeKey": 35,
+          "op": "median",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "height": "0.25 in",
+      "datasource": "orders",
+      "items": [
+        {
+          "id": "amount",
+          "typeKey": 21,
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "gf",
+      "typeKey": 16,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "gf-median",
+          "typeKey": 35,
+          "op": "median",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.15 in",
+      "items": []
+    }
+  ]
+}

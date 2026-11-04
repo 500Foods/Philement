@@ -148,14 +148,14 @@ export const reportFieldMethods = {
     els.sysBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
   },
 
-  /** True when the selected band can show a group or report total. */
+  /** True when the selected band can show a group, page, or report total. */
   _aggregateBandSelected() {
     if (!this.doc || !this._selectedBandId) return false;
     const band = (this.doc.bands || []).find((entry) => entry.id === this._selectedBandId);
     return Boolean(band && aggregateBandAllows(band.typeKey));
   },
 
-  /** Aggregate number (35) on a group or report header or footer. */
+  /** Aggregate number (35) on a group, page, or report header or footer. */
   _addAggregate() {
     if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
     let next;

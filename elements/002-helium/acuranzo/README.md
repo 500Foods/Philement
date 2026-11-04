@@ -416,4 +416,10 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1456](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render loads a stored report by id (Reporting Phase 27) |
 | [1457](/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render runs a query datasource (Reporting Phase 29) |
 | [1458](/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render reduces count, filled, unique, and sum (Reporting Phase 38) |
-| **383** | | | | **2194** | **383** | |
+| [1459](/elements/002-helium/acuranzo/migrations/acuranzo_1459.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render page totals (Reporting Phase 39) |
+| [1460](/elements/002-helium/acuranzo/migrations/acuranzo_1460.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render average and weighted (Reporting Phase 40) |
+| [1461](/elements/002-helium/acuranzo/migrations/acuranzo_1461.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render median (Reporting Phase 41) |
+| [1462](/elements/002-helium/acuranzo/migrations/acuranzo_1462.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render mode (Reporting Phase 42) |
+| [1463](/elements/002-helium/acuranzo/migrations/acuranzo_1463.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render min and max (Reporting Phase 43) |
+| [1464](/elements/002-helium/acuranzo/migrations/acuranzo_1464.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render first and last (Reporting Phase 44) |
+| **389** | | | | **2218** | **389** | |

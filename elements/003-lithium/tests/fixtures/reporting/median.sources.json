@@ -1,0 +1,9 @@
+{
+  "orders": [
+    { "group": "Odd", "amount": 10 },
+    { "group": "Odd", "amount": 30 },
+    { "group": "Odd", "amount": 20 },
+    { "group": "Even", "amount": 10 },
+    { "group": "Even", "amount": 40 }
+  ]
+}

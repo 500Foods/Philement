@@ -1,0 +1,161 @@
+{
+  "format": 1,
+  "name": "Average and weighted",
+  "title": "Average and weighted",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "orders",
+      "kind": "json",
+      "shape": "list",
+      "rows": [
+        { "amount": 10, "weight": 1 },
+        { "amount": 20, "weight": 1 },
+        { "amount": 30, "weight": 3 }
+      ]
+    }
+  ],
+  "bands": [
+    {
+      "id": "rh",
+      "typeKey": 12,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "rh-avg-label",
+          "typeKey": 0,
+          "text": "Avg",
+          "box": { "left": "0 in", "top": "0 in", "width": "0.6 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rh-avg",
+          "typeKey": 35,
+          "op": "avg",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "0.7 in", "top": "0 in", "width": "1.1 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rh-mean-label",
+          "typeKey": 0,
+          "text": "Mean",
+          "box": { "left": "2 in", "top": "0 in", "width": "0.7 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rh-mean",
+          "typeKey": 35,
+          "op": "mean",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "2.8 in", "top": "0 in", "width": "1.1 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rh-weighted-label",
+          "typeKey": 0,
+          "text": "Weighted",
+          "box": { "left": "4.1 in", "top": "0 in", "width": "1 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rh-weighted",
+          "typeKey": 35,
+          "op": "weighted",
+          "field": "amount",
+          "weight": "weight",
+          "mask": "#,##0.00",
+          "box": { "left": "5.2 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.15 in",
+      "items": []
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "height": "0.25 in",
+      "datasource": "orders",
+      "items": [
+        {
+          "id": "amount",
+          "typeKey": 21,
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "0 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        },
+        {
+          "id": "weight",
+          "typeKey": 21,
+          "field": "weight",
+          "mask": "#,##0.00",
+          "box": { "left": "1.4 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.15 in",
+      "items": []
+    },
+    {
+      "id": "rf",
+      "typeKey": 18,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "rf-avg",
+          "typeKey": 35,
+          "op": "avg",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "0.7 in", "top": "0 in", "width": "1.1 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rf-mean",
+          "typeKey": 35,
+          "op": "mean",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "2.8 in", "top": "0 in", "width": "1.1 in", "height": "0.2 in" }
+        },
+        {
+          "id": "rf-weighted",
+          "typeKey": 35,
+          "op": "weighted",
+          "field": "amount",
+          "weight": "weight",
+          "mask": "#,##0.00",
+          "box": { "left": "5.2 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    }
+  ]
+}

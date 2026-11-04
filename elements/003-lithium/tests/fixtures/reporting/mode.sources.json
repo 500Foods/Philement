@@ -1,0 +1,11 @@
+{
+  "orders": [
+    { "group": "Labels", "label": "A" },
+    { "group": "Labels", "label": "B" },
+    { "group": "Labels", "label": "A" },
+    { "group": "Numbers", "amount": 2 },
+    { "group": "Numbers", "amount": 1 },
+    { "group": "Numbers", "amount": 2 },
+    { "group": "Numbers", "amount": 1 }
+  ]
+}

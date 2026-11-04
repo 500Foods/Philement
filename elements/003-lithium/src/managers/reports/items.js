@@ -10,7 +10,7 @@
 
 import { bandHeight } from './model/document.js';
 import { contentBox, toCssPx } from './model/units.js';
-import { AGGREGATE_NUMBER_TYPE, aggregateItemLabel } from './reports-aggregate.js';
+import { aggregateItemLabel, isAggregateType } from './reports-aggregate.js';
 import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, systemItemLabel } from './reports-sample.js';
 
 /** Smallest resize, in CSS pixels. */
@@ -195,7 +195,7 @@ export function paintBandItems(body, band, doc) {
   const items = Array.isArray(band && band.items) ? band.items : [];
   for (const item of items) {
     if (!item || typeof item !== 'object') continue;
-    const aggregate = item.typeKey === AGGREGATE_NUMBER_TYPE;
+    const aggregate = isAggregateType(item.typeKey);
     if (item.typeKey !== 0 && item.typeKey !== PARAM_TYPE && !SYSTEM_TYPES.includes(item.typeKey) && !isFieldType(item.typeKey) && !aggregate) continue;
     if (typeof item.id !== 'string' || item.id === '') {
       body.append(itemNote('Item needs an id.'));

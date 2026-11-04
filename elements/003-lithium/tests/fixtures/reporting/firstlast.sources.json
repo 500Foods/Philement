@@ -1,0 +1,11 @@
+{
+  "orders": [
+    { "group": "Number", "amount": 10, "when": null },
+    { "group": "Number", "amount": null, "when": null },
+    { "group": "Number", "amount": 30, "when": null },
+    { "group": "Number", "amount": 7, "when": null },
+    { "group": "Date", "amount": null, "when": "2026-03-02" },
+    { "group": "Date", "amount": null, "when": null },
+    { "group": "Date", "amount": null, "when": "2026-01-01" }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "format": 1,
+  "name": "Page totals",
+  "title": "Page totals",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "2 in",
+    "margin": {
+      "left": "0 in",
+      "right": "0 in",
+      "top": "0 in",
+      "bottom": "0 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "orders",
+      "kind": "json",
+      "shape": "list",
+      "rows": [
+        { "amount": 10, "name": "Ann" },
+        { "amount": 20, "name": "Bo" },
+        { "amount": 7, "name": "Cy" }
+      ]
+    }
+  ],
+  "functions": [],
+  "bands": [
+    {
+      "id": "rh",
+      "typeKey": 12,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "rh-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "3 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "ph-count",
+          "typeKey": 35,
+          "op": "count",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "0 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        },
+        {
+          "id": "ph-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "1.5 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "datasource": "orders",
+      "height": "0.5 in",
+      "items": [
+        {
+          "id": "name",
+          "typeKey": 20,
+          "field": "name",
+          "box": { "left": "0 in", "top": "0 in", "width": "2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "pf-count",
+          "typeKey": 35,
+          "op": "count",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "0 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        },
+        {
+          "id": "pf-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "1.5 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    },
+    {
+      "id": "rf",
+      "typeKey": 18,
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "rf-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": { "left": "3 in", "top": "0 in", "width": "1.2 in", "height": "0.2 in" }
+        }
+      ]
+    }
+  ]
+}
