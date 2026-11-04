@@ -653,7 +653,25 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**packet handed over** (acuranzo_1454, 2026-11-03; next file 1455)
+**Complete** (2026-11-04). Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label in the designer.
+
+### Accomplished
+
+- Lookup 053 keys 61 (Page number), 62 (Page count), 64 (Page label) in acuranzo_1454.
+- Compose fills 61/62/64 after paging; every band on a page gets the same values.
+- Lithium System palette: Page Number / Page Count / Page Label (click + drag); Template row in the property panel.
+- Fixture `pagenum.*` and unit test `reports-pagelabel.test.js`.
+
+### Lessons learned
+
+- Page Label is one freeform template string with `{n}`/`{c}`. No coded presets.
+- A new item key must land in every Lithium registry. `ITEM_TYPES` in `model/document.js` omitted 64 while palette, drop, sample and properties had it, so drop threw `Item type 64 is not a v1 item.` Fix: add 64 to `ITEM_TYPES`. `MASK_TYPES` stays without 64 (template, not mask). Page Number/Count were already in `ITEM_TYPES`, so they worked first. Check `ITEM_TYPES` first when a new key fails on drop.
+- The fix was Lithium-only; acuranzo_1454 and Helium compose were correct. No follow-up migration.
+- Andrew applies migrations. Next Acuranzo file is 1455.
+
+### Handoff
+
+- Phase 24 (HTML emit) is next. `Reports.Render` in acuranzo_1454 still rejects any stage other than `compose`; Phase 24 adds `html` in acuranzo_1455.
 
 ---
 
