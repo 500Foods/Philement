@@ -93,11 +93,13 @@ describe('Report Manager field items', () => {
     expect(q('#reports-field-btn').getAttribute('aria-pressed')).toBe('true');
     expect(q('#reports-static-btn').getAttribute('aria-pressed')).toBe('false');
     expect(q('#reports-text-btn').hidden).toBe(true);
+    expect(q('#reports-shape-btn').hidden).toBe(true);
     for (const id of ['field-text', 'field-number', 'field-datetime', 'sample', 'sample-paste']) {
       expect(q(`#reports-${id}-btn`).hidden).toBe(false);
     }
     q('#reports-static-btn').click();
     expect(q('#reports-text-btn').hidden).toBe(false);
+    expect(q('#reports-shape-btn').hidden).toBe(false);
     expect(q('#reports-sample-btn').hidden).toBe(true);
   });
 

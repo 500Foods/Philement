@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReportsManager from '../../src/managers/reports/reports.js';
-import { FIELD_DROP_PREFIX, TEXT_DROP_KIND, textDropOrigin } from '../../src/managers/reports/reports-drop.js';
+import { FIELD_DROP_PREFIX, SHAPE_DROP_KIND, TEXT_DROP_KIND, textDropOrigin } from '../../src/managers/reports/reports-drop.js';
 import { dragItemBox, staticItemText } from '../../src/managers/reports/items.js';
 import { pageSpan } from '../../src/managers/reports/rulers.js';
 
@@ -157,7 +157,7 @@ describe('Report Manager static text', () => {
     manager.elements.textBtn.click();
     const placed = detailItem();
     expect(placed).toEqual({
-      id: 'i1',
+      id: 'text_1',
       typeKey: 0,
       align: 'Left',
       text: 'Text',
@@ -245,7 +245,7 @@ describe('Report Manager static text', () => {
     document.dispatchEvent(key('Delete'));
     expect(manager.doc.bands.find((band) => band.id === 'd1').items).toEqual([]);
     manager.elements.undoBtn.click();
-    expect(detailItem().id).toBe('i1');
+    expect(detailItem().id).toBe('text_1');
     expect(detailItem().box.left).toBe('5.5 in');
     expect(textEl().classList.contains('reports-item-selected')).toBe(true);
     manager.elements.undoBtn.click();
@@ -401,6 +401,66 @@ describe('Report Manager static text', () => {
     manager.elements.textBtn.click();
     expect(manager.doc.bands.find((band) => band.id === 'd1').items).toHaveLength(1);
     expect(document.querySelector('.reports-drag-ghost')).toBeNull();
+  });
+
+  it('drops a rectangle from the Shape button and ignores the click that follows the drag', async () => {
+    await open();
+    const btn = manager.container.querySelector('#reports-shape-btn');
+    expect(btn.getAttribute('draggable')).toBe('true');
+    const body = bandEl('d1').querySelector('.reports-band-body');
+    body.getBoundingClientRect = () => ({
+      left: 100, top: 200, width: 768, height: 24, right: 868, bottom: 224,
+    });
+    const transfer = {
+      setData: vi.fn(),
+      getData: (kind) => (kind === 'text/plain' ? SHAPE_DROP_KIND : ''),
+      setDragImage: vi.fn(),
+      effectAllowed: '',
+      dropEffect: '',
+    };
+    const start = new CustomEvent('dragstart', { bubbles: true, cancelable: true });
+    Object.defineProperty(start, 'dataTransfer', { value: transfer });
+    btn.dispatchEvent(start);
+    expect(transfer.setData).toHaveBeenCalledWith('text/plain', SHAPE_DROP_KIND);
+    expect(document.querySelector('.reports-drag-ghost').textContent).toBe('Shape');
+    const drop = new CustomEvent('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(drop, 'dataTransfer', { value: transfer });
+    Object.defineProperty(drop, 'clientX', { value: 244 });
+    Object.defineProperty(drop, 'clientY', { value: 200 });
+    body.dispatchEvent(drop);
+    expect(detailItem()).toMatchObject({ typeKey: 25, kind: 'rectangle', fillStyle: 'solid' });
+    expect(detailItem().box).toMatchObject({ left: '0.75 in', top: '0 in', width: '1.5 in', height: '0.2 in' });
+    btn.dispatchEvent(new CustomEvent('dragend', { bubbles: true }));
+    btn.click();
+    expect(manager.doc.bands.find((band) => band.id === 'd1').items).toHaveLength(1);
+    expect(document.querySelector('.reports-drag-ghost')).toBeNull();
+  });
+
+  it('adds a rectangle from the Shape button and reorders it from the property header', async () => {
+    await open();
+    const shape = manager.container.querySelector('#reports-shape-btn');
+    const order = (id) => manager.container.querySelector(`[data-action="${id}"]`);
+    expect(shape.disabled).toBe(false);
+    shape.click();
+    expect(detailItem()).toMatchObject({ typeKey: 25, kind: 'rectangle' });
+    expect(order('back').disabled).toBe(true);
+    expect(order('front').disabled).toBe(true);
+    manager.elements.textBtn.click();
+    const items = () => manager.doc.bands.find((band) => band.id === 'd1').items;
+    expect(items().map((item) => item.typeKey)).toEqual([25, 0]);
+    expect(order('backward').disabled).toBe(false);
+    expect(order('back').disabled).toBe(false);
+    expect(order('forward').disabled).toBe(true);
+    expect(order('front').disabled).toBe(true);
+    order('back').click();
+    expect(items().map((item) => item.typeKey)).toEqual([0, 25]);
+    expect(order('front').disabled).toBe(false);
+    order('front').click();
+    expect(items().map((item) => item.typeKey)).toEqual([25, 0]);
+    order('backward').click();
+    expect(items().map((item) => item.typeKey)).toEqual([0, 25]);
+    order('forward').click();
+    expect(items().map((item) => item.typeKey)).toEqual([25, 0]);
   });
 
   it('drags the System Parameter button onto a band as an unbound Parameter item', async () => {

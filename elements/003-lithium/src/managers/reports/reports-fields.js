@@ -9,7 +9,8 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { aggregateBandAllows } from './reports-aggregate.js';
 import { dropItem } from './reports-drop.js';
 import { toast } from '../../shared/toast.js';
-import { addBandInOrder, addItem, removeBand } from './model/document.js';
+import { addBandInOrder, addItem, removeBand, reorderItem, stepItem } from './model/document.js';
+import { SHAPE_TYPE, defaultShapeFields, setShapeCatalog } from './reports-shape.js';
 import {
   FIELD_TYPES, PARAM_TYPE, SYSTEM_TYPES, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
 } from './reports-sample.js';
@@ -65,6 +66,9 @@ export const reportFieldMethods = {
       systemBtn: root.querySelector('#reports-system-btn'),
       paramBtn: root.querySelector('#reports-param-btn'),
       sysBtns: [...root.querySelectorAll('#reports-sysdate-btn, #reports-sysuser-btn, #reports-pagenum-btn, #reports-pagecount-btn, #reports-pagelabel-btn')],
+      shapeBtn: root.querySelector('#reports-shape-btn'),
+      raiseBtn: root.querySelector('#reports-raise-btn'),
+      lowerBtn: root.querySelector('#reports-lower-btn'),
     };
   },
 
@@ -99,6 +103,19 @@ export const reportFieldMethods = {
     els.paramBtn?.addEventListener('click', this._onParamAdd);
     this._onSystemAdd = (event) => this._addSystem(Number(event.currentTarget.dataset.typeKey));
     els.sysBtns.forEach((btn) => btn.addEventListener('click', this._onSystemAdd));
+    this._fillShapes();
+    this._onShapeClick = () => {
+      if (this._textDragged) {
+        this._textDragged = false;
+        return;
+      }
+      this._addShape();
+    };
+    this._onRaise = () => this._stepShape(1);
+    this._onLower = () => this._stepShape(-1);
+    els.shapeBtn?.addEventListener('click', this._onShapeClick);
+    els.raiseBtn?.addEventListener('click', this._onRaise);
+    els.lowerBtn?.addEventListener('click', this._onLower);
   },
 
   _unbindFields() {
@@ -118,6 +135,9 @@ export const reportFieldMethods = {
     els.systemBtn?.removeEventListener('click', this._onSystemCategory);
     els.paramBtn?.removeEventListener('click', this._onParamAdd);
     els.sysBtns.forEach((btn) => btn.removeEventListener('click', this._onSystemAdd));
+    els.shapeBtn?.removeEventListener('click', this._onShapeClick);
+    els.raiseBtn?.removeEventListener('click', this._onRaise);
+    els.lowerBtn?.removeEventListener('click', this._onLower);
     this._fieldEls = null;
   },
 
@@ -146,6 +166,84 @@ export const reportFieldMethods = {
     els.bandBtns.forEach((btn) => { btn.disabled = !editing || !this.doc; });
     if (els.paramBtn) els.paramBtn.disabled = !editing || !this._selectedBandId;
     els.sysBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
+    const bands = this.doc && Array.isArray(this.doc.bands) ? this.doc.bands : [];
+    const band = bands.find((entry) => entry.id === this._selectedBandId);
+    const items = band && Array.isArray(band.items) ? band.items : [];
+    const index = items.findIndex((item) => item.id === this._selectedItemId);
+    if (els.raiseBtn) els.raiseBtn.disabled = !editing || index < 0 || index >= items.length - 1;
+    if (els.lowerBtn) els.lowerBtn.disabled = !editing || index <= 0;
+    if (els.shapeBtn) els.shapeBtn.disabled = !editing || !this._selectedBandId;
+    const canBack = Boolean(editing && index > 0);
+    const canFront = Boolean(editing && index >= 0 && index < items.length - 1);
+    this._props?.setOrderEnabled({
+      backward: canBack, back: canBack, forward: canFront, front: canFront,
+    });
+  },
+
+  /** Shape catalog for the property list. The toolbar button always adds a rectangle. */
+  _fillShapes() {
+    setShapeCatalog(this._lookups && this._lookups.shapeKinds);
+  },
+
+  /** Add a rectangle on the selected band. The kind changes in the property panel. */
+  _addShape() {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
+    let next;
+    try {
+      next = addItem(this.doc, this._selectedBandId, { typeKey: SHAPE_TYPE, ...defaultShapeFields('rectangle') });
+    } catch (error) {
+      this._failEdit(error, 'Shape could not be added.');
+      return;
+    }
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added shape rectangle ${added ? added.id : ''} on ${this._selectedBandId}`);
+  },
+
+  /** Raise (+1, paints later) or lower (-1) the selected item one step. */
+  _stepShape(delta) {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedItemId) return;
+    const itemId = this._selectedItemId;
+    let next;
+    try {
+      next = stepItem(this.doc, this._selectedBandId, itemId, delta);
+    } catch (error) {
+      this._failEdit(error, 'Item could not be reordered.');
+      return;
+    }
+    if (next === this.doc) return;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] ${delta > 0 ? 'Raised' : 'Lowered'} ${itemId}`);
+  },
+
+  /**
+   * Stack order from the property header.
+   * backward and forward move one step. back and front move to an end.
+   * @param {string} action
+   */
+  _orderItem(action) {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedItemId) return;
+    const band = (this.doc.bands || []).find((entry) => entry.id === this._selectedBandId);
+    const items = band && Array.isArray(band.items) ? band.items : [];
+    const index = items.findIndex((item) => item.id === this._selectedItemId);
+    if (index < 0) return;
+    const itemId = this._selectedItemId;
+    let next;
+    try {
+      if (action === 'backward') next = stepItem(this.doc, this._selectedBandId, itemId, -1);
+      else if (action === 'forward') next = stepItem(this.doc, this._selectedBandId, itemId, 1);
+      else if (action === 'back') next = reorderItem(this.doc, this._selectedBandId, itemId, 0);
+      else if (action === 'front') next = reorderItem(this.doc, this._selectedBandId, itemId, items.length - 1);
+      else return;
+    } catch (error) {
+      this._failEdit(error, 'Item could not be reordered.');
+      return;
+    }
+    if (!next || next === this.doc) return;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Moved ${itemId} ${action}`);
   },
 
   /** True when the selected band can show a group, page, or report total. */

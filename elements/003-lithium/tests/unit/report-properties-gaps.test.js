@@ -78,7 +78,9 @@ describe('Phase 14 gaps', () => {
     expect(selectionScope(doc, { bandId: 'd1', itemId: '' })).toBe('report');
     const withHeight = { ...lookups, attributes: [...lookups.attributes, attr(3, 'Height', { section: 5, Editor: 'Number' })] };
     const rows = propertyRows(doc, sel, withHeight);
-    expect(rows.map((row) => row.key)).toEqual([3]);
+    expect(rows.map((row) => row.label)).toEqual(['ID', 'Height', 'Notes']);
+    expect(rows[0]).toMatchObject({ id: 'object-id', value: 'd1', readOnly: true, section: 4 });
+    expect(rows.at(-1)).toMatchObject({ id: 'notes', multiline: true });
     const next = applyProperty(doc, sel, '3', '1.5 in', {});
     expect(next.bands.find((band) => band.id === 'd1').height).toBe('1.5 in');
   });

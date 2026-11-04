@@ -1,0 +1,119 @@
+{
+  "format": 1,
+  "name": "Shapes",
+  "title": "Shapes",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+  "datasources": [],
+  "bands": [
+    { "id": "ph", "typeKey": 13, "height": "0.4 in", "items": [] },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "height": "2 in",
+      "items": [
+        {
+          "id": "rect",
+          "typeKey": 25,
+          "kind": "rectangle",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "solid",
+          "fillPaint": { "kind": "solid", "color": "#d3d3d3" },
+          "rotation": 0,
+          "box": { "left": "0 in", "top": "0 in", "width": "1 in", "height": "0.6 in" }
+        },
+        {
+          "id": "round",
+          "typeKey": 25,
+          "kind": "roundrect",
+          "corners": {
+            "topLeft": "0.2 in",
+            "topRight": "0.05 in",
+            "bottomRight": "0.15 in",
+            "bottomLeft": "0 in"
+          },
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "solid",
+          "fillPaint": { "kind": "solid", "color": "#c8c8c8" },
+          "rotation": 0,
+          "box": { "left": "1.2 in", "top": "0 in", "width": "1 in", "height": "0.6 in" }
+        },
+        {
+          "id": "rule",
+          "typeKey": 25,
+          "kind": "line",
+          "side": "bottom",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "none",
+          "fillPaint": { "kind": "solid", "color": "#d3d3d3" },
+          "rotation": 0,
+          "box": { "left": "0 in", "top": "0.8 in", "width": "1 in", "height": "0.25 in" }
+        },
+        {
+          "id": "hex",
+          "typeKey": 25,
+          "kind": "hexagon",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "solid",
+          "fillPaint": { "kind": "solid", "color": "#778899" },
+          "rotation": 30,
+          "box": { "left": "1.2 in", "top": "0.8 in", "width": "0.8 in", "height": "0.8 in" }
+        },
+        {
+          "id": "back",
+          "typeKey": 25,
+          "kind": "rectangle",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "solid",
+          "fillPaint": { "kind": "solid", "color": "#112233" },
+          "rotation": 0,
+          "box": { "left": "3 in", "top": "0.2 in", "width": "0.8 in", "height": "0.8 in" }
+        },
+        {
+          "id": "front",
+          "typeKey": 25,
+          "kind": "ellipse",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "solid",
+          "fillPaint": { "kind": "solid", "color": "#abcdef" },
+          "rotation": 0,
+          "box": { "left": "3.2 in", "top": "0.35 in", "width": "0.8 in", "height": "0.8 in" }
+        }
+      ]
+    },
+    { "id": "pf", "typeKey": 17, "height": "0.4 in", "items": [] }
+  ],
+  "functions": []
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBlank, addItem } from '../../src/managers/reports/model/document.js';
-import { applyProperty, attributeKeys, propertyRows, withUnit } from '../../src/managers/reports/report-properties.js';
+import { CLIENT_SECTIONS, applyProperty, attributeKeys, propertyRows, withUnit } from '../../src/managers/reports/report-properties.js';
 import { tableData } from '../../src/properties/lithium-properties.js';
 import { outlineEntries } from '../../src/managers/reports/reports-panel.js';
 import { createHistory } from '../../src/managers/reports/model/history.js';
@@ -43,8 +43,22 @@ describe('report property rows', () => {
     expect(item).not.toContain(24);
     const report = attributeKeys(doc, { bandId: 'd1', itemId: '' }, lookups);
     expect(report).toEqual([6, 18, 29, 30, 21, 24, 16]);
-    const labels = propertyRows(doc, { bandId: 'd1', itemId: 't1' }, lookups).map((row) => row.label);
-    expect(labels).toEqual(['Text', 'Top', 'Left', 'Width', 'Height', 'Align', 'Rotation', 'Link']);
+    const sel = { bandId: 'd1', itemId: 't1' };
+    const labels = propertyRows(doc, sel, lookups).map((row) => row.label);
+    expect(labels).toEqual(['ID', 'Text', 'Top', 'Left', 'Width', 'Height', 'Align', 'Rotation', 'Notes', 'Link']);
+    const data = tableData(propertyRows(doc, sel, lookups), [
+      { id: 4, label: 'Object', sortSeq: 4 },
+      { id: 5, label: 'Position', sortSeq: 5 },
+      ...CLIENT_SECTIONS,
+    ]);
+    const object = data.filter((row) => row.sectionCaption === 'Object').map((row) => row.label);
+    expect(object).toEqual(['ID', 'Text', 'Link']);
+    expect(object[0]).toBe('ID');
+    expect(data.find((row) => row.label === 'ID')).toMatchObject({ value: 't1', readOnly: true });
+    expect(data.filter((row) => row.sectionCaption === 'Notes').map((row) => row.label)).toEqual(['Notes']);
+    expect(data.filter((row) => row.sectionCaption === 'Position')).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Align' }),
+    ]));
   });
 
   it('reads editors: Color from 054 on 21 and 24, text on Link, 057 on Page Size', () => {
@@ -112,6 +126,22 @@ describe('report property rows', () => {
       { id: 8, label: 'Grid', sortSeq: 8 },
     ]);
     expect([...new Set(data.map((row) => row.sectionName))]).toEqual(['00 Report', '01 Page Layout', '02 Object', '03 Fonts', '04 Grid', '05 Other']);
-    expect(outlineEntries(withText()).map((entry) => entry.label)).toEqual(['Report', 'ph1', 'd1', 'Text', 'pf1', 'End of Report']);
+    expect(outlineEntries(withText()).map((entry) => entry.label)).toEqual(['Report', 'ph1', 'd1', 't1 Text', 'pf1', 'End of Report']);
+  });
+
+  it('stores notes on the report, the band, and the item, and drops a blank', () => {
+    const doc = withText();
+    const sel = { bandId: 'd1', itemId: 't1' };
+    const itemNoted = applyProperty(doc, sel, 'notes', 'keep\nleft');
+    expect(itemNoted.bands[1].items[0].notes).toBe('keep\nleft');
+    expect(applyProperty(itemNoted, sel, 'notes', '  ').bands[1].items[0].notes).toBeUndefined();
+    const bandSel = { band: true, bandId: 'd1' };
+    expect(propertyRows(doc, bandSel, lookups).find((row) => row.id === 'object-id').value).toBe('d1');
+    const bandNoted = applyProperty(doc, bandSel, 'notes', 'band note');
+    expect(bandNoted.bands.find((band) => band.id === 'd1').notes).toBe('band note');
+    const reportNoted = applyProperty(doc, {}, 'notes', 'cover');
+    expect(reportNoted.notes).toBe('cover');
+    expect(propertyRows(doc, {}, lookups).some((row) => row.label === 'ID')).toBe(false);
+    expect(() => applyProperty(doc, sel, 'object-id', 'x')).toThrow(/read only/);
   });
 });

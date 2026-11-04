@@ -309,11 +309,11 @@ describe('Report Manager chrome', () => {
     expect(manager.elements.cloneBtn.disabled).toBe(false);
     manager.elements.cloneBtn.click();
     const items = manager.doc.bands.find((band) => band.id === 'd1').items;
-    expect(items.map((entry) => entry.id)).toEqual(['i1', 'i2']);
+    expect(items.map((entry) => entry.id)).toEqual(['text_1', 'text_2']);
     expect(items[1].box).toEqual(original.box);
     expect(items[0].box).toEqual(original.box);
     const selected = manager.elements.stage.querySelector('.reports-item-selected');
-    expect(selected.dataset.itemId).toBe('i2');
+    expect(selected.dataset.itemId).toBe('text_2');
 
     manager.elements.stage.querySelector('[data-band-id="ph1"] .reports-band-strip')
       .dispatchEvent(new CustomEvent('pointerdown', { bubbles: true }));

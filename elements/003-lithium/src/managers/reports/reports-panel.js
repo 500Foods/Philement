@@ -14,6 +14,8 @@ import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { LithiumProperties } from '../../properties/lithium-properties.js';
 import { resolveLabel } from '../../properties/sections.js';
 import { applyProperty, CLIENT_SECTIONS, parseCollection, propertyRows } from './report-properties.js';
+import { reorderItem } from './model/document.js';
+import { SHAPE_TYPE, setShapeCatalog, shapeOutlineLabel, withShapeSections } from './reports-shape.js';
 
 function locales() {
   return typeof navigator !== 'undefined' && navigator.languages ? [...navigator.languages] : [];
@@ -22,14 +24,22 @@ function locales() {
 /** Outline label for the End of Report marker. */
 export const END_LABEL = 'End of Report';
 
+/** Prefix a real id when the label is a different name. `d1` stays `d1`. */
+function withId(id, text) {
+  const name = text || id || '';
+  if (!id || name === id) return name;
+  return `${id} ${name}`;
+}
+
 /** Outline entries: report, each band and its items, then End of Report. */
 export function outlineEntries(doc) {
   const out = [{ depth: 0, label: (doc && doc.name) || 'Report', bandId: '', itemId: '' }];
   for (const band of Array.isArray(doc && doc.bands) ? doc.bands : []) {
-    out.push({ depth: 1, label: band.name || band.id, bandId: band.id, itemId: '' });
+    out.push({ depth: 1, label: withId(band.id, band.name), bandId: band.id, itemId: '' });
     for (const item of Array.isArray(band.items) ? band.items : []) {
-      const text = item.name || (typeof item.text === 'string' ? item.text : '') || item.id;
-      out.push({ depth: 2, label: text, bandId: band.id, itemId: item.id });
+      const named = item.name || (typeof item.text === 'string' && item.text !== '' ? item.text : '');
+      const text = item.typeKey === SHAPE_TYPE ? shapeOutlineLabel(item) : named;
+      out.push({ depth: 2, label: withId(item.id, text), bandId: band.id, itemId: item.id });
     }
   }
   out.push({ depth: 1, label: END_LABEL, bandId: '', itemId: '', end: true });
@@ -126,6 +136,7 @@ export const reportPanelMethods = {
         outline: this._outlineHost,
         onNavigate: (delta) => this._stepSelection(delta),
         onEdit: (id, value) => this._onPanelEdit(id, value),
+        onOrder: (action) => this._orderItem(action),
         state: prefs,
         onStateChange: (state) => savePanelPrefs(state),
         pageSizes: () => (this._lookups.pageSizes || []).map((row) => ({
@@ -150,18 +161,25 @@ export const reportPanelMethods = {
       });
     }
     this._onOutlineClick = (event) => this._pickOutline(event);
-    this._outlineHost?.addEventListener('click', this._onOutlineClick);
     this._onOutlineKey = (event) => this._outlineKey(event);
+    this._onOutlineDragStart = (event) => this._outlineDragStart(event);
+    this._onOutlineDragOver = (event) => this._outlineDragOver(event);
+    this._onOutlineDrop = (event) => this._outlineDrop(event);
+    this._props.setSections(withShapeSections(CLIENT_SECTIONS));
+    this._outlineHost?.addEventListener('click', this._onOutlineClick);
     if (this._outlineHost) {
       this._outlineHost.tabIndex = 0;
       this._outlineHost.addEventListener('keydown', this._onOutlineKey);
+      this._outlineHost.addEventListener('dragstart', this._onOutlineDragStart);
+      this._outlineHost.addEventListener('dragover', this._onOutlineDragOver);
+      this._outlineHost.addEventListener('drop', this._onOutlineDrop);
     }
     this._paintPanel();
     if (this.app && this.app.api) {
       loadPanelLookups(this.app.api).then((lookups) => {
         if (this._closed) return;
         this._lookups = lookups;
-        this._props?.setSections([
+        this._props?.setSections(withShapeSections([
           ...(lookups.sections || []).map((row) => ({
             id: Number(row.key_idx),
             label: resolveLabel({ label: row.value_txt, collection: parseCollection(row.collection) }, locales()),
@@ -169,8 +187,10 @@ export const reportPanelMethods = {
             icon: parseCollection(row.collection).icon || '',
           })),
           ...CLIENT_SECTIONS,
-        ]);
-        this._paintPanel();
+        ]));
+        setShapeCatalog(lookups.shapeKinds);
+        if (this.doc) this._showDocument(this.doc);
+        else this._paintPanel();
       });
     }
   },
@@ -178,6 +198,9 @@ export const reportPanelMethods = {
   _dropPanel() {
     this._outlineHost?.removeEventListener('click', this._onOutlineClick);
     this._outlineHost?.removeEventListener('keydown', this._onOutlineKey);
+    this._outlineHost?.removeEventListener('dragstart', this._onOutlineDragStart);
+    this._outlineHost?.removeEventListener('dragover', this._onOutlineDragOver);
+    this._outlineHost?.removeEventListener('drop', this._onOutlineDrop);
     this._propsSplitter?.destroy();
     this._propsSplitter = null;
     this._props?.destroy();
@@ -193,6 +216,8 @@ export const reportPanelMethods = {
 
   _paintPanel() {
     if (!this.doc) return;
+    setShapeCatalog(this._lookups && this._lookups.shapeKinds);
+    this._fillShapes?.();
     this._paintOutline();
     if (!this._props) return;
     const labelOf = (row, collection) => resolveLabel(
@@ -236,6 +261,7 @@ export const reportPanelMethods = {
       }
       row.dataset.bandId = entry.bandId;
       row.dataset.itemId = entry.itemId;
+      if (entry.itemId && this._recordEditing) row.draggable = true;
       row.textContent = entry.label;
       if (index === picked) row.classList.add('reports-outline-selected');
       list.append(row);
@@ -267,6 +293,45 @@ export const reportPanelMethods = {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     event.preventDefault();
     this._stepSelection(event.key === 'ArrowDown' ? 1 : -1);
+  },
+
+  _outlineDragStart(event) {
+    const row = event.target.closest?.('.reports-outline-row');
+    if (!row || !row.dataset.itemId || !this._recordEditing) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer?.setData('text/plain', `${row.dataset.bandId}\t${row.dataset.itemId}`);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  },
+
+  _outlineDragOver(event) {
+    const row = event.target.closest?.('.reports-outline-row');
+    if (!row || !row.dataset.itemId || !this._recordEditing) return;
+    event.preventDefault();
+  },
+
+  /** Drop takes the target row's index. The same band only. */
+  _outlineDrop(event) {
+    const row = event.target.closest?.('.reports-outline-row');
+    if (!row || !row.dataset.itemId || !this._recordEditing || !this.doc) return;
+    event.preventDefault();
+    const raw = event.dataTransfer ? event.dataTransfer.getData('text/plain') : '';
+    const parts = raw.split('\t');
+    const bandId = parts[0];
+    const itemId = parts[1];
+    if (!bandId || !itemId || bandId !== row.dataset.bandId) return;
+    const band = (this.doc.bands || []).find((entry) => entry.id === bandId);
+    const to = band && Array.isArray(band.items) ? band.items.findIndex((item) => item.id === row.dataset.itemId) : -1;
+    if (to < 0) return;
+    try {
+      const next = reorderItem(this.doc, bandId, itemId, to);
+      if (next === this.doc) return;
+      this._commitDocument(next);
+      log(Subsystems.MANAGER, Status.INFO, `[Reports] Reordered ${itemId}`);
+    } catch (error) {
+      this._failEdit(error, 'Item could not be reordered.');
+    }
   },
 
   _pickOutline(event) {

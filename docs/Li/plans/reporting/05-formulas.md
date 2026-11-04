@@ -1058,7 +1058,7 @@ Phase 44 Status complete.
 
 ### Work items
 
-- [ ] 44a.1 Seed a lookup of shape kinds. Re-check the next free
+- [x] 44a.1 Seed a lookup of shape kinds. Re-check the next free
        lookup id on disk that day. Lookup 077 is the highest
        reporting lookup as of this write-up. Built-in rows are
        `line`, `rectangle`, `roundrect`, and `ellipse`. Path rows
@@ -1073,7 +1073,7 @@ Phase 44 Status complete.
        command warns and skips that shape. Lookup 053 key 25
        stays Static Shape. Keys 26, 33, 39, and 53 stay hidden.
        No new QueryRef.
-- [ ] 44a.2 The item is typeKey 25. It stores `kind`, and for a
+- [x] 44a.2 The item is typeKey 25. It stores `kind`, and for a
        line `side` (`top`, `right`, `bottom`, or `left`). A
        rounded rectangle stores `corners.topLeft`,
        `corners.topRight`, `corners.bottomRight`, and
@@ -1094,7 +1094,7 @@ Phase 44 Status complete.
        bottom edge and fill `none`. The stroke is centered on
        the path. One Shape control lists the lookup. The
        palette's Static group shows it.
-- [ ] 44a.3 The design surface and Preview HTML draw an SVG from
+- [x] 44a.3 The design surface and Preview HTML draw an SVG from
        those commands. The side is applied, then rotation.
        Rounded corners and the ellipse are cubics. A corner is
        clamped so it cannot swallow the next corner. Fill `none`
@@ -1102,7 +1102,7 @@ Phase 44 Status complete.
        tags this phase generates. The item is selected by its
        box. PDF does not draw the shape. The commands stay
        usable by a later PDF path. Do not rasterize the shape.
-- [ ] 44a.4 Raise moves the item one step later in `band.items`.
+- [x] 44a.4 Raise moves the item one step later in `band.items`.
        Lower moves it one step earlier. The outline stays in
        array order, so the top row is the back-most item and a
        raised row moves down. The icons are neither the band-add
@@ -1126,7 +1126,214 @@ The script packet apply, the fixture call, and the browser preview.
 
 ### Status
 
-**not started**
+**In progress** (2026-11-04). Work items 44a.1 through 44a.4 are
+checked. Work item 44a.5 stays open until Andrew sees the
+preview. The packets are
+[`/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua)
+and
+[`/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua).
+Andrew reports 1466 is already applied (2026-11-04). Do not
+edit that file and do not apply it again. 1465 is still the
+lookup packet. The next free Acuranzo file is **1467**.
+The same day the property header centers the four stack
+icons. Object starts with a read-only id, Link is its last
+row, and Notes is a client text block. Shapes omit Align.
+The Notes editor uses the same transparent field and inherited
+text colour as the other property inputs. A new item id is a
+word and a number (`text_1`, `shape_1`). Band ids stay `ph1`
+and `d1`. An id already stored is kept. The outline stays
+text.
+Those edits do not change a migration.
+QueryRef **175** stays unused. Lookup **078** is taken. The next
+free lookup id is **079**. The next free lookup 054 key is **52**.
+
+### Accomplished
+
+- Phase 44 is complete. This sitting is Phase 44a. Phase 44b has
+  not started. Phase 45 has not started.
+- [`/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua)
+  seeds lookup 078, Report Shape Kinds. Keys 1–4 are `line`,
+  `rectangle`, `roundrect`, and `ellipse`, with an empty
+  collection. The designer draws those four. Keys 5–9 are `x`,
+  `trapezoid`, `star`, `pentagon`, and `hexagon`. `value_txt` is
+  the label. `code` is the token. A path collection is a
+  one-element JSON array. X is two open strokes, `closed` false,
+  with no `Z`. The polygons point up. The trapezoid's short edge
+  is on top. Commands are `M`, `L`, `C`, and `Z`. Lookup 054
+  keys 41–51 are Shape, Side, Stroke Width, Stroke Style, Stroke
+  Color, Fill Style, Fill Color, and the four corners. Shape and
+  Side stay in Object, section 4. Stroke is section 10, Fill is
+  section 11, and Corners is section 12. `sort_seq` on the
+  attributes runs 210–220. Lookup 075 keys 10–12 are Stroke,
+  Fill, and Corners, with database `sort_seq` 10, 11, and 12.
+  The panel places those sections at 4.2, 4.4, and 4.6, between
+  Object and Position. Corners is hidden unless the kind is a
+  rounded rectangle. Lookup 053
+  key 25 attributes become
+  `[0, 1, 2, 3, 4, 14, 29, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]`.
+  Key 24 leaves that list. Keys 26, 33, 39, and 53 stay as they
+  are. Reverse deletes lookup 078, keys 41–51, and lookup 075
+  keys 10–12, and restores the 1086 key 25 collection, including
+  key 24. No new QueryRef.
+- [`/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua)
+  copies the 1464 `Reports.Render` body. typeKey 25 passes
+  through compose. `stage=html` draws an SVG. PDF does not draw
+  the shape. Reverse restores the 1464 body. A missing
+  `H.altquery_sync`, or an empty database, keeps the built-in
+  list and does not warn. A failed lookup read warns once and
+  uses that list. A path row with a bad command warns and skips
+  that shape.
+- The toolbar Shape button adds a rectangle. A drag drops that
+  rectangle on the band under the pointer. The kind changes in
+  the Shape property. The closed cell shows the list label, so
+  Rounded Rectangle stays Rounded Rectangle, and the stored
+  code stays `roundrect`. A new shape is a rectangle, rotation
+  0, stroke `1 pt` solid `#000000`, fill `#d3d3d3`. A new line
+  uses the bottom edge and fill `none`.
+  A new rounded rectangle uses `0.125 in` on every corner.
+  Rotation stays lookup 054 key 14. Side shows for a line.
+  Corners show for a rounded rectangle. Dashed is four stroke
+  widths on and two off, with a butt cap. Dotted is one on and
+  two off, with a round cap. Raise is `fa-bring-forward`. Lower
+  is `fa-send-backward`. An outline drop takes the target row's
+  index. Later items paint over earlier ones.
+- The fixture is
+  [`/elements/003-lithium/tests/fixtures/reporting/shapes.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shapes.definition.json).
+  Lua 5.5.1 loaded the 1466 body with no database. The HTML
+  contained the rectangle fill `#d3d3d3`, a rounded-rectangle
+  cubic and fill `#c8c8c8`, the bottom line `M 0 24 L 96 24`,
+  the hexagon fill `#778899` with `rotate(30 38.4 38.4)`, and
+  `#112233` before `#abcdef`. `luacheck` on 1465 and 1466
+  reported 0 warnings. `npm test` was 94 files, 1491 passed,
+  12 skipped. `npm run lint` exited 0. `npm run lint:css`
+  exited 0. `templates:copy` copied 140 templates.
+
+### Lessons learned
+
+- The path JSON contains `]]`. A `sql=[[` string closes on that
+  pair. Both query strings in 1465 use `sql=[==[` and `]==]`.
+  The JSON ingest markers stay `[===[` and `]===]`.
+- Lookup collections are stored as one-element JSON arrays.
+  `parseCollection` still rejects an array. Shape keys merge the
+  embedded attribute metadata when that parse is empty. The
+  shape catalog unwraps a one-element array. The global parser
+  stays as it is.
+- happy-dom's DOMPurify reads an empty tag name and unwraps
+  `svg`. Preview HTML lifts each svg out, sanitizes the rest,
+  and puts the cleaned svg back. The token sits in a span. A
+  bare text token is deleted. `width="100%"`, `height="100%"`,
+  and `overflow="visible"` stay on that svg.
+- A line's area is never filled. Switching a rectangle that
+  already stores fill `solid` to a line keeps that stored
+  style. The drawing still uses fill `none`. Switching back
+  restores the fill.
+- Built-in codes win when a user row uses the same code. The
+  first row by `key_idx` wins. Geometry kinds ignore the
+  collection. A path row uses the lookup collection when that
+  row is present. A bad command skips that shape. A missing
+  built-in path row still uses the embedded commands.
+- `reports.js` stays at 1000 lines. `reports.css` stays at 1048.
+  Shape CSS is `reports-shape.css`.
+- A list editor shows the label while it is open. The closed
+  cell was printing the stored code. The closed cell now uses
+  the same label. Lookup 075 `sort_seq` stays an integer.
+  Stroke, Fill, and Corners store 10, 11, and 12. The panel
+  forces 4.2, 4.4, and 4.6.
+- The property header carries Move backward, Move to back,
+  Move forward, and Move to front, in that order. Search and
+  the outline stay on the left. Expand all and Collapse all
+  stay on the right. The four icons sit in the middle column.
+  They use the tight padding. Outline drag stays. Raise and
+  Lower stay on the item toolbar.
+- Shapes omit Align (lookup 054 key 4). A new shape does not
+  store `align`. Position still has the box and rotation.
+- Notes is a client section on the report, the band, and the
+  item. The stored field is `notes`. A blank value is omitted.
+  End of Report has none. No lookup row and no migration.
+- Object starts with a read-only ID, the band or item id
+  (`d1`, `s1`). The outline prefixes that id when the label
+  is a different name (`s1 Rounded Rectangle`). A band with
+  no name stays `d1`. Link (key 29) is the last Object row.
+  It is the old designer link string. `Reports.Render` does
+  not read it.
+- The Notes editor is a textarea. The property input rule
+  covered `input` and `select`. The browser's white field sat
+  under the light text colour. The editor rule in
+  `reports-shape.css` uses the same transparent field, the
+  inherited colour, and no border. `reports.css` stays at
+  1048 lines.
+- A new item id is a word, an underscore, and a number, counted
+  per word. The first text is `text_1` and the first shape is
+  `shape_1`. The underscore stays clear of a formula that
+  would read `text-1` as subtraction. Aggregate text, number,
+  and datetime share `agg_` because the op can change the type
+  and the id stays. Field text is `textfield_1` so it does not
+  share the static text count. Band ids stay `ph1` and `d1`.
+  An id passed in is kept. The outline stays text. A category
+  icon and a type icon were left off.
+
+### Handoff
+
+- Leave `acuranzo_1466.lua` as written. Andrew reports it
+  is already applied. Hydrogen will skip that number on the
+  next load. The toolbar tweaks do not change `Reports.Render`,
+  so do not write a replacement for 1466. The next change to
+  that script is a new file, and its old body is the 1466 body.
+  Apply `acuranzo_1465.lua` if it is not applied. That file
+  was edited in place for Stroke, Fill, and Corners. If 1465
+  was applied before that edit, say so. The follow-up is then
+  **1467**. Otherwise 1467 stays free. Regenerate the Hydrogen
+  payload and restart Hydrogen. Import
+  [`/elements/003-lithium/tests/fixtures/reporting/shapes.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shapes.definition.json)
+  and run Preview HTML on `https://lithium.500courses.com`.
+  The preview should show the rectangle, the rounded rectangle,
+  the bottom line, the hexagon rotated 30 degrees, and the
+  later shape on top of the earlier one. This phase stays in
+  progress until that check. Phase 44b stays closed until the
+  check is recorded. Phase 45 stays closed.
+- Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as
+  written. Next free file **1467**. QueryRef **175** stays
+  unused. Next free lookup id **079**. Next free lookup 054
+  key **52**.
+- Labels chosen for this packet: lookup name Report Shape
+  Kinds. Row labels Line, Rectangle, Rounded Rectangle,
+  Ellipse, X, Trapezoid, Star, Pentagon, and Hexagon.
+  Attribute labels Shape, Side, Stroke Width, Stroke Style,
+  Stroke Color, Fill Style, Fill Color, Corner Top Left,
+  Corner Top Right, Corner Bottom Right, and Corner Bottom
+  Left. The dash recipe is in Accomplished. An outline drop
+  takes the target row's index. Raise and Lower keep those
+  titles. The icons are `fa-bring-forward` and
+  `fa-send-backward`. The property header centers Move
+  backward (`fa-send-backward`), Move to back
+  (`fa-send-back`), Move forward (`fa-bring-forward`), and
+  Move to front (`fa-bring-front`). Search and the outline
+  stay on the left. Expand all and Collapse all stay on the
+  right. The Shape toolbar control is a button. Click and
+  drag both add a rectangle. Shapes omit Align. Object starts
+  with a read-only id, and the outline shows that id with the
+  name. Link is the last Object row. Notes is a client text
+  block stored as `notes`. A blank value is omitted. The
+  editor uses the same transparent field as the other inputs.
+  A new item is `text_1`, `shape_1`, `textfield_1`,
+  `number_1`, `datetime_1`, `date_1`, `user_1`, `agg_1`,
+  `calctext_1`, `calcnum_1`, `calctime_1`, `chart_1`,
+  `barcode_1`, `pagenum_1`, `pagecount_1`, `pagelabel_1`, or
+  `param_1`. Each word has its own count. Aggregate text,
+  number, and datetime share `agg_`. Bands stay as they are.
+  An existing id is kept. The outline does not add icons.
+- The design surface draws from the same commands before the
+  lookup is applied. After 1465, the Shape list comes from
+  lookup 078. 1466 stays frozen. If 1465 was already applied
+  before the section edit, say so. The panel still shows
+  Stroke, Fill, and Corners when that lookup has not loaded.
+- After the notes field and the item ids, `npm test` was 94
+  files, 1499 passed, 12 skipped. `npm run lint` exited 0.
+  `npm run lint:css` exited 0. 1465 and 1466 were not edited.
+  The live preview is still Andrew's check. The designer
+  was not opened in a browser. happy-dom applied the notes
+  rule: the field is transparent and the text colour is
+  inherited.
 
 ---
 

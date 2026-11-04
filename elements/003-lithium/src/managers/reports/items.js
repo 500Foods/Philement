@@ -12,6 +12,7 @@ import { bandHeight } from './model/document.js';
 import { contentBox, toCssPx } from './model/units.js';
 import { aggregateItemLabel, isAggregateType } from './reports-aggregate.js';
 import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, systemItemLabel } from './reports-sample.js';
+import { SHAPE_TYPE, paintShape } from './reports-shape.js';
 
 /** Smallest resize, in CSS pixels. */
 export const ITEM_MIN_PX = 1;
@@ -195,6 +196,33 @@ export function paintBandItems(body, band, doc) {
   const items = Array.isArray(band && band.items) ? band.items : [];
   for (const item of items) {
     if (!item || typeof item !== 'object') continue;
+    if (item.typeKey === SHAPE_TYPE) {
+      if (typeof item.id !== 'string' || item.id === '') {
+        body.append(itemNote('Item needs an id.'));
+        continue;
+      }
+      const shape = document.createElement('div');
+      shape.className = 'reports-item reports-item-shape';
+      shape.dataset.itemId = item.id;
+      try {
+        const box = measuredBox(item);
+        shape.style.left = `${box.left}px`;
+        shape.style.top = `${box.top}px`;
+        shape.style.width = `${box.width}px`;
+        shape.style.height = `${box.height}px`;
+      } catch (error) {
+        const message = error instanceof Error && error.message ? error.message : 'Item could not be measured.';
+        body.append(itemNote(message));
+        continue;
+      }
+      paintShape(shape, item);
+      const shapeCorner = document.createElement('div');
+      shapeCorner.className = 'reports-item-corner';
+      shapeCorner.title = 'Resize item';
+      shape.append(shapeCorner);
+      body.append(shape);
+      continue;
+    }
     const aggregate = isAggregateType(item.typeKey);
     if (item.typeKey !== 0 && item.typeKey !== PARAM_TYPE && !SYSTEM_TYPES.includes(item.typeKey) && !isFieldType(item.typeKey) && !aggregate) continue;
     if (typeof item.id !== 'string' || item.id === '') {

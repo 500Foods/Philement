@@ -127,8 +127,8 @@ describe('report document', () => {
   it('adds, moves, resizes, and deletes an item', () => {
     const blank = createBlank();
     const added = addItem(blank, 'd1', { typeKey: 0 });
-    expect(item(added, 'd1', 'i1')).toEqual({
-      id: 'i1',
+    expect(item(added, 'd1', 'text_1')).toEqual({
+      id: 'text_1',
       typeKey: 0,
       align: 'Left',
       text: 'Text',
@@ -139,26 +139,26 @@ describe('report document', () => {
         height: '0.2 in',
       },
     });
-    expect(Object.hasOwn(item(added, 'd1', 'i1'), 'font')).toBe(false);
-    expect(Object.hasOwn(item(added, 'd1', 'i1'), 'mask')).toBe(false);
+    expect(Object.hasOwn(item(added, 'd1', 'text_1'), 'font')).toBe(false);
+    expect(Object.hasOwn(item(added, 'd1', 'text_1'), 'mask')).toBe(false);
     const numberItem = addItem(added, 'd1', { typeKey: 21, field: 'amount' });
-    expect(item(numberItem, 'd1', 'i2').mask).toBe('');
-    expect(Object.hasOwn(item(numberItem, 'd1', 'i2'), 'text')).toBe(false);
+    expect(item(numberItem, 'd1', 'number_1').mask).toBe('');
+    expect(Object.hasOwn(item(numberItem, 'd1', 'number_1'), 'text')).toBe(false);
     const textItem = addItem(numberItem, 'ph1', { typeKey: 20, field: 'customer', id: 'customer' });
     expect(Object.hasOwn(item(textItem, 'ph1', 'customer'), 'mask')).toBe(false);
-    const moved = moveItem(textItem, 'd1', 'i1', { left: '96 px' });
-    expect(item(moved, 'd1', 'i1').box.left).toBe('1 in');
-    expect(item(moved, 'd1', 'i1').box.width).toBe('1.5 in');
-    expect(item(moved, 'd1', 'i1').id).toBe('i1');
-    const resized = resizeItem(moved, 'd1', 'i1', { width: '2 in', height: '0.3 in' });
-    expect(item(resized, 'd1', 'i1').box).toEqual({
+    const moved = moveItem(textItem, 'd1', 'text_1', { left: '96 px' });
+    expect(item(moved, 'd1', 'text_1').box.left).toBe('1 in');
+    expect(item(moved, 'd1', 'text_1').box.width).toBe('1.5 in');
+    expect(item(moved, 'd1', 'text_1').id).toBe('text_1');
+    const resized = resizeItem(moved, 'd1', 'text_1', { width: '2 in', height: '0.3 in' });
+    expect(item(resized, 'd1', 'text_1').box).toEqual({
       left: '1 in',
       top: '0.025 in',
       width: '2 in',
       height: '0.225 in',
     });
-    const removed = deleteItem(resized, 'd1', 'i1');
-    expect(band(removed, 'd1').items.map((entry) => entry.id)).toEqual(['i2']);
+    const removed = deleteItem(resized, 'd1', 'text_1');
+    expect(band(removed, 'd1').items.map((entry) => entry.id)).toEqual(['number_1']);
     expect(band(blank, 'd1').items).toEqual([]);
   });
 
@@ -168,23 +168,23 @@ describe('report document', () => {
       typeKey: 0,
       box: { left: '0 in', top: '0 in', width: '1 in', height: '1 in' },
     });
-    expect(item(added, 'd1', 'i1').box.height).toBe('1 in');
-    const slid = moveItem(added, 'd1', 'i1', { left: '-2 in', top: '-1 in' });
-    expect(item(slid, 'd1', 'i1').box).toEqual({
+    expect(item(added, 'd1', 'text_1').box.height).toBe('1 in');
+    const slid = moveItem(added, 'd1', 'text_1', { left: '-2 in', top: '-1 in' });
+    expect(item(slid, 'd1', 'text_1').box).toEqual({
       left: '0 in',
       top: '0 in',
       width: '1 in',
       height: '0.25 in',
     });
-    const parked = moveItem(added, 'd1', 'i1', { left: '10 in' });
-    expect(item(parked, 'd1', 'i1').box.left).toBe('7 in');
-    expect(item(parked, 'd1', 'i1').box.width).toBe('1 in');
-    const wide = resizeItem(added, 'd1', 'i1', { width: '20 in' });
-    expect(item(wide, 'd1', 'i1').box.left).toBe('0 in');
-    expect(item(wide, 'd1', 'i1').box.width).toBe('8 in');
-    const flat = resizeItem(added, 'd1', 'i1', { width: '0 in', height: '0 in' });
-    expect(item(flat, 'd1', 'i1').box.width).toBe('0.010417 in');
-    expect(item(flat, 'd1', 'i1').box.height).toBe('0.010417 in');
+    const parked = moveItem(added, 'd1', 'text_1', { left: '10 in' });
+    expect(item(parked, 'd1', 'text_1').box.left).toBe('7 in');
+    expect(item(parked, 'd1', 'text_1').box.width).toBe('1 in');
+    const wide = resizeItem(added, 'd1', 'text_1', { width: '20 in' });
+    expect(item(wide, 'd1', 'text_1').box.left).toBe('0 in');
+    expect(item(wide, 'd1', 'text_1').box.width).toBe('8 in');
+    const flat = resizeItem(added, 'd1', 'text_1', { width: '0 in', height: '0 in' });
+    expect(item(flat, 'd1', 'text_1').box.width).toBe('0.010417 in');
+    expect(item(flat, 'd1', 'text_1').box.height).toBe('0.010417 in');
     const metric = {
       format: 1,
       page: {
@@ -195,15 +195,24 @@ describe('report document', () => {
       },
       bands: [{ id: 'd1', typeKey: 15, height: '20 mm', items: [] }],
     };
-    const millimetre = moveItem(addItem(metric, 'd1', { typeKey: 0 }), 'd1', 'i1', { left: '0 px' });
-    expect(item(millimetre, 'd1', 'i1').box.left.endsWith(' mm')).toBe(true);
-    expect(item(millimetre, 'd1', 'i1').box.left).toBe('0 mm');
+    const millimetre = moveItem(addItem(metric, 'd1', { typeKey: 0 }), 'd1', 'text_1', { left: '0 px' });
+    expect(item(millimetre, 'd1', 'text_1').box.left.endsWith(' mm')).toBe(true);
+    expect(item(millimetre, 'd1', 'text_1').box.left).toBe('0 mm');
   });
 
   it('does not invent a datasource on a new detail band', () => {
     const next = addBand(createBlank(), { typeKey: 15, id: 'more' });
     expect(Object.hasOwn(band(next, 'more'), 'datasource')).toBe(false);
     expect(band(next, 'more').height).toBe('0.25 in');
+  });
+
+  it('numbers each item kind on its own and keeps an id that was passed in', () => {
+    const blank = createBlank();
+    const text = addItem(blank, 'd1', { typeKey: 0 });
+    const shape = addItem(text, 'd1', { typeKey: 25 });
+    const again = addItem(shape, 'd1', { typeKey: 0, id: 's1' });
+    const next = addItem(again, 'd1', { typeKey: 0 });
+    expect(band(next, 'd1').items.map((entry) => entry.id)).toEqual(['text_1', 'shape_1', 's1', 'text_2']);
   });
 
   it('copies an item onto the same band with a new id and the same box', () => {
@@ -213,11 +222,11 @@ describe('report document', () => {
       text: 'Hello',
       box: { left: '1 in', top: '0 in', width: '1.5 in', height: '0.2 in' },
     });
-    const copy = cloneItem(added, 'd1', 'i1');
+    const copy = cloneItem(added, 'd1', 'text_1');
     const items = band(copy, 'd1').items;
-    expect(items.map((entry) => entry.id)).toEqual(['i1', 'i2']);
-    expect(item(copy, 'd1', 'i2').text).toBe('Hello');
-    expect(item(copy, 'd1', 'i2').box).toEqual(item(copy, 'd1', 'i1').box);
+    expect(items.map((entry) => entry.id)).toEqual(['text_1', 'text_2']);
+    expect(item(copy, 'd1', 'text_2').text).toBe('Hello');
+    expect(item(copy, 'd1', 'text_2').box).toEqual(item(copy, 'd1', 'text_1').box);
     expect(band(added, 'd1').items).toHaveLength(1);
     expect(band(blank, 'd1').items).toEqual([]);
   });

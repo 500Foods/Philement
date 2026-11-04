@@ -33,6 +33,7 @@
 <fa fa-brackets-curly></fa>
 <fa fa-brackets-square></fa>
 <fa fa-briefcase></fa>
+<fa fa-bring-forward></fa>
 <fa fa-broom></fa>
 <fa fa-bug></fa>
 <fa fa-bullseye></fa>
@@ -81,6 +82,7 @@
 <fa fa-file-invoice></fa>
 <fa fa-file-lines></fa>
 <fa fa-file-pdf></fa>
+<fa fa-fill-drip></fa>
 <fa fa-filter></fa>
 <fa fa-flag-checkered></fa>
 <fa fa-flag></fa>
@@ -128,6 +130,7 @@
 <fa fa-party-horn></fa>
 <fa fa-pause></fa>
 <fa fa-pen-to-square></fa>
+<fa fa-pen></fa>
 <fa fa-pencil></fa>
 <fa fa-person-running-fast></fa>
 <fa fa-phone></fa>
@@ -145,6 +148,8 @@
 <fa fa-rotate-right></fa>
 <fa fa-ruler-combined></fa>
 <fa fa-search></fa>
+<fa fa-send-backward></fa>
+<fa fa-shapes></fa>
 <fa fa-shield-halved></fa>
 <fa fa-sigma></fa>
 <fa fa-sign-in-alt></fa>
@@ -177,6 +182,7 @@
 <fa fa-user-shield></fa>
 <fa fa-user></fa>
 <fa fa-users></fa>
+<fa fa-vector-square></fa>
 <fa fa-volume-high></fa>
 <fa fa-volume-low></fa>
 <fa fa-volume-xmark></fa>

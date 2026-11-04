@@ -64,10 +64,10 @@ describe('report history', () => {
     history.undo();
     const added = addItem(history.document, 'detail', { typeKey: 0 });
     history.commit(added);
-    expect(history.document.bands[1].items.at(-1).id).toBe('i1');
+    expect(history.document.bands[1].items.at(-1).id).toBe('text_1');
     history.undo();
     history.redo();
-    expect(history.document.bands[1].items.at(-1).id).toBe('i1');
+    expect(history.document.bands[1].items.at(-1).id).toBe('text_1');
   });
 
   it('restores a band height', () => {

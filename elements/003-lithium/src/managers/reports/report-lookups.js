@@ -14,6 +14,8 @@ export const PANEL_LOOKUPS = {
   dsKinds: 76,
   /** 077 datetime mask presets (Phase 22b). Empty until 1453 applies; the picker hides. */
   datetimePresets: 77,
+  /** 078 shape kinds (Phase 44a). Empty until 1465 applies; the palette uses the built-in list. */
+  shapeKinds: 78,
 };
 
 /**

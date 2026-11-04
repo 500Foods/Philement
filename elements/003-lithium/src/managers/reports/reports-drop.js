@@ -1,5 +1,5 @@
 /**
- * Drag the Text button onto a band.
+ * Drag the Text or Shape button onto a band.
  * The button still adds a centered item. A drop places the same
  * rectangle on the band under the pointer and commits once.
  */
@@ -10,8 +10,10 @@ import { toCssPx } from './model/units.js';
 import { readViewScale } from './scale.js';
 import { AGGREGATE_NUMBER_TYPE } from './reports-aggregate.js';
 import { PAGE_LABEL_DEFAULT, PAGE_LABEL_TYPE } from './reports-sample.js';
+import { SHAPE_TYPE, defaultShapeFields } from './reports-shape.js';
 
 export const TEXT_DROP_KIND = 'reports-text';
+export const SHAPE_DROP_KIND = 'reports-shape';
 
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
@@ -67,6 +69,9 @@ export const reportDropMethods = {
     });
     textBtn.addEventListener('dragstart', this._onTextDragStart);
     textBtn.addEventListener('dragend', this._onTextDragEnd);
+    this._shapeDragBtn = this.container.querySelector('#reports-shape-btn');
+    this._shapeDragBtn?.addEventListener('dragstart', this._onTextDragStart);
+    this._shapeDragBtn?.addEventListener('dragend', this._onTextDragEnd);
     stage.addEventListener('dragover', this._onTextDragOver);
     stage.addEventListener('drop', this._onTextDrop);
   },
@@ -82,6 +87,9 @@ export const reportDropMethods = {
     this._fieldDragBtns = null;
     elements.textBtn?.removeEventListener('dragstart', this._onTextDragStart);
     elements.textBtn?.removeEventListener('dragend', this._onTextDragEnd);
+    this._shapeDragBtn?.removeEventListener('dragstart', this._onTextDragStart);
+    this._shapeDragBtn?.removeEventListener('dragend', this._onTextDragEnd);
+    this._shapeDragBtn = null;
     elements.stage?.removeEventListener('dragover', this._onTextDragOver);
     elements.stage?.removeEventListener('drop', this._onTextDrop);
   },
@@ -96,11 +104,21 @@ export const reportDropMethods = {
     if (!transfer) return;
     const typeKey = Number(event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.typeKey);
     const isField = FIELD_DROP_TYPES.has(typeKey);
-    transfer.setData('text/plain', isField ? `${FIELD_DROP_PREFIX}${typeKey}` : TEXT_DROP_KIND);
+    const isShape = typeKey === SHAPE_TYPE;
+    let dragKind = TEXT_DROP_KIND;
+    let ghostText = 'Text';
+    if (isField) {
+      dragKind = `${FIELD_DROP_PREFIX}${typeKey}`;
+      ghostText = FIELD_GHOST[typeKey];
+    } else if (isShape) {
+      dragKind = SHAPE_DROP_KIND;
+      ghostText = 'Shape';
+    }
+    transfer.setData('text/plain', dragKind);
     transfer.effectAllowed = 'copy';
     const ghost = document.createElement('div');
     ghost.className = 'reports-drag-ghost';
-    ghost.textContent = isField ? FIELD_GHOST[typeKey] : 'Text';
+    ghost.textContent = ghostText;
     document.body.append(ghost);
     if (typeof transfer.setDragImage === 'function') transfer.setDragImage(ghost, 72, 10);
     this._textGhost = ghost;
@@ -134,7 +152,8 @@ export const reportDropMethods = {
       ? Number(kind.slice(FIELD_DROP_PREFIX.length))
       : NaN;
     const isField = FIELD_DROP_TYPES.has(fieldType);
-    if (kind !== TEXT_DROP_KIND && !isField) return;
+    const isShape = kind === SHAPE_DROP_KIND;
+    if (kind !== TEXT_DROP_KIND && !isField && !isShape) return;
     event.preventDefault();
     const origin = textDropOrigin(
       body.getBoundingClientRect(),
@@ -144,8 +163,11 @@ export const reportDropMethods = {
     );
     let next;
     let addedId;
+    let spec = { typeKey: 0 };
+    if (isField) spec = dropItem(fieldType);
+    else if (isShape) spec = { typeKey: SHAPE_TYPE, ...defaultShapeFields('rectangle') };
     try {
-      next = addItem(this.doc, bandId, isField ? dropItem(fieldType) : { typeKey: 0 });
+      next = addItem(this.doc, bandId, spec);
       const band = next.bands.find((entry) => entry.id === bandId);
       const added = band && band.items[band.items.length - 1];
       if (!added) return;
@@ -155,12 +177,15 @@ export const reportDropMethods = {
         top: `${origin.top} px`,
       });
     } catch (error) {
-      this._failEdit(error, 'Static text could not be added.');
+      this._failEdit(error, isShape ? 'Shape could not be added.' : 'Static text could not be added.');
       return;
     }
     this._selectedBandId = bandId;
     this._selectedItemId = addedId;
     this._commitDocument(next);
-    log(Subsystems.MANAGER, Status.INFO, `[Reports] Dropped ${isField ? FIELD_GHOST[fieldType].toLowerCase() : 'static text'} ${addedId} on ${bandId}`);
+    let name = 'static text';
+    if (isField) name = FIELD_GHOST[fieldType].toLowerCase();
+    else if (isShape) name = 'shape';
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Dropped ${name} ${addedId} on ${bandId}`);
   },
 };

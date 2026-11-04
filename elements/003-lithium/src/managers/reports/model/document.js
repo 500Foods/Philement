@@ -2,8 +2,9 @@
  * Report definition: import, export, and edits.
  * Import keeps omitted keys omitted. Create writes the Defaults table.
  * Lengths written by an edit are stored in the document unit.
- * A generated band id is b1, b2, ... and a generated item id is i1, i2, ...
- * createBlank uses ph1, d1, and pf1.
+ * A generated band id is ph1, d1, pf1. A generated item id is
+ * text_1, shape_1, and so on, numbered per kind. An id passed
+ * in is kept.
  */
 
 import {
@@ -32,13 +33,44 @@ const BAND_PREFIX = {
   12: 'rh', 13: 'ph', 14: 'gh', 15: 'd', 16: 'gf', 17: 'pf', 18: 'rf',
 };
 
+/**
+ * Item id word per type. The number is per word, so the first
+ * text is text_1 and the first shape is shape_1. Aggregate
+ * text, number, and datetime share agg_ because the op can
+ * change the type and the id stays put. An existing id is
+ * never rewritten.
+ */
+const ITEM_PREFIX = {
+  0: 'text',
+  5: 'date',
+  6: 'user',
+  20: 'textfield',
+  21: 'number',
+  24: 'datetime',
+  25: 'shape',
+  28: 'calctext',
+  29: 'calcnum',
+  32: 'calctime',
+  34: 'agg',
+  35: 'agg',
+  38: 'agg',
+  42: 'chart',
+  43: 'barcode',
+  44: 'chart',
+  45: 'barcode',
+  61: 'pagenum',
+  62: 'pagecount',
+  63: 'param',
+  64: 'pagelabel',
+};
+
 /** Canvas order rank: report header, page header, group headers, detail, group footers, page footer, report footer. */
 const BAND_RANK = {
   12: 0, 13: 1, 14: 2, 15: 3, 16: 4, 17: 5, 18: 6,
 };
 
 const ITEM_TYPES = new Set([
-  0, 5, 6, 20, 21, 24, 28, 29, 32, 34, 35, 38, 42, 43, 44, 45, 61, 62, 63, 64,
+  0, 5, 6, 20, 21, 24, 25, 28, 29, 32, 34, 35, 38, 42, 43, 44, 45, 61, 62, 63, 64,
 ]);
 
 const MASK_TYPES = new Set([5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
@@ -608,7 +640,8 @@ export function addItem(doc, bandId, spec) {
   if (isAggregateType(typeKey) && !aggregateBandAllows(band.typeKey)) {
     throw new Error('An aggregate item goes on a group header, a group footer, a report header, a report footer, a page header, or a page footer.');
   }
-  const id = spec.id === undefined ? nextId(itemIds(next), 'i') : spec.id;
+  const word = ITEM_PREFIX[typeKey] || 'item';
+  const id = spec.id === undefined ? nextId(itemIds(next), `${word}_`) : spec.id;
   assertId(id, 'Item');
   if (itemIds(next).has(id)) throw new Error(`Item id "${id}" is already used.`);
   const unit = documentUnit(next);
@@ -616,9 +649,10 @@ export function addItem(doc, bandId, spec) {
   delete item.index;
   item.id = id;
   item.typeKey = typeKey;
-  if (!Object.hasOwn(item, 'align')) item.align = 'Left';
+  if (typeKey !== 25 && !Object.hasOwn(item, 'align')) item.align = 'Left';
   item.box = item.box === undefined ? centeredBox(next, band) : storedBox(item.box, unit);
   if (typeKey === 0 && !Object.hasOwn(item, 'text')) item.text = 'Text';
+  if (typeKey === 25 && !Object.hasOwn(item, 'kind')) item.kind = 'rectangle';
   if (isAggregateType(typeKey)) {
     if (!Object.hasOwn(item, 'op')) {
       if (typeKey === AGGREGATE_TEXT_TYPE) item.op = 'mode';
@@ -712,4 +746,47 @@ export function cloneItem(doc, bandId, itemId) {
   const spec = clone(item);
   delete spec.id;
   return addItem(doc, bandId, spec);
+}
+
+/**
+ * Move an item to `toIndex` in its band. The index is the target's
+ * place before the move. The same index returns `doc`.
+ * Later items paint over earlier ones.
+ * @param {object} doc
+ * @param {string} bandId
+ * @param {string} itemId
+ * @param {number} toIndex
+ * @returns {object}
+ */
+export function reorderItem(doc, bandId, itemId, toIndex) {
+  if (!Number.isInteger(toIndex)) throw new Error(`Item index ${toIndex} is outside the report.`);
+  const next = clone(doc);
+  const band = findBand(next, bandId);
+  if (!Array.isArray(band.items)) throw new Error(`Item "${itemId}" was not found on band "${bandId}".`);
+  const from = band.items.findIndex((item) => item.id === itemId);
+  if (from < 0) throw new Error(`Item "${itemId}" was not found on band "${bandId}".`);
+  if (from === toIndex) return doc;
+  const [moved] = band.items.splice(from, 1);
+  const dest = Math.max(0, Math.min(toIndex, band.items.length));
+  band.items.splice(dest, 0, moved);
+  return next;
+}
+
+/**
+ * Move an item one step. Positive is later in the band (paints on top).
+ * An end returns `doc`.
+ * @param {object} doc
+ * @param {string} bandId
+ * @param {string} itemId
+ * @param {number} delta
+ * @returns {object}
+ */
+export function stepItem(doc, bandId, itemId, delta) {
+  const band = findBand(doc, bandId);
+  const items = Array.isArray(band.items) ? band.items : [];
+  const from = items.findIndex((item) => item.id === itemId);
+  if (from < 0) throw new Error(`Item "${itemId}" was not found on band "${bandId}".`);
+  const to = from + delta;
+  if (to < 0 || to >= items.length) return doc;
+  return reorderItem(doc, bandId, itemId, to);
 }

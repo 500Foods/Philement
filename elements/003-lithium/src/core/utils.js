@@ -384,13 +384,14 @@ function stripActiveHtml(html) {
  * For text, use escapeHtml. This is the path for markdown HTML.
  *
  * @param {string} html
+ * @param {object} [config] Extra DOMPurify config. The default callers pass none.
  * @returns {string} Sanitized HTML, or '' when html is not a string
  */
-export function sanitizeHtml(html) {
+export function sanitizeHtml(html, config) {
   if (typeof html !== 'string' || html.length === 0) {
     return '';
   }
-  const clean = DOMPurify.sanitize(html);
+  const clean = config ? DOMPurify.sanitize(html, config) : DOMPurify.sanitize(html);
   if (!htmlStillActive(clean)) {
     return clean;
   }

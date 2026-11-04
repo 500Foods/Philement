@@ -9,6 +9,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { invokeScript } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { sanitizeHtml } from '../../core/utils.js';
+import { restorePreviewShapes, SHAPE_PURIFY, shieldPreviewShapes } from './reports-shape.js';
 import { composeDefinition, composeResult, composeSources, RENDER_SCRIPT } from './reports-compose.js';
 import { pendingQueryDatasources, runQueryDatasources } from './reports-query.js';
 import { reportKey, saveListedReport } from './reports-save.js';
@@ -184,7 +185,9 @@ export function previewResult(envelope) {
  * @returns {string}
  */
 export function previewSrcdoc(html) {
-  const body = sanitizeHtml(typeof html === 'string' ? html : '');
+  const shielded = shieldPreviewShapes(typeof html === 'string' ? html : '');
+  const clean = sanitizeHtml(shielded.html, SHAPE_PURIFY);
+  const body = restorePreviewShapes(clean, shielded.shapes);
   return `${SHELL_HEAD}${body}${SHELL_TAIL}`;
 }
 

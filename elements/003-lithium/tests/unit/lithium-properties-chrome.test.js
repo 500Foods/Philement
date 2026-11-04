@@ -5,7 +5,7 @@ vi.hoisted(() => {
   window.HTMLCanvasElement.prototype.getContext = () => ({ fillStyle: '', fillRect() {}, getImageData: () => ({ data: [255, 0, 0, 255] }) });
 });
 
-import { LithiumProperties, groupHeaderHtml, valueWidth } from '../../src/properties/lithium-properties.js';
+import { LithiumProperties, choiceLabel, groupHeaderHtml, valueWidth } from '../../src/properties/lithium-properties.js';
 
 function mount(options = {}) {
   const element = document.createElement('aside');
@@ -45,6 +45,80 @@ describe('LithiumProperties chrome', () => {
     expect(element.querySelector('[data-action="outline"]').classList.contains('lithium-nav-btn-active')).toBe(false);
     expect(outline.parentElement.hidden).toBe(true);
     expect(props.outlineSizer.hidden).toBe(true);
+    props.destroy();
+  });
+
+  it('shows a list label in the closed cell and keeps the stored code', () => {
+    expect(choiceLabel('roundrect', [{ value: 'roundrect', label: 'Rounded Rectangle' }])).toBe('Rounded Rectangle');
+    expect(choiceLabel('solid', ['solid', 'dashed'])).toBeNull();
+    const { props } = mount();
+    const wrap = props._format({
+      getRow: () => ({
+        getData: () => ({
+          editor: 'List',
+          value: 'roundrect',
+          list: [{ value: 'roundrect', label: 'Rounded Rectangle' }],
+        }),
+      }),
+    });
+    expect(wrap.textContent).toBe('Rounded Rectangle');
+    props.destroy();
+  });
+
+  it('centers the stack icons between the side controls', () => {
+    const { element, props, onStub } = mount();
+    const bar = element.querySelector('.lithium-properties-bar-top');
+    expect([...bar.children].map((node) => node.className)).toEqual([
+      'lithium-properties-bar-side',
+      'lithium-properties-order',
+      'lithium-properties-bar-side lithium-properties-bar-side-end',
+    ]);
+    const actions = (selector) => [...bar.querySelector(selector).children].map((node) => node.dataset.action);
+    expect(actions('.lithium-properties-bar-side')).toEqual(['search', 'outline']);
+    expect(actions('.lithium-properties-order')).toEqual(['backward', 'back', 'forward', 'front']);
+    expect(actions('.lithium-properties-bar-side-end')).toEqual(['expand', 'collapse']);
+    const icon = (id) => [...props.buttons[id].querySelector('i, fa').classList];
+    expect(icon('backward')).toContain('fa-send-backward');
+    expect(icon('back')).toEqual(expect.arrayContaining(['fa-send-back']));
+    expect(icon('back')).not.toContain('fa-send-backward');
+    expect(icon('forward')).toContain('fa-bring-forward');
+    expect(icon('front')).toEqual(expect.arrayContaining(['fa-bring-front']));
+    expect(icon('front')).not.toContain('fa-bring-forward');
+    for (const id of ['backward', 'back', 'forward', 'front']) {
+      expect(props.buttons[id].disabled).toBe(true);
+      expect(props.buttons[id].classList.contains('lithium-properties-btn-tight')).toBe(true);
+    }
+    props.setOrderEnabled({ backward: true, back: true, forward: false, front: true });
+    expect(props.buttons.backward.disabled).toBe(false);
+    expect(props.buttons.back.disabled).toBe(false);
+    expect(props.buttons.forward.disabled).toBe(true);
+    expect(props.buttons.front.disabled).toBe(false);
+    const onOrder = vi.fn();
+    props.onOrder = onOrder;
+    click(props, 'backward');
+    expect(onOrder).toHaveBeenCalledWith('backward');
+    expect(onStub).not.toHaveBeenCalled();
+    props.destroy();
+  });
+
+  it('edits a multiline note in a textarea and keeps Enter as a newline', () => {
+    const { props } = mount();
+    let saved;
+    const area = props._editor(
+      { getRow: () => ({ getData: () => ({ multiline: true, editor: 'Text' }) }), getValue: () => 'hi' },
+      (fn) => fn(),
+      (value) => { saved = value; },
+      () => {},
+    );
+    expect(area.tagName).toBe('TEXTAREA');
+    area.value = 'line one';
+    const enter = new globalThis.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    area.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(false);
+    expect(saved).toBeUndefined();
+    area.value = 'a note';
+    area.dispatchEvent(new globalThis.Event('blur'));
+    expect(saved).toBe('a note');
     props.destroy();
   });
 

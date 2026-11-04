@@ -6,7 +6,8 @@
  * which lists 054 keys. Key 24 (Grid Background Color) is a
  * report attribute only and is dropped from item lists here.
  * Keys 21 and 24 use the Color editor by name (lookup says Text).
- * Key 29 (Link) is plain text. Key 30 (Page Size) takes its
+ * Key 29 (Link) is plain text and the last row in Object.
+ * Key 30 (Page Size) takes its
  * choices from lookup 057, not from its own List.
  * Page Size copies width, height, margins, and orientation from 057.
  * Values the file omits show the Defaults table value.
@@ -28,12 +29,13 @@ import {
 import {
   findReportingQuery, queryLabel, setDatasourceParam, setDatasourceParams, setDatasourceQuery,
 } from './reports-query.js';
+import { shapeAttrMeta, shapeAttributeKeys, shapeItemFields, shapeKindOptions } from './reports-shape.js';
 
 export const REPORT_TYPE_KEY = 9;
 const TEXT_KEYS = new Set([29]);
 const PAGE_SIZE_KEY = 30;
 /** Number keys that hold a length; the rest are plain numbers. */
-const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38]);
+const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38, 43, 48, 49, 50, 51]);
 /** Editors the panel knows. Field and Datasource (Phase 15) become Lists. */
 export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None', 'Field', 'Datasource']);
 /** Items that take a mask string (Phase 15.5 edits it). */
@@ -246,6 +248,8 @@ const ITEM_FIELDS = {
   29: itemField('link', ''),
 };
 
+Object.assign(ITEM_FIELDS, shapeItemFields);
+
 /**
  * Client-only sections (no 075 row, no migration). Ids sit far above
  * the 075 key range so they sort last.
@@ -253,6 +257,10 @@ const ITEM_FIELDS = {
 export const END_SECTION_ID = 9001;
 export const RULER_SECTION_ID = 9002;
 export const DATASOURCE_SECTION_ID = 9003;
+/** Free-text notes. No lookup row and no migration. */
+export const NOTES_SECTION_ID = 9004;
+export const NOTES_ROW_ID = 'notes';
+export const ID_ROW_ID = 'object-id';
 /** Most datasources a report may declare (Count editor bound). */
 export const DS_MAX = 20;
 /** Section id for "Datasource N" (0-based index); one section per datasource. */
@@ -262,6 +270,7 @@ export const DATASOURCE_ITEM_SECTIONS = Array.from({ length: DS_MAX }, (_, index
   sortSeq: 8999 + (index + 1) / 100, icon: '<fa fa-table></fa>',
 }));
 export const CLIENT_SECTIONS = [
+  { id: NOTES_SECTION_ID, label: 'Notes', sortSeq: 20, icon: '<fa fa-note-sticky></fa>' },
   { id: DATASOURCE_SECTION_ID, label: 'Datasources', sortSeq: 8999, icon: '<fa fa-database></fa>' },
   ...DATASOURCE_ITEM_SECTIONS,
   { id: END_SECTION_ID, label: 'End of Report', sortSeq: 9001, icon: '<fa fa-flag-checkered></fa>' },
@@ -565,7 +574,9 @@ export function attributeKeys(doc, sel, lookups) {
   if (item) {
     const row = types.find((entry) => Number(entry.key_idx) === Number(item.typeKey));
     const list = attrList(row) || [0, 1, 2, 3, 4, 14, 29];
-    return list.map(toKey).filter(Number.isInteger);
+    const keys = list.map(toKey).filter(Number.isInteger);
+    if (Number(item.typeKey) === 25) return shapeAttributeKeys(item, keys);
+    return keys;
   }
   const top = types.find((entry) => Number(entry.key_idx) === REPORT_TYPE_KEY);
   const list = attrList(top);
@@ -599,6 +610,40 @@ function editorFor(key, collection) {
   if (TEXT_KEYS.has(key)) return 'Text';
   if (key === PAGE_SIZE_KEY) return 'PageSize';
   return collection.Editor || 'Text';
+}
+
+/** The object the Notes row writes. End of Report has none. */
+function notesOwner(doc, sel) {
+  const scope = selectionScope(doc, sel);
+  if (scope === 'item') return findSelected(doc, sel).item || null;
+  if (scope === 'band') return bandOf(doc, sel);
+  if (scope === 'report') return doc;
+  return null;
+}
+
+/**
+ * Read-only id first in Object, notes on the object, Link last in Object.
+ * A blank notes string is omitted from the file.
+ */
+function finishPanelRows(rows, doc, sel) {
+  const scope = selectionScope(doc, sel);
+  const owner = notesOwner(doc, sel);
+  if (owner && (scope === 'item' || scope === 'band') && owner.id) {
+    rows.unshift({
+      id: ID_ROW_ID, key: null, label: 'ID', value: String(owner.id), omitted: false, note: '',
+      editor: 'None', list: null, section: 4, group: 'Object', readOnly: true,
+    });
+  }
+  if (owner) {
+    const value = typeof owner.notes === 'string' ? owner.notes : '';
+    rows.push({
+      id: NOTES_ROW_ID, key: null, label: 'Notes', value, omitted: value === '', note: '',
+      editor: 'Text', multiline: true, list: null, section: NOTES_SECTION_ID, group: 'Notes', readOnly: false,
+    });
+  }
+  const linkAt = rows.findIndex((row) => row.key === 29);
+  if (linkAt >= 0) rows.push(rows.splice(linkAt, 1)[0]);
+  return rows;
 }
 
 /**
@@ -673,8 +718,13 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     });
   }
   for (const key of attributeKeys(doc, sel, lookups)) {
-    const row = attrs.find((entry) => Number(entry.key_idx) === key) || { key_idx: key, value_txt: `Key ${key}` };
-    const collection = parseCollection(row.collection);
+    const found = attrs.find((entry) => Number(entry.key_idx) === key);
+    const meta = shapeAttrMeta(key);
+    const row = found || { key_idx: key, value_txt: meta ? meta.Label : `Key ${key}` };
+    const parsed = found ? parseCollection(found.collection) : {};
+    const collection = meta
+      ? { ...meta, ...parsed, section: meta.section, Group: meta.Group }
+      : parsed;
     const field = fields[key];
     const read = field ? field.get(doc, sel) : { value: '', omitted: true };
     const editor = editorFor(key, collection);
@@ -683,6 +733,12 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       continue;
     }
     const choices = bindingChoices(editor, doc, lookups, read.value);
+    let list = choices || (editor === 'List' && Array.isArray(collection.List) ? collection.List : null);
+    if (key === 41) {
+      list = shapeKindOptions(lookups && lookups.shapeKinds).map((entry) => ({
+        value: entry.code, label: entry.label,
+      }));
+    }
     rows.push({
       id: String(key),
       key,
@@ -691,7 +747,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       omitted: read.omitted,
       note: read.omitted ? (read.note || OMITTED_NOTE) : '',
       editor: bindingEditor(editor, choices),
-      list: choices || (editor === 'List' && Array.isArray(collection.List) ? collection.List : null),
+      list,
       section: collection.section ?? null,
       group: collection.Group || '',
       readOnly: !field || editor === 'None',
@@ -718,7 +774,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     });
   }
   if (scope === 'report') rows.push(...datasourceRows(doc, lookups), ...rulerRows(doc));
-  return rows;
+  return finishPanelRows(rows, doc, sel);
 }
 
 /**
@@ -782,6 +838,25 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
     const next = JSON.parse(JSON.stringify(doc));
     const text = String(value ?? '').trim();
     if (text) next.defaultZone = text; else delete next.defaultZone;
+    return next;
+  }
+  if (rowId === NOTES_ROW_ID) {
+    const scopeNow = selectionScope(doc, sel);
+    if (scopeNow === 'end') throw new Error('End of Report has no editable properties.');
+    const text = String(value ?? '');
+    const keep = text.trim() !== '';
+    if (scopeNow === 'item') {
+      return editItem(doc, sel, (item) => { if (keep) item.notes = text; else delete item.notes; });
+    }
+    if (scopeNow === 'band') {
+      const next = JSON.parse(JSON.stringify(doc));
+      const band = bandOf(next, sel);
+      if (!band) throw new Error('Notes needs a selected band.');
+      if (keep) band.notes = text; else delete band.notes;
+      return next;
+    }
+    const next = JSON.parse(JSON.stringify(doc));
+    if (keep) next.notes = text; else delete next.notes;
     return next;
   }
   const scope = selectionScope(doc, sel);

@@ -51,6 +51,19 @@ export const VALUE_MIN_WIDTH = 60;
  * @param {number} label Name column width
  * @returns {number}
  */
+/**
+ * Label for a list value. Object entries show `label`. A plain entry
+ * shows the stored value.
+ * @param {unknown} value
+ * @param {unknown} list
+ * @returns {string|null}
+ */
+export function choiceLabel(value, list) {
+  if (!Array.isArray(list)) return null;
+  const hit = list.find((entry) => entry && typeof entry === 'object' && String(entry.value) === String(value));
+  return hit && hit.label != null ? String(hit.label) : null;
+}
+
 export function valueWidth(inner, label, min = VALUE_MIN_WIDTH) {
   return Math.max(min, Math.floor(inner - label));
 }
@@ -64,11 +77,14 @@ export function groupHeaderHtml(caption, icon, count) {
 
 const BAR_BUTTONS = {
   top: [
-    { id: 'search', icon: 'fa-magnifying-glass', title: 'Search properties', toggle: true },
-    { id: 'outline', icon: 'fa-sitemap', title: 'Show the outline', toggle: true },
-    { gap: true },
-    { id: 'expand', icon: 'fa-angles-down', title: 'Expand all sections', tight: true },
-    { id: 'collapse', icon: 'fa-angles-up', title: 'Collapse all sections', tight: true },
+    { id: 'search', icon: 'fa-magnifying-glass', title: 'Search properties', toggle: true, slot: 'start' },
+    { id: 'outline', icon: 'fa-sitemap', title: 'Show the outline', toggle: true, slot: 'start' },
+    { id: 'backward', icon: 'fa-send-backward', title: 'Move backward', tight: true, slot: 'center' },
+    { id: 'back', icon: 'fa-send-back', title: 'Move to back', tight: true, slot: 'center' },
+    { id: 'forward', icon: 'fa-bring-forward', title: 'Move forward', tight: true, slot: 'center' },
+    { id: 'front', icon: 'fa-bring-front', title: 'Move to front', tight: true, slot: 'center' },
+    { id: 'expand', icon: 'fa-angles-down', title: 'Expand all sections', tight: true, slot: 'end' },
+    { id: 'collapse', icon: 'fa-angles-up', title: 'Collapse all sections', tight: true, slot: 'end' },
   ],
   bottom: [
     { id: 'favourites', icon: 'fa-star', title: 'Show only favourites', toggle: true },
@@ -79,10 +95,36 @@ const BAR_BUTTONS = {
   ],
 };
 
+function barButton(spec, onClick, buttons) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `lithium-toolbar-btn lithium-properties-btn${spec.tight ? ' lithium-properties-btn-tight' : ''}`;
+  button.dataset.action = spec.id;
+  button.title = spec.title;
+  button.setAttribute('aria-label', spec.title);
+  if (spec.toggle) button.setAttribute('aria-pressed', 'false');
+  button.innerHTML = `<fa ${spec.icon}></fa>`;
+  button.addEventListener('click', () => onClick(spec.id, button));
+  buttons[spec.id] = button;
+  return button;
+}
+
 function buildBar(kind, onClick) {
   const bar = document.createElement('div');
   bar.className = `lithium-toolbar lithium-properties-bar lithium-properties-bar-${kind}`;
   const buttons = {};
+  if (kind === 'top') {
+    const start = document.createElement('div');
+    start.className = 'lithium-properties-bar-side';
+    const order = document.createElement('div');
+    order.className = 'lithium-properties-order';
+    const end = document.createElement('div');
+    end.className = 'lithium-properties-bar-side lithium-properties-bar-side-end';
+    const host = { start, center: order, end };
+    for (const spec of BAR_BUTTONS.top) host[spec.slot].append(barButton(spec, onClick, buttons));
+    bar.append(start, order, end);
+    return { bar, buttons };
+  }
   for (const spec of BAR_BUTTONS[kind]) {
     if (spec.gap) {
       const gap = document.createElement('div');
@@ -90,17 +132,7 @@ function buildBar(kind, onClick) {
       bar.append(gap);
       continue;
     }
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `lithium-toolbar-btn lithium-properties-btn${spec.tight ? ' lithium-properties-btn-tight' : ''}`;
-    button.dataset.action = spec.id;
-    button.title = spec.title;
-    button.setAttribute('aria-label', spec.title);
-    if (spec.toggle) button.setAttribute('aria-pressed', 'false');
-    button.innerHTML = `<fa ${spec.icon}></fa>`;
-    button.addEventListener('click', () => onClick(spec.id, button));
-    buttons[spec.id] = button;
-    bar.append(button);
+    bar.append(barButton(spec, onClick, buttons));
   }
   return { bar, buttons };
 }
@@ -299,9 +331,11 @@ export class LithiumProperties {
    *   outline?: HTMLElement, onStub?: (action: string) => void,
    *   showSearch?: boolean, showOutline?: boolean,
    *   state?: object, onStateChange?: (state: object) => void,
-   *   onNavigate?: (delta: number) => void }} options
+   *   onNavigate?: (delta: number) => void,
+   *   onOrder?: (action: string) => void }} options
    *   state: a saved getState() result; onStateChange gets each change.
    *   onNavigate: Previous (-1) / Next (+1) object on the bottom bar.
+   *   onOrder: backward, back, forward, or front for the selected item.
    */
   constructor(options) {
     this.element = options.element;
@@ -310,6 +344,7 @@ export class LithiumProperties {
     this.sections = [];
     this.onStub = options.onStub || (() => {});
     this.onNavigate = options.onNavigate || null;
+    this.onOrder = options.onOrder || null;
     const state = options.state || {};
     this.onStateChange = options.onStateChange || null;
     this._closedGroups = new Set(Array.isArray(state.closedSections) ? state.closedSections.map(String) : []);
@@ -326,6 +361,7 @@ export class LithiumProperties {
     const top = buildBar('top', (action, button) => this._onBar(action, button));
     const bottom = buildBar('bottom', (action, button) => this._onBar(action, button));
     this.buttons = { ...top.buttons, ...bottom.buttons };
+    for (const id of ['backward', 'back', 'forward', 'front']) this.buttons[id].disabled = true;
     for (const [id, cls] of [['favourites', 'lithium-properties-show-favourite'], ['hidden', 'lithium-properties-show-hidden']]) {
       this.buttons[id].addEventListener('pointerenter', () => this.element.classList.add(cls));
       this.buttons[id].addEventListener('pointerleave', () => this.element.classList.remove(cls));
@@ -598,6 +634,14 @@ export class LithiumProperties {
     this.table.setFilter((data) => matchesSearch(data, term));
   }
 
+  /** Enable the stack-order buttons. A missing flag leaves that button off. */
+  setOrderEnabled(flags) {
+    for (const id of ['backward', 'back', 'forward', 'front']) {
+      const button = this.buttons[id];
+      if (button) button.disabled = !flags || !flags[id];
+    }
+  }
+
   _onBar(action, button) {
     if (action === 'search') {
       this._setSearch(this.search.hidden);
@@ -608,6 +652,8 @@ export class LithiumProperties {
       this.setAllGroups(action === 'expand');
     } else if (action === 'prev' || action === 'next') {
       if (this.onNavigate) this.onNavigate(action === 'next' ? 1 : -1);
+    } else if (action === 'backward' || action === 'back' || action === 'forward' || action === 'front') {
+      if (this.onOrder) this.onOrder(action);
     } else if (action === 'favourites') {
       this._favouritesOnly = !this._favouritesOnly;
       this._pressed('favourites', this._favouritesOnly);
@@ -761,6 +807,10 @@ export class LithiumProperties {
       const hit = this.pageSizes().find((entry) => Number(entry.value) === Number(data.value));
       if (hit) text = hit.label;
     }
+    if (data.editor === 'List') {
+      const listed = choiceLabel(data.value, data.list);
+      if (listed) text = listed;
+    }
     const wrap = document.createElement('span');
     wrap.className = 'lithium-properties-value';
     if (data.editor === 'Boolean') text = data.value === true || data.value === 'True' ? 'Yes' : 'No';
@@ -791,7 +841,11 @@ export class LithiumProperties {
     if (data.editor === 'Date') return dateEditor(cell, onRendered, success, cancel);
     let choices = data.editor === 'PageSize'
       ? this.pageSizes()
-      : (data.list || []).map((entry) => ({ value: entry, label: entry }));
+      : (data.list || []).map((entry) => (
+        entry && typeof entry === 'object'
+          ? { value: entry.value, label: entry.label == null ? String(entry.value) : String(entry.label) }
+          : { value: entry, label: entry }
+      ));
     if (data.editor === 'Boolean') {
       choices = [{ value: 'True', label: 'Yes' }, { value: 'False', label: 'No' }];
     }
@@ -819,6 +873,33 @@ export class LithiumProperties {
       });
       onRendered(() => select.focus());
       return select;
+    }
+    if (data.multiline) {
+      const area = document.createElement('textarea');
+      area.className = 'lithium-properties-memo';
+      area.rows = 4;
+      area.value = cell.getValue() ?? '';
+      let done = false;
+      const commit = () => {
+        if (done) return;
+        done = true;
+        success(area.value);
+      };
+      area.addEventListener('blur', commit);
+      area.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          done = true;
+          cancel();
+        } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          commit();
+        } else if (event.key === 'Enter') {
+          event.stopPropagation();
+        }
+      });
+      onRendered(() => area.focus());
+      return area;
     }
     const input = document.createElement('input');
     input.type = 'text';

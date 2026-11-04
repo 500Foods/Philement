@@ -422,4 +422,6 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1462](/elements/002-helium/acuranzo/migrations/acuranzo_1462.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render mode (Reporting Phase 42) |
 | [1463](/elements/002-helium/acuranzo/migrations/acuranzo_1463.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render min and max (Reporting Phase 43) |
 | [1464](/elements/002-helium/acuranzo/migrations/acuranzo_1464.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render first and last (Reporting Phase 44) |
-| **389** | | | | **2218** | **389** | |
+| [1465](/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua) | lookups | 1.0.0 | 2026-11-04 | 28 | ✗ | Lookup 078 (Report Shape Kinds) and shape attributes (Reporting Phase 44a) |
+| [1466](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render static shapes (Reporting Phase 44a) |
+| **391** | | | | **2250** | **391** | |

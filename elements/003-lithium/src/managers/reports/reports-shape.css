@@ -1,0 +1,67 @@
+/* Static shapes. The box stays the hit target. The stroke may
+   sit half outside that box, so the item does not clip it. */
+
+.reports-item.reports-item-shape {
+  padding: 0;
+  overflow: visible;
+}
+
+.reports-item-shape svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.reports-shape-note {
+  margin: 0;
+  color: #6a6a6a;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.reports-outline-row[draggable='true'] {
+  cursor: grab;
+}
+
+/* Search and outline stay left. Expand and collapse stay right.
+   The four stack icons sit in the middle column, tight together. */
+.lithium-properties-bar-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 0;
+}
+
+.lithium-properties-bar-side,
+.lithium-properties-order {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  height: 24px;
+}
+
+.lithium-properties-bar-side-end {
+  justify-content: flex-end;
+}
+
+/* Same chrome as the other property inputs: the cell colour and
+   background, no white browser field. */
+.lithium-properties .tabulator-cell.tabulator-editing > textarea.lithium-properties-memo {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 4.5em;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  resize: vertical;
+  white-space: pre-wrap;
+}
