@@ -2,7 +2,19 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { composeDefinition, composeSources } from '../../src/managers/reports/reports-compose.js';
-import { cssPageLength, previewFrameBox, previewParams, previewResult, previewSrcdoc } from '../../src/managers/reports/reports-preview.js';
+import {
+  PREVIEW_OVER_CAP_TOAST,
+  SCRIPT_PARAMS_RESERVE_BYTES,
+  cssPageLength,
+  inlineParamsExceedCap,
+  previewFrameBox,
+  previewParams,
+  previewResult,
+  previewSrcdoc,
+  resolvePreviewParams,
+  scriptParamsBytes,
+  storedPreviewParams,
+} from '../../src/managers/reports/reports-preview.js';
 
 const fixture = (name) => readFileSync(
   resolve(process.cwd(), 'tests/fixtures/reporting', name),
@@ -42,6 +54,95 @@ describe('preview params and result', () => {
       status: 'completed',
       result: { pages: [], log: [] },
     }).error).toBe('Preview returned no HTML.');
+  });
+});
+
+describe('over-cap preview params', () => {
+  const detail = () => JSON.parse(fixture('detail.definition.json'));
+
+  it('keeps a small definition inline and measures compact UTF-8 bytes', () => {
+    const params = previewParams(detail());
+    const bytes = scriptParamsBytes(params);
+    expect(bytes).toBe(new TextEncoder().encode(JSON.stringify(params)).length);
+    expect(inlineParamsExceedCap(params, bytes + SCRIPT_PARAMS_RESERVE_BYTES)).toBe(false);
+    expect(inlineParamsExceedCap(params, bytes + SCRIPT_PARAMS_RESERVE_BYTES - 1)).toBe(true);
+  });
+
+  it('names the stored revision and leaves the definition and the session claims out', () => {
+    const doc = detail();
+    const params = storedPreviewParams(doc, { report_id: 4, rev_id: 2 });
+    expect(params).toEqual({
+      stage: 'html',
+      report_id: 4,
+      rev_id: 2,
+      sources: composeSources(doc),
+    });
+    expect(Object.hasOwn(params, 'definition')).toBe(false);
+    expect(Object.hasOwn(params, '_hydrogen')).toBe(false);
+    expect(PREVIEW_OVER_CAP_TOAST).toEqual({
+      title: 'Saved to preview',
+      description: 'This report is larger than the 256 KiB script limit, so it was saved and previewed from the stored revision.',
+    });
+  });
+
+  it('saves once, toasts once, and previews by the new revision when the inline body is over the cap', async () => {
+    const doc = detail();
+    const notes = [];
+    let saves = 0;
+    const manager = {
+      _selectedRow: () => ({ report_id: 0 }),
+      _openRevision: null,
+      editHelper: {
+        isEditing: () => true,
+        _takeSnapshot() { this.snapped = true; },
+        checkDirtyState() { this.checked = true; },
+      },
+    };
+    const resolved = await resolvePreviewParams(manager, doc, {
+      cap: 32,
+      save: async (host) => {
+        saves += 1;
+        host._openRevision = { report_id: 9, rev_id: 3 };
+      },
+      notify: (title, description) => notes.push({ title, description }),
+    });
+    expect(saves).toBe(1);
+    expect(manager.editHelper.snapped).toBe(true);
+    expect(manager.editHelper.checked).toBe(true);
+    expect(notes).toEqual([PREVIEW_OVER_CAP_TOAST]);
+    expect(resolved.stored).toBe(true);
+    expect(resolved.params.report_id).toBe(9);
+    expect(resolved.params.rev_id).toBe(3);
+    expect(resolved.params.definition).toBeUndefined();
+  });
+
+  it('does not save a definition that fits', async () => {
+    let saves = 0;
+    const resolved = await resolvePreviewParams({}, detail(), {
+      cap: 8 * 1024 * 1024,
+      save: async () => { saves += 1; },
+      notify: () => { throw new Error('toast'); },
+    });
+    expect(saves).toBe(0);
+    expect(resolved.stored).toBe(false);
+    expect(resolved.params.definition).toEqual(composeDefinition(detail()));
+  });
+
+  it('leaves the preview unsent when the save fails or no row is selected', async () => {
+    const doc = detail();
+    await expect(resolvePreviewParams({ _selectedRow: () => null }, doc, { cap: 32 }))
+      .rejects.toMatchObject({
+        overCapSave: true,
+        serverError: { error: 'Save is not available' },
+      });
+    const failed = new Error('The insert did not return a report id.');
+    await expect(resolvePreviewParams({
+      _selectedRow: () => ({ report_id: 1 }),
+    }, doc, {
+      cap: 32,
+      save: async () => { throw failed; },
+      notify: () => { throw new Error('toast'); },
+    })).rejects.toMatchObject({ overCapSave: true, message: failed.message });
   });
 });
 

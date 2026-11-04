@@ -5,11 +5,13 @@
  */
 
 import './reports-preview.css';
+import { log, Subsystems, Status } from '../../core/log.js';
 import { invokeScript } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { sanitizeHtml } from '../../core/utils.js';
 import { composeDefinition, composeResult, composeSources, RENDER_SCRIPT } from './reports-compose.js';
 import { pendingQueryDatasources, runQueryDatasources } from './reports-query.js';
+import { reportKey, saveListedReport } from './reports-save.js';
 
 const SHELL_HEAD = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff}</style></head><body>';
 const SHELL_TAIL = '</body></html>';
@@ -58,6 +60,110 @@ export function previewParams(doc) {
   return { stage: 'html', definition: composeDefinition(doc), sources: composeSources(doc) };
 }
 
+/** Default conduit script params cap. Hydrogen's merged `_hydrogen` claims sit inside it. */
+export const SCRIPT_PARAMS_CAP_BYTES = 256 * 1024;
+
+/** Bytes left for the server-added `_hydrogen` object. The client does not send that key. */
+export const SCRIPT_PARAMS_RESERVE_BYTES = 4096;
+
+export const PREVIEW_OVER_CAP_TOAST = Object.freeze({
+  title: 'Saved to preview',
+  description: 'This report is larger than the 256 KiB script limit, so it was saved and previewed from the stored revision.',
+});
+
+/**
+ * UTF-8 length of the compact JSON the client would send as `params`.
+ * @param {object} params
+ * @returns {number}
+ */
+export function scriptParamsBytes(params) {
+  return new TextEncoder().encode(JSON.stringify(params)).length;
+}
+
+/**
+ * True when the inline params would not fit under the cap once `_hydrogen` is merged.
+ * @param {object} params
+ * @param {number} [cap]
+ * @param {number} [reserve]
+ * @returns {boolean}
+ */
+export function inlineParamsExceedCap(
+  params,
+  cap = SCRIPT_PARAMS_CAP_BYTES,
+  reserve = SCRIPT_PARAMS_RESERVE_BYTES,
+) {
+  return scriptParamsBytes(params) > cap - reserve;
+}
+
+/**
+ * Preview call that names a stored revision. Sources stay inline. The definition does not.
+ * @param {object} doc
+ * @param {{ report_id: number, rev_id: number }} identity
+ * @returns {object}
+ */
+export function storedPreviewParams(doc, identity) {
+  return {
+    stage: 'html',
+    report_id: identity.report_id,
+    rev_id: identity.rev_id,
+    sources: composeSources(doc),
+  };
+}
+
+/**
+ * @param {string} title
+ * @param {string} message
+ * @returns {Error}
+ */
+function overCapSaveError(title, message) {
+  const error = new Error(message);
+  error.overCapSave = true;
+  error.serverError = { error: title, message };
+  return error;
+}
+
+/**
+ * Inline params, or a save then `report_id` and `rev_id`, when the inline body is over the cap.
+ * A failed save throws and does not toast. The canvas is left to the caller.
+ * @param {object} manager
+ * @param {object} doc
+ * @param {{ cap?: number, save?: Function, notify?: Function }} [options]
+ * @returns {Promise<{ params: object, stored: boolean }>}
+ */
+export async function resolvePreviewParams(manager, doc, options = {}) {
+  const inline = previewParams(doc);
+  if (!inlineParamsExceedCap(inline, options.cap)) return { params: inline, stored: false };
+  const row = typeof manager._selectedRow === 'function' ? manager._selectedRow() : null;
+  if (!row) {
+    throw overCapSaveError('Save is not available', 'Select this report in the list before previewing it.');
+  }
+  const save = options.save || saveListedReport;
+  try {
+    await save(manager, row);
+  } catch (error) {
+    if (error && typeof error === 'object') error.overCapSave = true;
+    throw error;
+  }
+  const helper = manager.editHelper;
+  if (typeof helper?.isEditing === 'function' && helper.isEditing()
+    && typeof helper._takeSnapshot === 'function') {
+    helper._takeSnapshot();
+    if (typeof helper.checkDirtyState === 'function') helper.checkDirtyState();
+  }
+  const saved = manager._openRevision;
+  const reportId = reportKey(saved && saved.report_id);
+  const revId = reportKey(saved && saved.rev_id);
+  if (!reportId || !revId) {
+    throw overCapSaveError('Save Failed', 'The insert did not return a report id.');
+  }
+  const notify = options.notify || ((title, description) => {
+    toast.info(title, { description, subsystem: 'Manager' });
+  });
+  notify(PREVIEW_OVER_CAP_TOAST.title, PREVIEW_OVER_CAP_TOAST.description);
+  log(Subsystems.MANAGER, Status.INFO, `[Reports] Preview saved report ${reportId} revision ${revId}`);
+  return { params: storedPreviewParams(doc, { report_id: reportId, rev_id: revId }), stored: true };
+}
+
 /**
  * @param {object} envelope
  * @returns {{ html?: string, log?: Array<object>, error?: string }}
@@ -67,8 +173,8 @@ export function previewResult(envelope) {
   if (parsed.error) return { error: parsed.error };
   const body = parsed.ir;
   if (!body || typeof body.html !== 'string') return { error: 'Preview returned no HTML.' };
-  const log = Array.isArray(body.log) ? body.log : [];
-  return { html: body.html, log };
+  const entries = Array.isArray(body.log) ? body.log : [];
+  return { html: body.html, log: entries };
 }
 
 /**
@@ -127,9 +233,25 @@ export const reportPreviewMethods = {
         }
         doc = run.doc;
       }
+      let params;
+      try {
+        const resolved = await resolvePreviewParams(this, doc);
+        params = resolved.params;
+      } catch (error) {
+        if (error && error.overCapSave) {
+          const message = error instanceof Error && error.message ? error.message : 'Save failed.';
+          toast.error(error.serverError?.error || 'Save Failed', {
+            description: error.serverError?.message || message,
+            serverError: error.serverError,
+            subsystem: 'Conduit',
+          });
+          return;
+        }
+        throw error;
+      }
       const envelope = await invokeScript(this.app.api, {
         script: RENDER_SCRIPT,
-        params: previewParams(doc),
+        params,
         wait: true,
       });
       const result = previewResult(envelope);
