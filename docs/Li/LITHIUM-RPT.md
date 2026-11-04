@@ -144,9 +144,11 @@ replace, and a formula save on blur each commit one diff.
 `exportDefinition` keeps `history`. `format` stays 1. The formula
 editor keeps its own keystroke undo while that buffer is focused.
 
-`kind` `json` takes an array in `sources`, or the session sample while
-designing. That array is not stored in the definition. `kind` `query`
-names a QueryRef and binds. Sample rows still design the canvas.
+`kind` `json` stores its array as `rows` on the datasource in the
+definition (Phase 19b). Compose passes it as `sources[name]`. `kind`
+`query` names a QueryRef and binds; `queryRef` and `params` are
+reserved until Phase 28. The kind is a lookup key: JSON, Query, CSV
+(CSV is not read yet).
 
 v1 `typeKey` allowlist:
 

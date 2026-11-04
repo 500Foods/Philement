@@ -1,0 +1,24 @@
+{
+  "orders": [
+    {
+      "region": "North",
+      "customer": "Ada",
+      "amount": 10
+    },
+    {
+      "region": "North",
+      "customer": "Ada",
+      "amount": 12.5
+    },
+    {
+      "region": "North",
+      "customer": "Ben",
+      "amount": 7
+    },
+    {
+      "region": "South",
+      "customer": "Cy",
+      "amount": 3
+    }
+  ]
+}

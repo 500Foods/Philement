@@ -91,8 +91,10 @@ export class ReportJsonPage {
    * @param {HTMLElement} footerEl
    * @param {() => void} onBlur
    * @param {() => void} [onChange]
+   * @param {(doc: object) => string} [textOf] Buffer text; the Compose page passes its own.
    */
-  constructor(host, footerEl, onBlur, onChange) {
+  constructor(host, footerEl, onBlur, onChange, textOf) {
+    this.textOf = textOf || reportJsonText;
     this.host = host;
     this.footerEl = footerEl;
     this.onBlur = onBlur;
@@ -161,7 +163,7 @@ export class ReportJsonPage {
     }));
     this.host.innerHTML = '';
     this.view = new EditorView({
-      state: EditorState.create({ doc: reportJsonText(doc), extensions }),
+      state: EditorState.create({ doc: this.textOf(doc), extensions }),
       parent: this.host,
     });
     if (this.footerEl) {
@@ -198,7 +200,7 @@ export class ReportJsonPage {
     this.ensure(doc);
     if (!this.view) return;
     if (!held) {
-      const text = reportJsonText(doc);
+      const text = this.textOf(doc);
       if (this.view.state.doc.toString() !== text) {
         setEditorContentNoHistory(this.view, text);
       }

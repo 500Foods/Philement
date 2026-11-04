@@ -184,6 +184,12 @@ export const reportPointerMethods = {
       this._beginBandDrag(event);
       return;
     }
+    const delBtn = target.closest('.reports-band-delete');
+    if (delBtn) {
+      const owner = delBtn.closest('.reports-band');
+      if (this._recordEditing && owner && owner.dataset.bandId) this._removeBand(owner.dataset.bandId);
+      return;
+    }
     const bandEl = target.closest('.reports-band');
     if (bandEl && bandEl.dataset.bandId) {
       this._selectedBandId = bandEl.dataset.bandId;

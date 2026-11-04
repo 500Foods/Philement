@@ -12,7 +12,7 @@
  * Values the file omits show the Defaults table value.
  */
 
-import { bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
+import { GROUP_HEADER_TYPE, bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
 import { parseLength } from './model/units.js';
 import { datasourceNames } from './reports-sample.js';
 
@@ -187,6 +187,20 @@ const BAND_FIELDS = {
     },
     set: (doc, sel, value) => resizeBand(doc, sel.bandId, value),
   },
+  /** Group field: group header only. The footer shares it. */
+  7: {
+    get: (doc, sel) => {
+      const band = bandOf(doc, sel);
+      return band && own(band, 'field') ? { value: band.field, omitted: false } : { value: '', omitted: true };
+    },
+    set: (doc, sel, value) => {
+      const next = JSON.parse(JSON.stringify(doc));
+      const band = bandOf(next, sel);
+      if (!band || band.typeKey !== GROUP_HEADER_TYPE) throw new Error('Group field is set on the group header.');
+      band.field = String(value ?? '').trim();
+      return next;
+    },
+  },
 };
 
 function bandOf(doc, sel) {
@@ -346,9 +360,16 @@ export function attributeKeys(doc, sel, lookups) {
   const toKey = (entry) => (typeof entry === 'number' ? entry : byName.get(String(entry)));
   const { item } = sel && sel.itemId ? findSelected(doc, sel) : {};
   if (!item && selectionScope(doc, sel) === 'band') {
-    const row = types.find((entry) => Number(entry.key_idx) === Number(bandOf(doc, sel).typeKey));
+    const band = bandOf(doc, sel);
+    const row = types.find((entry) => Number(entry.key_idx) === Number(band.typeKey));
     const list = attrList(row) || [3];
-    return list.map(toKey).filter(Number.isInteger);
+    const keys = list.map(toKey).filter(Number.isInteger);
+    if (band.typeKey === GROUP_HEADER_TYPE) {
+      if (!keys.includes(7)) keys.push(7);
+    } else {
+      return keys.filter((key) => key !== 7);
+    }
+    return keys;
   }
   if (item) {
     const row = types.find((entry) => Number(entry.key_idx) === Number(item.typeKey));

@@ -6,7 +6,7 @@
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import { toast } from '../../shared/toast.js';
-import { addItem } from './model/document.js';
+import { addBandInOrder, addItem, removeBand } from './model/document.js';
 import { FIELD_TYPES, parseSample, unboundFields } from './reports-sample.js';
 
 /** Profile path for the selected element group. */
@@ -37,7 +37,7 @@ export function saveCategory(name, settings) {
   if (service && REPORT_CATEGORIES.includes(name)) service.set(CATEGORY_PROFILE_PATH, name);
 }
 
-export const REPORT_CATEGORIES = Object.freeze(['static', 'field']);
+export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'bands']);
 
 const TYPE_NAMES = Object.freeze({ 20: 'text field', 21: 'number field', 24: 'datetime field' });
 
@@ -47,6 +47,8 @@ export const reportFieldMethods = {
     return {
       fieldBtn: root.querySelector('#reports-field-btn'),
       itemBtns: [...root.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key]')],
+      bandsBtn: root.querySelector('#reports-bands-btn'),
+      bandBtns: [...root.querySelectorAll('#reports-items-toolbar [data-reports-category="bands"][data-band-type]')],
       sampleBtn: root.querySelector('#reports-sample-btn'),
       pasteBtn: root.querySelector('#reports-sample-paste-btn'),
       sampleInput: root.querySelector('#reports-sample-input'),
@@ -58,11 +60,15 @@ export const reportFieldMethods = {
     this._fieldEls = els;
     this._onFieldCategory = () => this.selectCategory('field');
     this._onFieldItem = (event) => this._addField(Number(event.currentTarget.dataset.typeKey));
+    this._onBandsCategory = () => this.selectCategory('bands');
+    this._onBandAdd = (event) => this._addBandType(Number(event.currentTarget.dataset.bandType));
     this._onSampleClick = () => els.sampleInput?.click();
     this._onSampleFile = () => this._importSampleFile();
     this._onSamplePaste = () => this._pasteSample();
     els.fieldBtn?.addEventListener('click', this._onFieldCategory);
     els.itemBtns.forEach((btn) => btn.addEventListener('click', this._onFieldItem));
+    els.bandsBtn?.addEventListener('click', this._onBandsCategory);
+    els.bandBtns.forEach((btn) => btn.addEventListener('click', this._onBandAdd));
     els.sampleBtn?.addEventListener('click', this._onSampleClick);
     els.sampleInput?.addEventListener('change', this._onSampleFile);
     els.pasteBtn?.addEventListener('click', this._onSamplePaste);
@@ -73,6 +79,8 @@ export const reportFieldMethods = {
     if (!els) return;
     els.fieldBtn?.removeEventListener('click', this._onFieldCategory);
     els.itemBtns.forEach((btn) => btn.removeEventListener('click', this._onFieldItem));
+    els.bandsBtn?.removeEventListener('click', this._onBandsCategory);
+    els.bandBtns.forEach((btn) => btn.removeEventListener('click', this._onBandAdd));
     els.sampleBtn?.removeEventListener('click', this._onSampleClick);
     els.sampleInput?.removeEventListener('change', this._onSampleFile);
     els.pasteBtn?.removeEventListener('click', this._onSamplePaste);
@@ -100,6 +108,7 @@ export const reportFieldMethods = {
     const els = this._fieldEls;
     if (!els) return;
     els.itemBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
+    els.bandBtns.forEach((btn) => { btn.disabled = !editing || !this.doc; });
   },
 
   _addField(typeKey) {
@@ -117,6 +126,44 @@ export const reportFieldMethods = {
     if (added) this._selectedItemId = added.id;
     this._commitDocument(next);
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Added ${TYPE_NAMES[typeKey]} ${added ? added.id : ''} on ${this._selectedBandId}`);
+  },
+
+  /** Bands palette: add one band (14 adds a header and footer pair). */
+  _addBandType(typeKey) {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc) return;
+    const before = new Set(this.doc.bands.map((band) => band.id));
+    let next;
+    try {
+      next = addBandInOrder(this.doc, typeKey);
+    } catch (error) {
+      this._failEdit(error, 'Band could not be added.');
+      return;
+    }
+    const added = next.bands.find((band) => !before.has(band.id));
+    if (added) {
+      this._selectedBandId = added.id;
+      this._selectedItemId = '';
+    }
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added band ${added ? added.id : ''}`);
+  },
+
+  /** Delete a band from its strip. A group header or footer removes its pair. */
+  _removeBand(id) {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc) return;
+    let next;
+    try {
+      next = removeBand(this.doc, id);
+    } catch (error) {
+      this._failEdit(error, 'Band could not be deleted.');
+      return;
+    }
+    if (!next.bands.some((band) => band.id === this._selectedBandId)) {
+      this._selectedBandId = '';
+      this._selectedItemId = '';
+    }
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Deleted band ${id}`);
   },
 
   /**

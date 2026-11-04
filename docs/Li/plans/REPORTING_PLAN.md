@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 has not started. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." The next not-started phase is 19. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -78,11 +78,12 @@ Andrew reports the apply.
 | 14 | Property panel | Lithium UI | Medium | Complete |
 | 14b | Property panel preferences | Lithium UI | Medium | Complete |
 | 15 | Field items and a sample datasource | Lithium UI | Easy | Complete |
-| 16 | One group level | Lithium UI | Easy | Not started |
+| 16 | One group level | Lithium UI | Easy | Complete |
 | 17 | Save and load packet | Helium, human apply | Medium | Complete |
 | 18 | Revisions in the manager | Lithium UI | Medium | Complete |
-| 19 | Compose skeleton | Helium seed, human apply | Medium | Not started |
-| 20 | Value format | Helium amendment | Medium | Not started |
+| 19 | Compose skeleton | Helium seed, human apply | Medium | Complete |
+| 19b | Datasources editor and embedded JSON | Lithium UI + Helium lookup | Medium | Not started |
+| 20 | Value format | Helium amendment | Medium | In progress |
 | 21 | Paging | Helium amendment | Easy | Not started |
 | 22 | System datetime and system user | Lithium UI + Lua | Medium | Not started |
 | 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
@@ -201,7 +202,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 has not started. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." The next not-started phase is 19. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -370,7 +371,7 @@ the phase body.
 | --- | --- |
 | **Band** | Open implementation as of 2026-10-30. Each phase starts with `cdli && grok`. CATCHUP Phase 19 stays parked until Andrew names Course Builder. |
 | **Effort** | XL. Each phase is one behavior and one gate. A sidequest stays unnumbered unless he names it. Phase 10-UI is that name. It does not change the count of 72. |
-| **Done** | Phases 0–15 of 72 complete (2026-11-03), plus labeled Phase 13b (section lookups 074 and 075, applied); labeled Phase 14b (property panel preferences, complete 2026-11-03). Phase 14 closed after Andrew said "Lets wrap this phase". Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 13 is complete (2026-11-02); lookup 057 has eight page sizes, with A4 and A3 landscape skipped by choice. Phase 15 is complete (2026-11-03): Andrew confirmed fields, sample, band floor, and the audit footer. Phase 16 has not started. |
+| **Done** | Phases 0–18 of 72 complete (2026-11-03), plus labeled Phase 13b (section lookups 074 and 075, applied); labeled Phase 14b (property panel preferences, complete 2026-11-03). Phase 14 closed after Andrew said "Lets wrap this phase". Phases 6 and 7 closed after Andrew confirmed drag, Undo, Redo, export, import, and the dots. Phase 8 closed after Andrew accepted the rulers, the corner cycle, and the unit name. The 2026-11-01 sidequest draws each band once, at the content width. The top ruler sits above the first band's descriptor and starts at 0. Each left ruler starts at 0 at that band's body. Snap starts on. Paper height and margin guides stay off the surface. Phase 9 closed after Andrew said the view scale works pretty well. Phase 10 closed after Andrew said static text works pretty well. Phase 10-UI is complete. Andrew said the changes are working. Phase 17 is complete. Phase 18 is complete (2026-10-31). Andrew said the changes are working. Phase 11 is complete (2026-11-02). Andrew confirmed lookup 053 after the 1436 apply. Phase 13 is complete (2026-11-02); lookup 057 has eight page sizes, with A4 and A3 landscape skipped by choice. Phase 15 is complete (2026-11-03): Andrew confirmed fields, sample, band floor, and the audit footer. Phase 16 is complete (2026-11-03). |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
 
@@ -3339,3 +3340,112 @@ datasource, the band content floor, and the audit footer in the
 browser: "Everything looks good. I think we're ready to wrap Phase
 15." 15.4 passes. Phase 16 (one group level) is next and has not
 started.
+
+
+### 2026-11-03 — Flatpickr-ce parked on Phase 22
+
+Andrew: park the Flatpickr community-edition swap on the date-work
+phase, not as a Phase 16 sidequest. Note sits under Phase 22 in
+[`03-preview.md`](/docs/Li/plans/reporting/03-preview.md): alias
+`"flatpickr": "npm:flatpickr-ce@4.9.0"` (exact pin), smoke
+FlatpickrPicker / Date editor / Profile date-formats when that phase
+opens.
+
+**2026-11-03 — Phase 16 started (one group level).** Field toolbar gets
+a Group button (`#reports-group-btn`): one click adds a group header
+(typeKey 14, `field: ""`) just before Detail and a group footer
+(typeKey 16) just after it, both `0.25 in`. The header is selected. A
+second click toasts "One group level only" and changes nothing. Model:
+`addGroup` / `hasGroup` in `model/document.js`. Property panel: the
+group header shows Height plus Field (054 key 7, sample columns when a
+sample is loaded, else typed); the footer shows Height only and shares
+the header's field. Export keys match `grouped.definition.json` for gh
+and gf. New `reports-group.test.js` (3 tests). `npm test`: 87 files,
+1424 passed, 12 skipped. ESLint clean on reports + new test. Stylelint
+clean. 16.3 browser check waits for Andrew. Phase 16 In progress.
+
+**2026-11-03 — Phase 16 widened (Andrew): bands palette, delete, multi-group.**
+New Bands category (`#reports-bands-btn`) beside Static / Field, with
+Report Header, Page Header, Group, Detail, Page Footer, Report Footer.
+`addBandInOrder` puts each at its canvas rank (rh, ph, gh…, detail,
+gf…, pf, rf). Generated ids are short per type (rh1, ph1, gh1, d1, gf1,
+pf1, rf1). `b1` is gone. Group no longer refuses a second level: each
+new group is innermost (gh1 gh2 detail gf2 gf1). Pairing is by nesting
+(`groupPartner`), so no new definition keys, and gh/gf keys still match
+`grouped.definition.json`. The band strip shows the group field (the
+footer shows its header's) and a trash button at the far right.
+`removeBand` deletes a group pair together. The Group button moved
+from Field to Bands. `npm test`: 87 files, 1426 passed, 12 skipped.
+ESLint clean on reports and the touched tests. The full-tree count is
+unchanged at 171 (pre-existing). Stylelint clean. New icons need
+`npm run icon:registry` (the build runs it). Browser 16.3 / 16.8 wait
+for Andrew.
+
+**2026-11-03 — Phase 16 browser tweaks (Andrew).** The first band strip
+spans the ruler column like the others (the headed band hides its ruler
+pad). `createBlank` now uses ph1, d1, pf1. `defaultBandId` picks the
+first detail by type, not by the id `detail`. Imported files keep their
+ids. `canRemoveBand` keeps the last detail: no trash on it, and
+`removeBand` throws. The Text / Number / Datetime field buttons are
+draggable and drop onto a band under the pointer with an empty binding
+(kind `reports-field:<typeKey>`). Bands buttons stay click-only. Tests
+that built on `createBlank` moved to the new ids. `npm test`: 87 files,
+1427 passed, 12 skipped. ESLint clean on reports and the reports tests.
+Stylelint clean. Phase 16 In progress until Andrew's browser check.
+
+**2026-11-03 — Phase 16 complete.** Andrew: "Seems to be working pretty
+well. Let's close Phase 16." Groups (multi-level), Bands palette, band
+delete with pair and last-detail rules, short ids, and field drag-drop
+are in. Band trash buttons hide outside edit mode. 87 files, 1427 passed, 12 skipped. Phases 17 and 18 were
+already complete (2026-10-31), so the next not-started phase is 19
+(Compose skeleton). No migration; next Acuranzo file 1444; next
+caller-facing QueryRef 173.
+
+**2026-11-03 — Phase 19 started; acuranzo_1444 drafted.** Andrew widened
+the scope: compose every band role, any count, multi-level groups (not
+one level). `Reports.Render` (group Reports, invokable 1, mcp_access 0)
+takes `stage`, inline `definition`, and `sources`; `stage=compose`
+returns `{ pages, log }`. Values as-is. Unknown typeKey, missing
+datasource, and empty field warn; format ≠ 1 and other stages return
+an error body. Added the bands and warnings fixtures. All five fixtures
+match under a local Lua 5.5 harness. Known gap: Hydrogen encodes an
+empty Lua table as `{}`, so empty `items` and `log` come back as `{}`
+rather than `[]`. Next Acuranzo file 1445; next caller-facing QueryRef
+173 (unused).
+
+**2026-11-03 — Phase 19: Compose tab.** Renamed the JSON tab to
+Definition (page id still `json`). Added Compose, Preview HTML, and
+Preview PDF after Revisions. Compose runs `Reports.Render`
+`stage=compose` on the open definition with the session sample as
+sources and shows `{ pages, log }` read-only, with `{}` shown as `[]`.
+HTML and PDF are placeholders. Phase 19 stays In progress until
+Andrew applies acuranzo_1444 and the fixture calls match.
+
+**2026-11-03 — Phase 19: editor toolbars.** Run moved to the start of
+the right-hand cluster. Definition and Compose hide Import/Export and
+show Collapse all, Expand all, and the shared font popup (Query Manager
+pattern, per-page localStorage). Phase 19 stays In progress.
+
+**2026-11-03 — Phase 19 complete.** Andrew applied acuranzo_1444 and
+enabled Scripting in hydrogen-pintura.json. Compose is live in the
+designer: the JSON tab is now Definition, Compose runs
+`Reports.Render` `stage=compose`, and Preview HTML and Preview PDF
+are placeholders. All five structural fixtures match. Next: Phase 20
+Value format (amendment file 1445).
+
+**2026-11-03 — Phase 20 started.** Wrote acuranzo_1445 (does not
+edit 1444): `Reports.Render` compose routes field items through the
+Value format table. Null prints blank; a bad mask or value warns once
+per item and prints raw. Added the masks fixture set. The formatted
+detail fixture and the masks fixture match under the local Lua 5.5
+harness, and static, grouped, bands, and warnings are unchanged.
+Variance: absent and null columns both print blank with no warning.
+Waiting on Andrew to apply 1445. Next Acuranzo file 1446.
+
+**2026-11-03 — Phase 19b drafted.** Andrew locked the datasource
+decisions in Coder 3 chat. The Report owns datasources; the first
+drives iteration. `json` rows are stored in the definition for good.
+A new kind lookup (JSON, Query, CSV) gets one Acuranzo file after
+1445. QueryRef picker, `Reporting` status, the demo query, and query
+field and param metadata stay in Phase 28. Phase 20 stays in
+progress. Next Acuranzo file 1446.

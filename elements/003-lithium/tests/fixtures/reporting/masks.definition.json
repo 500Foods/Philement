@@ -1,0 +1,236 @@
+{
+  "format": 1,
+  "name": "Masks",
+  "title": "Masks",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "vals",
+      "kind": "json",
+      "shape": "list"
+    }
+  ],
+  "bands": [
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.4 in",
+      "items": []
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "datasource": "vals",
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "n_plain",
+          "typeKey": 21,
+          "field": "n",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "n_money",
+          "typeKey": 21,
+          "field": "n",
+          "mask": "$#,##0.00",
+          "box": {
+            "left": "0.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "n_paren",
+          "typeKey": 21,
+          "field": "n",
+          "mask": "(#,##0.00)",
+          "box": {
+            "left": "1 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "n_pct",
+          "typeKey": 21,
+          "field": "n",
+          "mask": "0%",
+          "box": {
+            "left": "1.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "n_comma",
+          "typeKey": 21,
+          "field": "n",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "2 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "n_bad",
+          "typeKey": 21,
+          "field": "n",
+          "mask": "#.#0",
+          "box": {
+            "left": "2.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "d_iso",
+          "typeKey": 24,
+          "field": "d",
+          "mask": "yyyy-mm-dd",
+          "box": {
+            "left": "3 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "d_long",
+          "typeKey": 24,
+          "field": "d",
+          "mask": "d mmm yyyy",
+          "box": {
+            "left": "3.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "d_time",
+          "typeKey": 24,
+          "field": "d",
+          "mask": "dd/mm/yy hh:nn:ss",
+          "box": {
+            "left": "4 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "d_plain",
+          "typeKey": 24,
+          "field": "d",
+          "box": {
+            "left": "4.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "t_mask",
+          "typeKey": 24,
+          "field": "t",
+          "mask": "dd/mm/yy hh:nn",
+          "box": {
+            "left": "5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "t_plain",
+          "typeKey": 24,
+          "field": "t",
+          "box": {
+            "left": "5.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "u_mask",
+          "typeKey": 24,
+          "field": "u",
+          "mask": "yyyy-mm-dd hh:nn:ss",
+          "box": {
+            "left": "6 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "u_plain",
+          "typeKey": 24,
+          "field": "u",
+          "box": {
+            "left": "6.5 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "s_plain",
+          "typeKey": 20,
+          "field": "s",
+          "box": {
+            "left": "7 in",
+            "top": "0 in",
+            "width": "0.5 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.4 in",
+      "items": []
+    }
+  ],
+  "functions": []
+}

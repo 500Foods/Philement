@@ -1,0 +1,1876 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "typeKey": 13,
+          "id": "ph",
+          "height": "0.4 in",
+          "items": []
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "1.235",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "$1.24",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "1.24",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "124%",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "1.24",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "1.235",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "2026-11-03",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "3 Nov 2026",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "03/11/26 00:00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "2026-11-03",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "03/11/26 14:05",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "2026-11-03 14:05",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "1970-01-01 00:00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "1970-01-01",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "North",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "-1.235",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "-$1.24",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "(1.24)",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "-124%",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "-1.24",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "-1.235",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "2026-01-09",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "9 Jan 2026",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "09/01/26 00:00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "2026-01-09",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "09/01/26 00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "2026-01-09 00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "2026-11-04 00:00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "2026-11-04",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "x",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "0",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "$0.00",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "0.00",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "0%",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "0.00",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "0",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "bad-date",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "bad-date",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "bad-date",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "bad-date",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "2026-11-04 13:46:40",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "2026-11-04 13:46",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "-1234.5",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "-$1,234.50",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "(1,234.50)",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "-123450%",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "-1,234.50",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "-1234.5",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "2024-02-29",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "29 Feb 2024",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "29/02/24 00:00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "2024-02-29",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "0.256",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "$0.26",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "0.26",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "26%",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "0.26",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "0.256",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "1999-12-31",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "31 Dec 1999",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "31/12/99 00:00:00",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "1999-12-31",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "100000000000000000000",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "$100,000,000,000,000,000,000.00",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "100,000,000,000,000,000,000.00",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "10000000000000000000000%",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "100,000,000,000,000,000,000.00",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "100000000000000000000",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 15,
+          "id": "detail",
+          "height": "0.25 in",
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_plain",
+              "text": "",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_money",
+              "text": "",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "0.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_paren",
+              "text": "",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_pct",
+              "text": "",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "1.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_comma",
+              "text": "",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "n_bad",
+              "text": "",
+              "typeKey": 21,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "2.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_iso",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_long",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "3.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_time",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "d_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "4.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "t_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "5.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_mask",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "u_plain",
+              "text": "",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "6.5 in"
+              },
+              "align": "Left"
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "family": "Vanadium Sans",
+                "size": "10 pt"
+              },
+              "id": "s_plain",
+              "text": "",
+              "typeKey": 20,
+              "box": {
+                "height": "0.2 in",
+                "width": "0.5 in",
+                "top": "0 in",
+                "left": "7 in"
+              },
+              "align": "Left"
+            }
+          ]
+        },
+        {
+          "typeKey": 17,
+          "id": "pf",
+          "height": "0.4 in",
+          "items": []
+        }
+      ]
+    }
+  ],
+  "log": [
+    {
+      "level": "warn",
+      "message": "item n_bad in band detail has mask #.#0 which does not parse; printed raw"
+    },
+    {
+      "level": "warn",
+      "message": "item d_iso in band detail value bad-date is not a date; printed raw"
+    },
+    {
+      "level": "warn",
+      "message": "item d_long in band detail value bad-date is not a date; printed raw"
+    },
+    {
+      "level": "warn",
+      "message": "item d_time in band detail value bad-date is not a date; printed raw"
+    },
+    {
+      "level": "warn",
+      "message": "item d_plain in band detail value bad-date is not a date; printed raw"
+    }
+  ]
+}

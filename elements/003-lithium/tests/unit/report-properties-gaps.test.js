@@ -23,9 +23,9 @@ const lookups = {
 
 describe('Phase 14 gaps', () => {
   it('item without a font shows the report font with the override note', () => {
-    const doc = addItem(createBlank(), 'detail', { typeKey: 0, id: 't1' });
+    const doc = addItem(createBlank(), 'd1', { typeKey: 0, id: 't1' });
     const unknown = [];
-    const rows = propertyRows(doc, { bandId: 'detail', itemId: 't1' }, lookups, undefined, unknown);
+    const rows = propertyRows(doc, { bandId: 'd1', itemId: 't1' }, lookups, undefined, unknown);
     const family = rows.find((row) => row.key === 15);
     expect(family.omitted).toBe(true);
     expect(family.note).toBe(FONT_NOTE);
@@ -41,15 +41,15 @@ describe('Phase 14 gaps', () => {
   });
 
   it('number item with an empty mask shows the plain-decimal rule', () => {
-    const doc = addItem(createBlank(), 'detail', { typeKey: 21, id: 'n1', mask: '' });
-    const rows = propertyRows(doc, { bandId: 'detail', itemId: 'n1' }, lookups);
+    const doc = addItem(createBlank(), 'd1', { typeKey: 21, id: 'n1', mask: '' });
+    const rows = propertyRows(doc, { bandId: 'd1', itemId: 'n1' }, lookups);
     const mask = rows.find((row) => row.id === MASK_ROW_ID);
     expect(mask.note).toBe(PLAIN_DECIMAL_NOTE);
     expect(mask.readOnly).toBe(false);
-    expect(applyProperty(doc, { bandId: 'detail', itemId: 'n1' }, MASK_ROW_ID, ' #,##0.00 ')
-      .bands.find((b) => b.id === 'detail').items.find((i) => i.id === 'n1').mask).toBe('#,##0.00');
-    const text = addItem(createBlank(), 'detail', { typeKey: 0, id: 't1', mask: '' });
-    expect(propertyRows(text, { bandId: 'detail', itemId: 't1' }, lookups).some((row) => row.id === MASK_ROW_ID)).toBe(false);
+    expect(applyProperty(doc, { bandId: 'd1', itemId: 'n1' }, MASK_ROW_ID, ' #,##0.00 ')
+      .bands.find((b) => b.id === 'd1').items.find((i) => i.id === 'n1').mask).toBe('#,##0.00');
+    const text = addItem(createBlank(), 'd1', { typeKey: 0, id: 't1', mask: '' });
+    expect(propertyRows(text, { bandId: 'd1', itemId: 't1' }, lookups).some((row) => row.id === MASK_ROW_ID)).toBe(false);
   });
 
   it('number editor keeps the unit and rejects junk', () => {
@@ -73,13 +73,13 @@ describe('Phase 14 gaps', () => {
 
   it('band scope shows band rows and edits the band height', () => {
     const doc = createBlank();
-    const sel = { bandId: 'detail', itemId: '', band: true };
+    const sel = { bandId: 'd1', itemId: '', band: true };
     expect(selectionScope(doc, sel)).toBe('band');
-    expect(selectionScope(doc, { bandId: 'detail', itemId: '' })).toBe('report');
+    expect(selectionScope(doc, { bandId: 'd1', itemId: '' })).toBe('report');
     const withHeight = { ...lookups, attributes: [...lookups.attributes, attr(3, 'Height', { section: 5, Editor: 'Number' })] };
     const rows = propertyRows(doc, sel, withHeight);
     expect(rows.map((row) => row.key)).toEqual([3]);
     const next = applyProperty(doc, sel, '3', '1.5 in', {});
-    expect(next.bands.find((band) => band.id === 'detail').height).toBe('1.5 in');
+    expect(next.bands.find((band) => band.id === 'd1').height).toBe('1.5 in');
   });
 });

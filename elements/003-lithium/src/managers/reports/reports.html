@@ -17,30 +17,49 @@
         <fa fa-pen-to-square></fa>
         <span>Editor</span>
       </button>
-      <button type="button" class="lithium-toolbar-tab" id="reports-json-tab" data-page="json" data-collapsible-text>
+      <button type="button" class="lithium-toolbar-tab" id="reports-json-tab" data-page="json" title="Definition: the raw report definition JSON" aria-label="Definition" data-collapsible-text>
         <fa fa-brackets-curly></fa>
-        <span>JSON</span>
+        <span>Definition</span>
       </button>
       <button type="button" class="lithium-toolbar-tab" id="reports-revisions-tab" data-page="revisions" data-collapsible-text>
         <fa fa-clock></fa>
         <span>Revisions</span>
       </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-compose-tab" data-page="compose" title="Compose: the intermediate layout from Reports.Render" aria-label="Compose" data-collapsible-text>
+        <fa fa-layer-group></fa>
+        <span>Compose</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-html-tab" data-page="html" title="Preview HTML" aria-label="Preview HTML" data-collapsible-text>
+        <fa fa-globe></fa>
+        <span>Preview HTML</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-pdf-tab" data-page="pdf" title="Preview PDF" aria-label="Preview PDF" data-collapsible-text>
+        <fa fa-file-pdf></fa>
+        <span>Preview PDF</span>
+      </button>
       <div class="lithium-toolbar-placeholder"></div>
-      <button type="button" class="lithium-toolbar-btn" id="reports-import-btn" title="Import a definition file">
+      <button type="button" class="lithium-toolbar-btn" id="reports-compose-btn" data-reports-page="compose" title="Run Reports.Render (compose) on the current definition" hidden>
+        <fa fa-arrows-rotate></fa>
+        <span>Run</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-import-btn" data-reports-page="report editor revisions html pdf" title="Import a definition file">
         <fa fa-upload></fa>
         <span>Import</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-export-btn" title="Export the definition file">
+      <button type="button" class="lithium-toolbar-btn" id="reports-export-btn" data-reports-page="report editor revisions html pdf" title="Export the definition file">
         <fa fa-download></fa>
         <span>Export</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-fold-btn" data-reports-page="json" title="Collapse all folds" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-fold-btn" data-reports-page="json compose" title="Collapse all folds" hidden>
         <fa fa-compress></fa>
         <span>Collapse all</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-unfold-btn" data-reports-page="json" title="Expand all folds" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-unfold-btn" data-reports-page="json compose" title="Expand all folds" hidden>
         <fa fa-expand></fa>
         <span>Expand all</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-font-btn" data-reports-page="json compose" title="Font Settings" hidden>
+        <fa fa-font-case></fa>
       </button>
       <span class="reports-view-controls" id="reports-view-controls" data-reports-page="editor">
         <button type="button" class="lithium-toolbar-btn" id="reports-fit-btn" title="Fit the page to the canvas width">
@@ -71,6 +90,10 @@
         <fa fa-database></fa>
         <span>Field</span>
       </button>
+      <button type="button" class="lithium-toolbar-btn reports-category-btn" id="reports-bands-btn" title="Bands" aria-pressed="false">
+        <fa fa-layer-group></fa>
+        <span>Bands</span>
+      </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-undo-btn" title="Undo" data-shortcut-id="reports-undo" disabled>
         <fa fa-rotate-left></fa>
@@ -90,17 +113,41 @@
         <fa fa-font-case></fa>
         <span>Text</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-field-text-btn" title="Add a text field to the selected band" data-reports-category="field" data-type-key="20" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-text-btn" title="Add a text field to the selected band" draggable="true" data-reports-category="field" data-type-key="20" hidden>
         <fa fa-font></fa>
         <span>Text</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-field-number-btn" title="Add a number field to the selected band" data-reports-category="field" data-type-key="21" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-number-btn" title="Add a number field to the selected band" draggable="true" data-reports-category="field" data-type-key="21" hidden>
         <fa fa-hashtag></fa>
         <span>Number</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-field-datetime-btn" title="Add a date and time field to the selected band" data-reports-category="field" data-type-key="24" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-datetime-btn" title="Add a date and time field to the selected band" draggable="true" data-reports-category="field" data-type-key="24" hidden>
         <fa fa-calendar-days></fa>
         <span>Datetime</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-band-report-header-btn" title="Add a report header band" data-reports-category="bands" data-band-type="12" hidden>
+        <fa fa-arrow-up-to-line></fa>
+        <span>Report Header</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-band-page-header-btn" title="Add a page header band" data-reports-category="bands" data-band-type="13" hidden>
+        <fa fa-arrow-up></fa>
+        <span>Page Header</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-band-group-btn" title="Add a group level: a group header before the detail band and a group footer after it" data-reports-category="bands" data-band-type="14" hidden>
+        <fa fa-layer-group></fa>
+        <span>Group</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-band-detail-btn" title="Add a detail band" data-reports-category="bands" data-band-type="15" hidden>
+        <fa fa-bars></fa>
+        <span>Detail</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-band-page-footer-btn" title="Add a page footer band" data-reports-category="bands" data-band-type="17" hidden>
+        <fa fa-arrow-down></fa>
+        <span>Page Footer</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-band-report-footer-btn" title="Add a report footer band" data-reports-category="bands" data-band-type="18" hidden>
+        <fa fa-arrow-down-to-line></fa>
+        <span>Report Footer</span>
       </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-sample-btn" title="Import sample data (JSON array). Session only, never exported." data-reports-category="field" hidden>
         <fa fa-file-import></fa>
@@ -188,6 +235,18 @@
           <div class="reports-json-host" id="reports-json-editor"></div>
           <div class="lithium-toolbar lithium-editor-footer" id="reports-json-footer"></div>
         </div>
+      </div>
+      <div class="reports-page-pane" id="reports-page-compose" data-reports-page="compose" hidden>
+        <div class="reports-json-wrap">
+          <div class="reports-json-host" id="reports-compose-editor" aria-label="Compose result"></div>
+          <div class="lithium-toolbar lithium-editor-footer" id="reports-compose-footer"></div>
+        </div>
+      </div>
+      <div class="reports-page-pane" id="reports-page-html" data-reports-page="html" hidden>
+        <p class="reports-revisions-note">Preview HTML is not wired yet (Phases 24 and 25).</p>
+      </div>
+      <div class="reports-page-pane" id="reports-page-pdf" data-reports-page="pdf" hidden>
+        <p class="reports-revisions-note">Preview PDF is not wired yet.</p>
       </div>
     </div>
     <input type="file" class="reports-file-input" id="reports-import-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">

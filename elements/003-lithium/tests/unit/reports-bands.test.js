@@ -14,15 +14,15 @@ describe('report bands', () => {
   });
 
   it('uses the stored height and the default when the key is omitted', () => {
-    expect(bandHeight({ id: 'ph', typeKey: 13 })).toBe('0.4 in');
-    expect(bandHeight({ id: 'detail', typeKey: 15 })).toBe('0.25 in');
+    expect(bandHeight({ id: 'ph1', typeKey: 13 })).toBe('0.4 in');
+    expect(bandHeight({ id: 'd1', typeKey: 15 })).toBe('0.25 in');
     expect(bandHeight({ id: 'gh', typeKey: 14, height: '1 in' })).toBe('1 in');
     expect(() => bandHeight({ id: 'x', typeKey: 99 })).toThrow(/needs a height/);
   });
 
   it('frames bands in array order and refuses a bad length', () => {
     const blank = bandFrames(createBlank());
-    expect(blank.map((frame) => frame.id)).toEqual(['ph', 'detail', 'pf']);
+    expect(blank.map((frame) => frame.id)).toEqual(['ph1', 'd1', 'pf1']);
     expect(blank.map((frame) => frame.role)).toEqual(['Page header', 'Detail', 'Page footer']);
     expect(blank.map((frame) => frame.heightPx)).toEqual([
       toCssPx('0.4 in'),
@@ -33,7 +33,7 @@ describe('report bands', () => {
 
     const bad = bandFrames({
       format: 1,
-      bands: [{ id: 'detail', typeKey: 15, height: '4' }],
+      bands: [{ id: 'd1', typeKey: 15, height: '4' }],
     });
     expect(bad[0].error).toMatch(/needs a unit/);
     expect(bad[0].heightPx).toBeUndefined();

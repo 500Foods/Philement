@@ -32,10 +32,10 @@ const lookups = {
 };
 
 describe('field property rows', () => {
-  const sel = { bandId: 'detail', itemId: 'n1' };
+  const sel = { bandId: 'd1', itemId: 'n1' };
 
   it('Field lists the sample columns, Datasource lists definition datasources', () => {
-    const doc = { ...addItem(createBlank(), 'detail', { typeKey: 21, id: 'n1', field: '' }), datasources: ['main'] };
+    const doc = { ...addItem(createBlank(), 'd1', { typeKey: 21, id: 'n1', field: '' }), datasources: ['main'] };
     const rows = propertyRows(doc, sel, { ...lookups, sampleColumns: ['customer', 'total'] });
     const field = rows.find((row) => row.id === '7');
     expect(field.editor).toBe('List');
@@ -43,13 +43,13 @@ describe('field property rows', () => {
     expect(field.readOnly).toBe(false);
     expect(rows.find((row) => row.id === '8').list).toEqual(['main']);
     const bound = applyProperty(doc, sel, '7', 'customer');
-    expect(bound.bands.find((b) => b.id === 'detail').items[0].field).toBe('customer');
+    expect(bound.bands.find((b) => b.id === 'd1').items[0].field).toBe('customer');
   });
 
   it('with no sample, Field is typed, and a bound value stays listed', () => {
-    const doc = addItem(createBlank(), 'detail', { typeKey: 21, id: 'n1', field: 'legacy' });
+    const doc = addItem(createBlank(), 'd1', { typeKey: 21, id: 'n1', field: 'legacy' });
     expect(propertyRows(doc, sel, lookups).find((row) => row.id === '7').list).toEqual(['legacy']);
-    const empty = addItem(createBlank(), 'detail', { typeKey: 21, id: 'n1', field: '' });
+    const empty = addItem(createBlank(), 'd1', { typeKey: 21, id: 'n1', field: '' });
     expect(propertyRows(empty, sel, lookups).find((row) => row.id === '7').editor).toBe('Text');
   });
 });
@@ -105,7 +105,7 @@ describe('Report Manager field items', () => {
     const saved = await open();
     q('#reports-field-btn').click();
     q('#reports-field-datetime-btn').click();
-    const item = manager.doc.bands.find((b) => b.id === 'detail').items[0];
+    const item = manager.doc.bands.find((b) => b.id === 'd1').items[0];
     expect(item).toMatchObject({ typeKey: 24, field: '', mask: '' });
     const node = q('.reports-item-field');
     expect(node.textContent).toBe('Field datetime');
@@ -119,11 +119,11 @@ describe('Report Manager field items', () => {
     expect(manager.loadSample('not json')).toBe(false);
     expect(manager.sampleColumns()).toEqual(['customer', 'when']);
 
-    manager._commitDocument(applyProperty(manager.doc, { bandId: 'detail', itemId: item.id }, '7', 'when'));
+    manager._commitDocument(applyProperty(manager.doc, { bandId: 'd1', itemId: item.id }, '7', 'when'));
     expect(q('.reports-item-field').textContent).toBe('when');
     manager.elements.exportBtn.click();
     expect(saved).toHaveLength(1);
     expect(saved[0].json).not.toContain('2026-11-03');
-    expect(JSON.parse(saved[0].json).bands.find((b) => b.id === 'detail').items[0]).toMatchObject({ typeKey: 24, field: 'when' });
+    expect(JSON.parse(saved[0].json).bands.find((b) => b.id === 'd1').items[0]).toMatchObject({ typeKey: 24, field: 'when' });
   });
 });

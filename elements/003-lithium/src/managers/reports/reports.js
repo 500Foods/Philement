@@ -60,6 +60,8 @@ import { reportDropMethods } from './reports-drop.js';
 import { REPORT_CATEGORIES, loadCategory, reportFieldMethods, saveCategory } from './reports-fields.js';
 import { reportLockMethods } from './reports-lock.js';
 import { reportPageMethods } from './reports-pages.js';
+import { reportComposeMethods } from './reports-compose.js';
+import { reportFontMethods } from './reports-font.js';
 import { reportPanelMethods } from './reports-panel.js';
 import { reportPointerMethods } from './reports-pointer.js';
 import { bindRevisionControls, reportRevisionMethods, unbindRevisionControls } from './reports-revisions.js';
@@ -170,6 +172,12 @@ export default class ReportsManager {
       editorTab: this.container.querySelector('#reports-editor-tab'),
       jsonTab: this.container.querySelector('#reports-json-tab'),
       revisionsTab: this.container.querySelector('#reports-revisions-tab'),
+      composeTab: this.container.querySelector('#reports-compose-tab'),
+      htmlTab: this.container.querySelector('#reports-html-tab'),
+      pdfTab: this.container.querySelector('#reports-pdf-tab'),
+      composeBtn: this.container.querySelector('#reports-compose-btn'),
+      composeHost: this.container.querySelector('#reports-compose-editor'),
+      composeFooter: this.container.querySelector('#reports-compose-footer'),
       revisionSelect: this.container.querySelector('#reports-revision-select'),
       revisionCopy: this.container.querySelector('#reports-revision-copy'),
       revisionRevert: this.container.querySelector('#reports-revision-revert'),
@@ -186,6 +194,7 @@ export default class ReportsManager {
       clearBtn: this.container.querySelector('#reports-clear-btn'),
       foldBtn: this.container.querySelector('#reports-fold-btn'),
       unfoldBtn: this.container.querySelector('#reports-unfold-btn'),
+      fontBtn: this.container.querySelector('#reports-font-btn'),
       viewControls: this.container.querySelector('#reports-view-controls'),
       deleteBtn: this.container.querySelector('#reports-delete-btn'),
       cloneBtn: this.container.querySelector('#reports-clone-btn'),
@@ -217,9 +226,10 @@ export default class ReportsManager {
   _missingControl() {
     const required = [
       'collapseBtn', 'reportTab', 'editorTab', 'jsonTab', 'revisionsTab',
+      'composeTab', 'htmlTab', 'pdfTab', 'composeBtn', 'composeHost', 'composeFooter',
       'revisionSelect', 'revisionCopy', 'revisionRevert', 'revisionStatus', 'revisionForm',
       'importBtn', 'exportBtn',
-      'undoBtn', 'redoBtn', 'clearBtn', 'foldBtn', 'unfoldBtn', 'viewControls',
+      'undoBtn', 'redoBtn', 'clearBtn', 'foldBtn', 'unfoldBtn', 'fontBtn', 'viewControls',
       'metaName', 'metaTitle', 'metaSummary', 'metaForm',
       'deleteBtn', 'cloneBtn', 'snapBtn', 'gridBtn', 'staticBtn', 'categories', 'itemsToolbar', 'textBtn',
       'fitBtn', 'zoomOutBtn', 'zoomLabel', 'zoom100Btn', 'zoomInBtn', 'fileInput',
@@ -267,10 +277,17 @@ export default class ReportsManager {
     this._onReport = () => this.showPage('report');
     this._onEditor = () => this.showPage('editor');
     this._onJson = () => this.showPage('json');
+    this._onComposeTab = () => this.showPage('compose');
+    this._onHtmlTab = () => this.showPage('html');
+    this._onPdfTab = () => this.showPage('pdf');
+    this._onComposeRun = () => {
+      this.runCompose();
+    };
     this._onMetaChange = () => this._commitMetaFields();
     this._onMetaSubmit = (event) => event.preventDefault();
-    this._onFold = () => this._json?.fold();
-    this._onUnfold = () => this._json?.unfold();
+    this._onFold = () => (this._page === 'compose' ? this._compose : this._json)?.fold();
+    this._onUnfold = () => (this._page === 'compose' ? this._compose : this._json)?.unfold();
+    this._onFont = (event) => this._handleFontClick(event);
     this._onFit = () => this._fitWidth();
     this._onZoomOut = () => this._zoomBy(-1);
     this._onZoom100 = () => this._zoom100();
@@ -294,6 +311,10 @@ export default class ReportsManager {
     reportTab.addEventListener('click', this._onReport);
     editorTab.addEventListener('click', this._onEditor);
     jsonTab.addEventListener('click', this._onJson);
+    this.elements.composeTab.addEventListener('click', this._onComposeTab);
+    this.elements.htmlTab.addEventListener('click', this._onHtmlTab);
+    this.elements.pdfTab.addEventListener('click', this._onPdfTab);
+    this.elements.composeBtn.addEventListener('click', this._onComposeRun);
     bindRevisionControls(this);
     metaName.addEventListener('change', this._onMetaChange);
     metaTitle.addEventListener('change', this._onMetaChange);
@@ -301,6 +322,7 @@ export default class ReportsManager {
     metaForm.addEventListener('submit', this._onMetaSubmit);
     foldBtn.addEventListener('click', this._onFold);
     unfoldBtn.addEventListener('click', this._onUnfold);
+    this.elements.fontBtn.addEventListener('click', this._onFont);
     fitBtn.addEventListener('click', this._onFit);
     zoomOutBtn.addEventListener('click', this._onZoomOut);
     zoom100Btn.addEventListener('click', this._onZoom100);
@@ -490,6 +512,9 @@ export default class ReportsManager {
     this._dropPane();
     if (this._json) this._json.destroy();
     this._json = null;
+    this._destroyReportFont();
+    if (this._compose) this._compose.destroy();
+    this._compose = null;
     if (this.auditFooter) this.auditFooter.destroy();
     this.auditFooter = null;
     this.updateAuditFooter = null;
@@ -520,6 +545,10 @@ export default class ReportsManager {
     reportTab.removeEventListener('click', this._onReport);
     editorTab.removeEventListener('click', this._onEditor);
     jsonTab.removeEventListener('click', this._onJson);
+    this.elements.composeTab.removeEventListener('click', this._onComposeTab);
+    this.elements.htmlTab.removeEventListener('click', this._onHtmlTab);
+    this.elements.pdfTab.removeEventListener('click', this._onPdfTab);
+    this.elements.composeBtn.removeEventListener('click', this._onComposeRun);
     unbindRevisionControls(this);
     metaName.removeEventListener('change', this._onMetaChange);
     metaTitle.removeEventListener('change', this._onMetaChange);
@@ -527,6 +556,7 @@ export default class ReportsManager {
     metaForm.removeEventListener('submit', this._onMetaSubmit);
     foldBtn.removeEventListener('click', this._onFold);
     unfoldBtn.removeEventListener('click', this._onUnfold);
+    this.elements.fontBtn.removeEventListener('click', this._onFont);
     collapseBtn.removeEventListener('click', this._onCollapse);
     fitBtn.removeEventListener('click', this._onFit);
     zoomOutBtn.removeEventListener('click', this._onZoomOut);
@@ -959,6 +989,8 @@ Object.assign(
   reportDropMethods,
   reportFieldMethods,
   reportPageMethods,
+  reportComposeMethods,
+  reportFontMethods,
   reportRevisionMethods,
   reportPanelMethods,
 );

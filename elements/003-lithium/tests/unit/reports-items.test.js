@@ -144,12 +144,12 @@ describe('Report Manager static text', () => {
   }
 
   function detailItem() {
-    return manager.doc.bands.find((band) => band.id === 'detail').items[0];
+    return manager.doc.bands.find((band) => band.id === 'd1').items[0];
   }
 
   it('adds Text to the selected band and exports typeKey 0', async () => {
     const saved = await open();
-    expect(bandEl('detail').classList.contains('reports-band-selected')).toBe(true);
+    expect(bandEl('d1').classList.contains('reports-band-selected')).toBe(true);
     expect(manager.elements.textBtn.disabled).toBe(false);
     expect(manager.elements.deleteBtn.disabled).toBe(true);
     expect(textEl()).toBeNull();
@@ -188,7 +188,7 @@ describe('Report Manager static text', () => {
     expect(manager.doc.history.undo).toHaveLength(1);
 
     manager.elements.undoBtn.click();
-    expect(manager.doc.bands.find((band) => band.id === 'detail').items).toEqual([]);
+    expect(manager.doc.bands.find((band) => band.id === 'd1').items).toEqual([]);
     expect(textEl()).toBeNull();
     expect(manager.elements.deleteBtn.disabled).toBe(true);
     manager.elements.redoBtn.click();
@@ -198,7 +198,7 @@ describe('Report Manager static text', () => {
     manager.elements.exportBtn.click();
     const file = JSON.parse(saved[0].json);
     expect(file.format).toBe(1);
-    expect(file.bands.find((band) => band.id === 'detail').items[0]).toEqual(placed);
+    expect(file.bands.find((band) => band.id === 'd1').items[0]).toEqual(placed);
     expect(file.history.undo).toHaveLength(1);
     manager._importText(saved[0].json);
     expect(textEl().textContent).toBe('Text');
@@ -217,8 +217,8 @@ describe('Report Manager static text', () => {
     expect(detailItem().box.left).toBe('4.25 in');
     expect(detailItem().box.top).toBe('0 in');
     expect(detailItem().box.width).toBe('1.5 in');
-    expect(bandEl('detail').style.getPropertyValue('--reports-band-height')).toBe('');
-    expect(bandEl('detail').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
+    expect(bandEl('d1').style.getPropertyValue('--reports-band-height')).toBe('');
+    expect(bandEl('d1').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
       .toBe(`${toCssPx('0.25 in')}px`);
 
     const corner = textEl().querySelector('.reports-item-corner');
@@ -241,9 +241,9 @@ describe('Report Manager static text', () => {
     expect(detailItem().box.height).toBe('0.25 in');
 
     manager.elements.deleteBtn.click();
-    expect(manager.doc.bands.find((band) => band.id === 'detail').items).toEqual([]);
+    expect(manager.doc.bands.find((band) => band.id === 'd1').items).toEqual([]);
     document.dispatchEvent(key('Delete'));
-    expect(manager.doc.bands.find((band) => band.id === 'detail').items).toEqual([]);
+    expect(manager.doc.bands.find((band) => band.id === 'd1').items).toEqual([]);
     manager.elements.undoBtn.click();
     expect(detailItem().id).toBe('i1');
     expect(detailItem().box.left).toBe('5.5 in');
@@ -255,7 +255,7 @@ describe('Report Manager static text', () => {
     manager.elements.undoBtn.click();
     expect(detailItem().box.left).toBe('3.25 in');
     manager.elements.undoBtn.click();
-    expect(manager.doc.bands.find((band) => band.id === 'detail').items).toEqual([]);
+    expect(manager.doc.bands.find((band) => band.id === 'd1').items).toEqual([]);
   });
 
   it('divides a drag by the view scale and adds text to the band that was clicked', async () => {
@@ -267,13 +267,13 @@ describe('Report Manager static text', () => {
     document.dispatchEvent(pointer('pointerup', 48, 0));
     expect(detailItem().box.left).toBe('4.25 in');
 
-    bandEl('ph').querySelector('.reports-band-strip').dispatchEvent(pointer('pointerdown', 0, 0));
-    expect(bandEl('ph').classList.contains('reports-band-selected')).toBe(true);
-    expect(bandEl('detail').classList.contains('reports-band-selected')).toBe(false);
+    bandEl('ph1').querySelector('.reports-band-strip').dispatchEvent(pointer('pointerdown', 0, 0));
+    expect(bandEl('ph1').classList.contains('reports-band-selected')).toBe(true);
+    expect(bandEl('d1').classList.contains('reports-band-selected')).toBe(false);
     expect(textEl().classList.contains('reports-item-selected')).toBe(false);
     expect(manager.elements.deleteBtn.disabled).toBe(true);
     manager.elements.textBtn.click();
-    const header = manager.doc.bands.find((band) => band.id === 'ph').items[0];
+    const header = manager.doc.bands.find((band) => band.id === 'ph1').items[0];
     expect(header.box.top).toBe('0.1 in');
     expect(header.box.left).toBe('3.25 in');
     expect(header.text).toBe('Text');
@@ -290,7 +290,7 @@ describe('Report Manager static text', () => {
       page,
       font: { family: 'Courier New', size: '12 pt', style: 'Bold' },
       bands: [{
-        id: 'detail',
+        id: 'd1',
         typeKey: 15,
         height: '0.25 in',
         items: [
@@ -318,7 +318,7 @@ describe('Report Manager static text', () => {
     const fieldNode = pageEl().querySelector('.reports-item-field');
     expect(fieldNode.textContent).toBe('customer');
     expect(fieldNode.dataset.unbound).toBe('false');
-    expect(bandEl('detail').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
+    expect(bandEl('d1').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
       .toBe(`${toCssPx('0.25 in')}px`);
     expect(manager.container.querySelector('#reports-outline').textContent).toContain('customer');
 
@@ -326,7 +326,7 @@ describe('Report Manager static text', () => {
       format: 1,
       page,
       bands: [{
-        id: 'detail',
+        id: 'd1',
         typeKey: 15,
         height: '0.25 in',
         items: [{
@@ -354,7 +354,7 @@ describe('Report Manager static text', () => {
     manager._addText();
     manager.elements.metaName.value = 'Nope';
     manager.elements.metaName.dispatchEvent(new CustomEvent('change'));
-    bandEl('detail').querySelector('.reports-band-edge')
+    bandEl('d1').querySelector('.reports-band-edge')
       .dispatchEvent(pointer('pointerdown', 0, 0));
     document.dispatchEvent(pointer('pointermove', 0, 40));
     document.dispatchEvent(pointer('pointerup', 0, 40));
@@ -372,7 +372,7 @@ describe('Report Manager static text', () => {
     const origin = textDropOrigin({ left: 100, top: 200 }, 244, 200, 1);
     expect(origin.left).toBe(72);
     expect(origin.top).toBeCloseTo(-9.6, 5);
-    const body = bandEl('detail').querySelector('.reports-band-body');
+    const body = bandEl('d1').querySelector('.reports-band-body');
     body.getBoundingClientRect = () => ({
       left: 100, top: 200, width: 768, height: 24, right: 868, bottom: 224,
     });
@@ -399,7 +399,7 @@ describe('Report Manager static text', () => {
 
     manager.elements.textBtn.dispatchEvent(new CustomEvent('dragend', { bubbles: true }));
     manager.elements.textBtn.click();
-    expect(manager.doc.bands.find((band) => band.id === 'detail').items).toHaveLength(1);
+    expect(manager.doc.bands.find((band) => band.id === 'd1').items).toHaveLength(1);
     expect(document.querySelector('.reports-drag-ghost')).toBeNull();
   });
 
@@ -408,7 +408,7 @@ describe('Report Manager static text', () => {
     manager.elements.textBtn.click();
     const node = textEl();
     const page = pageEl();
-    const body = page.querySelector('[data-band-id="detail"] .reports-band-body');
+    const body = page.querySelector('[data-band-id="d1"] .reports-band-body');
     const sheet = page.closest('.reports-sheet');
     sheet.getBoundingClientRect = () => ({
       top: 0, left: 0, width: 796, height: 220, right: 796, bottom: 220,

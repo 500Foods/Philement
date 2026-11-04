@@ -104,7 +104,8 @@ export function bandItemBounds(doc, band) {
  */
 export function defaultBandId(doc) {
   const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
-  if (bands.some((band) => band.id === 'detail')) return 'detail';
+  const detail = bands.find((band) => band && band.typeKey === 15 && typeof band.id === 'string' && band.id !== '');
+  if (detail) return detail.id;
   const first = bands.find((band) => typeof band.id === 'string' && band.id !== '');
   return first ? first.id : '';
 }

@@ -401,4 +401,6 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1441](/elements/002-helium/acuranzo/migrations/acuranzo_1441.lua) | lookups | 1.0.0 | 2026-11-02 | 84 | ✗ | Lookup 054 (Report Object Attributes) sections for Reporting Phase 13b |
 | [1442](/elements/002-helium/acuranzo/migrations/acuranzo_1442.lua) | lookups | 1.0.0 | 2026-11-03 | 38 | ✗ | Lookup 054 Color editors and lookup 053 key 24 cleanup (Reporting, after Phase 14b) |
 | [1443](/elements/002-helium/acuranzo/migrations/acuranzo_1443.lua) | queries | 1.0.0 | 2026-11-03 | 4 | ✗ | QueryRef #165 include the audit columns |
-| **368** | | | | **2117** | **368** | |
+| [1444](/elements/002-helium/acuranzo/migrations/acuranzo_1444.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reporting Phase 19: seed Reports.Render (compose skeleton) |
+| [1445](/elements/002-helium/acuranzo/migrations/acuranzo_1445.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reports.Render compose applies value format masks (Reporting Phase 20) |
+| **370** | | | | **2125** | **370** | |

@@ -3,7 +3,7 @@
  * Import keeps omitted keys omitted. Create writes the Defaults table.
  * Lengths written by an edit are stored in the document unit.
  * A generated band id is b1, b2, ... and a generated item id is i1, i2, ...
- * createBlank uses ph, detail, and pf.
+ * createBlank uses ph1, d1, and pf1.
  */
 
 import {
@@ -22,6 +22,16 @@ const BAND_HEIGHT = {
   16: '0.25 in',
   17: '0.4 in',
   18: '0.4 in',
+};
+
+/** Short id prefix per band type: rh1, ph1, gh1, d1, gf1, pf1, rf1. */
+const BAND_PREFIX = {
+  12: 'rh', 13: 'ph', 14: 'gh', 15: 'd', 16: 'gf', 17: 'pf', 18: 'rf',
+};
+
+/** Canvas order rank: report header, page header, group headers, detail, group footers, page footer, report footer. */
+const BAND_RANK = {
+  12: 0, 13: 1, 14: 2, 15: 3, 16: 4, 17: 5, 18: 6,
 };
 
 const ITEM_TYPES = new Set([
@@ -157,9 +167,9 @@ export function createBlank() {
     font: { family: 'Vanadium Sans', size: '10 pt', style: 'Normal' },
     datasources: [],
     bands: [
-      blankBand('ph', 13),
-      blankBand('detail', 15),
-      blankBand('pf', 17),
+      blankBand('ph1', 13),
+      blankBand('d1', 15),
+      blankBand('pf1', 17),
     ],
     functions: [],
   };
@@ -407,7 +417,7 @@ export function addBand(doc, spec) {
   const next = clone(doc);
   const bands = ensureBands(next);
   const typeKey = requireBandType(spec.typeKey);
-  const id = spec.id === undefined ? nextId(bandIds(next), 'b') : spec.id;
+  const id = spec.id === undefined ? nextId(bandIds(next), BAND_PREFIX[typeKey]) : spec.id;
   assertId(id, 'Band');
   if (bandIds(next).has(id)) throw new Error(`Band id "${id}" is already used.`);
   const unit = documentUnit(next);
@@ -431,6 +441,102 @@ export function addBand(doc, spec) {
   const index = spec.index === undefined ? bands.length : requireIndex(spec.index, bands.length, 'Band');
   bands.splice(index, 0, band);
   return next;
+}
+
+export const GROUP_HEADER_TYPE = 14;
+export const GROUP_FOOTER_TYPE = 16;
+export const DETAIL_TYPE = 15;
+
+/** True when the document has at least one group header or footer. */
+export function hasGroup(doc) {
+  const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
+  return bands.some((band) => band && (band.typeKey === GROUP_HEADER_TYPE || band.typeKey === GROUP_FOOTER_TYPE));
+}
+
+/**
+ * Add a band of one non-group type at its place in canvas order:
+ * after the last band whose rank is at or before its own.
+ * @param {object} doc
+ * @param {number} typeKey 12, 13, 15, 17 or 18.
+ * @returns {object}
+ */
+export function addBandInOrder(doc, typeKey) {
+  if (typeKey === GROUP_HEADER_TYPE || typeKey === GROUP_FOOTER_TYPE) return addGroup(doc);
+  requireBandType(typeKey);
+  const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
+  const rank = BAND_RANK[typeKey];
+  let index = 0;
+  bands.forEach((band, i) => { if (band && BAND_RANK[band.typeKey] <= rank) index = i + 1; });
+  return addBand(doc, { typeKey, index });
+}
+
+/**
+ * Add one group level, innermost: header just before the first detail
+ * band, footer just after the last one. Ids ghN / gfN share N. The header stores
+ * `field`; the footer pairs with it by nesting and shares that field.
+ * @param {object} doc
+ * @param {{ field?: string }} [spec]
+ * @returns {object}
+ */
+export function addGroup(doc, spec = {}) {
+  const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
+  const detail = bands.findIndex((band) => band && band.typeKey === DETAIL_TYPE);
+  if (detail < 0) throw new Error('A group needs a detail band.');
+  const last = bands.findLastIndex((band) => band && band.typeKey === DETAIL_TYPE);
+  const used = bandIds(doc);
+  let n = 1;
+  while (used.has(`gh${n}`) || used.has(`gf${n}`)) n += 1;
+  const field = typeof spec.field === 'string' ? spec.field : '';
+  let next = addBand(doc, { id: `gh${n}`, typeKey: GROUP_HEADER_TYPE, field, index: detail });
+  next = addBand(next, { id: `gf${n}`, typeKey: GROUP_FOOTER_TYPE, index: last + 2 });
+  return next;
+}
+
+/**
+ * Partner of a group band by nesting: the k-th header above the first
+ * detail (counting outward) pairs with the k-th footer below the last detail.
+ * @param {object} doc
+ * @param {string} id
+ * @returns {object|null}
+ */
+export function groupPartner(doc, id) {
+  const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
+  const detail = bands.findIndex((band) => band && band.typeKey === DETAIL_TYPE);
+  const last = bands.findLastIndex((band) => band && band.typeKey === DETAIL_TYPE);
+  const index = bands.findIndex((band) => band && band.id === id);
+  if (index < 0) return null;
+  const band = bands[index];
+  const headers = bands.slice(0, detail < 0 ? bands.length : detail).filter((b2) => b2.typeKey === GROUP_HEADER_TYPE).reverse();
+  const footers = bands.slice(detail < 0 ? bands.length : last + 1).filter((b2) => b2.typeKey === GROUP_FOOTER_TYPE);
+  if (band.typeKey === GROUP_HEADER_TYPE) return footers[headers.indexOf(band)] || null;
+  if (band.typeKey === GROUP_FOOTER_TYPE) return headers[footers.indexOf(band)] || null;
+  return null;
+}
+
+/**
+ * False for the last detail band: a report keeps at least one.
+ * @param {object} doc
+ * @param {string} id
+ * @returns {boolean}
+ */
+export function canRemoveBand(doc, id) {
+  const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
+  const band = bands.find((entry) => entry && entry.id === id);
+  if (!band || band.typeKey !== DETAIL_TYPE) return true;
+  return bands.filter((entry) => entry && entry.typeKey === DETAIL_TYPE).length > 1;
+}
+
+/**
+ * Delete a band. A group header or footer takes its partner with it.
+ * @param {object} doc
+ * @param {string} id
+ * @returns {object}
+ */
+export function removeBand(doc, id) {
+  if (!canRemoveBand(doc, id)) throw new Error('A report needs at least one detail band.');
+  const partner = groupPartner(doc, id);
+  const next = deleteBand(doc, id);
+  return partner ? deleteBand(next, partner.id) : next;
 }
 
 /**

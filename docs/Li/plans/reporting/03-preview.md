@@ -20,7 +20,11 @@ phase table, and append the Working Log in the parent.
 ### Goal
 
 Seed `Reports.Render` and return the structural intermediate for a
-static report, a detail list, and one group level.
+static report, a detail list, and groups. Scope amended 2026-11-03 (Andrew):
+compose takes every band role the designer places after Phase 16, in
+any count: report header, page header, group headers (multi-level,
+nested in header order), detail (one or more), group footers, page
+footer, report footer. Order RH → PH… → GH… → Detail → GF… → PF… → RF.
 
 ### Entry gate
 
@@ -30,25 +34,29 @@ written before Phase 17. Re-check the next file number.
 
 ### Work items
 
-- [ ] 19.1 Copy the `scripts` insert shape from
+- [x] 19.1 Copy the `scripts` insert shape from
        [`acuranzo_1376.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua).
        Group `Reports`, name `Render`, `invokable = 1`,
        `mcp_access = 0`.
-- [ ] 19.2 `stage=compose` emits the structural intermediate. A static
+- [x] 19.2 `stage=compose` emits the structural intermediate. A static
        report renders when `sources` is empty and the detail band has
        no datasource. The detail band repeats once per row. Field text
        is the plain value, so `1234.5` prints `1234.5` even when a
-       mask is stored. One group level opens and closes, on one page.
+       mask is stored. Groups open and close at every level (amended from
+       one level), on one page. Rows are taken in the order given; compose
+       does not sort. The first detail with a datasource drives the rows;
+       every detail band repeats per row. Group footers pair with headers
+       by suffix (gh2/gf2), else by nesting order.
        The result includes `log`. A query datasource with no
        array adds a warn entry and contributes no rows. The fixture calls
        pass `stage=compose`. Phase 31 switches the default stage to
        `pdf`. The script skips top-level `history`. The intermediate
        and `log` leave that key out.
-- [ ] 19.3 A missing datasource, an unknown `typeKey`, and an empty
+- [x] 19.3 A missing datasource, an unknown `typeKey`, and an empty
        `field` become warn entries on `log`. The script still returns a document.
        A `format` other than 1 returns an error through
        `H.set_result_json` and does not throw out of the worker.
-- [ ] 19.4 Hand the packet over. After apply, the three structural
+- [x] 19.4 Hand the packet over. After apply, the three structural
        fixture calls match. Each call passes `stage` `compose`, the
        definition file as `definition`, and the sources file as
        `sources`. The contract is
@@ -60,11 +68,35 @@ written before Phase 17. Re-check the next file number.
        | detail | [`detail.definition.json`](/elements/003-lithium/tests/fixtures/reporting/detail.definition.json) | [`detail.sources.json`](/elements/003-lithium/tests/fixtures/reporting/detail.sources.json) | [`detail.intermediate.json`](/elements/003-lithium/tests/fixtures/reporting/detail.intermediate.json) |
        | grouped | [`grouped.definition.json`](/elements/003-lithium/tests/fixtures/reporting/grouped.definition.json) | [`grouped.sources.json`](/elements/003-lithium/tests/fixtures/reporting/grouped.sources.json) | [`grouped.intermediate.json`](/elements/003-lithium/tests/fixtures/reporting/grouped.intermediate.json) |
 
-       The formatted `1,234.50` file is Phase 20.
+       | bands (added) | [`bands.definition.json`](/elements/003-lithium/tests/fixtures/reporting/bands.definition.json) | [`bands.sources.json`](/elements/003-lithium/tests/fixtures/reporting/bands.sources.json) | [`bands.intermediate.json`](/elements/003-lithium/tests/fixtures/reporting/bands.intermediate.json) |
+       | warnings (added) | [`warnings.definition.json`](/elements/003-lithium/tests/fixtures/reporting/warnings.definition.json) | [`warnings.sources.json`](/elements/003-lithium/tests/fixtures/reporting/warnings.sources.json) | [`warnings.intermediate.json`](/elements/003-lithium/tests/fixtures/reporting/warnings.intermediate.json) |
+
+       The formatted `1,234.50` file is Phase 20. Packet:
+       [`acuranzo_1444.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1444.lua).
+- [x] 19.5 (added) Designer tabs. The JSON tab is renamed **Definition**
+       (page id stays `json`). After Revisions come **Compose**,
+       **Preview HTML**, and **Preview PDF**. Compose has a Run button on
+       the right of the toolbar. It calls `Reports.Render` through
+       `invokeScript` with `stage` `compose`, the open definition
+       (history stripped), and the session sample under every declared
+       datasource name (empty `sources` when there is no sample or no
+       datasource). The result shows read-only in the same JSON editor as
+       Definition. Empty `{}` becomes `[]` for `pages`, `log`, `bands`,
+       and `items`. An error toasts once and keeps the last result. The
+       two Preview tabs are placeholders: HTML is Phases 24 and 25; PDF is
+       later. Code: [`reports-compose.js`](/elements/003-lithium/src/managers/reports/reports-compose.js).
+       On Definition and Compose, Import and Export hide; Collapse all,
+       Expand all, and the Query Manager font popup show (saved per page
+       as `lithium_reports_font_json` / `_compose`). Run sits first in
+       the right-hand cluster.
+- [x] 19.6 (added) Browser check. Andrew enabled Scripting in
+       `hydrogen-pintura.json`, applied 1444, and ran Compose from the
+       designer: Definition, Compose, the Run button, the editor tools,
+       and the Preview HTML/PDF placeholders all behave as listed.
 
 ### Done means
 
-Andrew reports the three structural fixture calls matched, and the
+Andrew reports the five structural fixture calls matched, and the
 script is `Reports.Render`.
 
 ### Exit gate
@@ -74,7 +106,114 @@ migration if he ran it.
 
 ### Status
 
-**not started**
+**Complete** (2026-11-03). Andrew applied `acuranzo_1444`, enabled
+Scripting in `hydrogen-pintura.json`, and confirmed the Compose tab
+live in the designer.
+
+### Accomplished
+
+- `Reports.Render` seeded (group `Reports`, invokable 1, mcp_access 0).
+  `stage=compose` returns `{ pages, log }` for every band role in any
+  count, with multi-level groups (scope widened from one level).
+- Warnings for an unknown typeKey, a missing datasource, and an empty
+  field. Format ≠ 1 and other stages return an error body.
+- Fixtures: static, detail, grouped, plus added bands and warnings.
+  All five match.
+- Designer: JSON tab renamed **Definition**. New **Compose** tab (Run,
+  read-only JSON, `{}`→`[]` normalising, one toast on error, last
+  result kept). **Preview HTML** and **Preview PDF** placeholder tabs.
+  Definition and Compose share Collapse all, Expand all, and the font
+  popup; Import/Export hide there.
+
+### Lessons learned
+
+- Hydrogen encodes an empty Lua table as `{}`. Normalise list keys in
+  the client until the encoder can tell arrays from objects.
+- An invokable script needs Scripting enabled in the server config, or
+  every call fails before the script runs. Check config before the
+  migration when a phase adds a script.
+- A local Lua harness against the fixtures caught every compose bug
+  before the packet went over. Keep it for Phase 20.
+
+### Handoff
+
+- Phase 20 amends `Reports.Render` in a new file (next Acuranzo file
+  1445). Do not edit 1444.
+- The Compose tab is the quickest check for Phase 20: load the detail
+  sample and Run. `amount` should read `1,234.50` once masks apply.
+- Preview HTML is Phases 24/25. Preview PDF follows the PDF milestone.
+
+---
+
+## Phase 19b — Datasources editor and embedded JSON
+
+### Goal
+
+The Report owns its datasources. A `json` datasource keeps its rows
+in the definition. Compose reads each datasource from the definition.
+
+### Entry gate
+
+Phase 19 Status complete. Runs beside Phase 20; it does not wait for
+20 to close.
+
+### Work items
+
+- [ ] 19b.1 Report property panel: a Datasources section. Add and
+       remove. Each entry is its own group (Datasource 1,
+       Datasource 2, ...) with Name and Kind.
+- [ ] 19b.2 Kind comes from a new datasource-kind lookup: JSON,
+       Query, CSV. JSON is live. Query is listed and disabled until
+       Phase 28. CSV is listed and ignored; a later importer turns a
+       CSV (then XLS, XML, YAML) into JSON rows.
+- [ ] 19b.3 Helium packet: one Acuranzo file for the kind lookup
+       (next file after 1445). The definition stores the lookup key,
+       matching the other report lookups. Query status `Reporting`
+       stays in Phase 28.
+- [ ] 19b.4 A `kind` `json` datasource stores `rows` in the
+       definition, permanently: saved, revisioned, exported. Load
+       Sample writes into the chosen datasource's `rows`. Fixed JSON
+       and lookup tables are first-class.
+- [ ] 19b.5 The first datasource drives iteration. Detail and group
+       bands default to it. Grouping assumes, or enforces, a sort on
+       the group key.
+- [ ] 19b.6 The Field dropdown lists the columns of the band's
+       datasource (the first one by default), not one global sample.
+- [ ] 19b.7 Field items pick Field only. Item Datasource stays
+       reserved for joins and lookups; not required here.
+- [ ] 19b.8 `composeSources` builds `sources[name]` from each `json`
+       datasource's `rows`. No copying one array under every name.
+- [ ] 19b.9 `queryRef` and `params` are reserved keys on a `query`
+       datasource. Documented only; Phase 28 fills them.
+- [ ] 19b.10 Amend [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md):
+       `json` rows live in the definition. Drops the Phase 15.1
+       session-only rule for this path.
+
+### Done means
+
+Add two `json` datasources in the Report panel, load rows into the
+first, bind a field, save, reload, and Compose prints the rows. The
+rows survive export and import.
+
+### Exit gate
+
+Andrew's check in the designer, plus the kind lookup apply report.
+
+### Notes
+
+- Every Compose and Render call ships the rows through conduit.
+  Params are capped at 256 KiB.
+- Phase 28 owns the QueryRef picker (lookup 28 status `Reporting`,
+  sorted by name, refresh control), the synthetic demo query, and
+  fields and params (with datatypes and `calculated`) on the query
+  definition.
+- Lookup joins (Status 0/1 to True/False) and the palette buckets
+  (Static, Fields, Aggregates, Lookups) follow later.
+- Lua load, filter, and custom fields are not yet designed.
+
+### Status
+
+**Not started** — decisions locked by Andrew 2026-11-03.
 
 ---
 
@@ -90,16 +229,19 @@ Phase 19 Status complete.
 
 ### Work items
 
-- [ ] 20.1 Apply the Value format table. A number rounds half away
+- [x] 20.1 Apply the Value format table. A number rounds half away
        from zero. An omitted number mask prints a plain decimal. A
        mask that does not parse warns once, and the raw value is
        printed. Dates follow the same table.
-- [ ] 20.2 The formatted detail fixture
+- [x] 20.2 The formatted detail fixture
        [`detail.intermediate.formatted.json`](/elements/003-lithium/tests/fixtures/reporting/detail.intermediate.formatted.json)
        prints `1,234.50` for `amount` and a blank `note`. The
        definition and sources are the Phase 19 detail pair. The
        contract is [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
-       A second fixture walks the rest of the mask table.
+       A second fixture walks the rest of the mask table:
+       [`masks.definition.json`](/elements/003-lithium/tests/fixtures/reporting/masks.definition.json),
+       [`masks.sources.json`](/elements/003-lithium/tests/fixtures/reporting/masks.sources.json),
+       [`masks.intermediate.json`](/elements/003-lithium/tests/fixtures/reporting/masks.intermediate.json).
 - [ ] 20.3 Hand the amendment over. Do not edit the applied Phase 19
        file. After apply, both fixture calls match.
 
@@ -111,9 +253,23 @@ The formatted detail fixture and the mask-table fixture both match.
 
 Andrew's apply report and the two fixture calls.
 
+### Variances
+
+- Hydrogen turns JSON null into nil, so a column absent from the row
+  and a null value look the same. Both print blank; the
+  absent-column warning is not raised.
+- A unix-seconds value has a time when it is not exactly midnight UTC.
+  With no mask, midnight prints `yyyy-mm-dd`, otherwise
+  `yyyy-mm-dd hh:nn`.
+- A negative under a mask without `( )` prints a leading minus before
+  any `$` (`-$1.24`).
+- A bad mask or a value that is not a number or date warns once per
+  item per band.
+
 ### Status
 
-**not started**
+**In progress** — acuranzo_1445 written; all six fixtures match the
+local Lua 5.5 harness. Waiting on Andrew to apply 1445.
 
 ---
 
@@ -196,6 +352,15 @@ Andrew's apply report and the fixture call.
 ### Status
 
 **not started**
+
+### Note (2026-11-03)
+
+When this phase opens, swap upstream `flatpickr@4.6.13` to the community
+edition with the npm alias `"flatpickr": "npm:flatpickr-ce@4.9.0"` (pin
+exact, no `^`). Smoke `shared/flatpickr-picker.js`, the property Date
+editor, and Profile date-formats. Upstream has had no releases since
+2022; `flatpickr-ce` claims drop-in and started shipping updates
+2026-10-27. Do not chase every CE bump for a week after the swap.
 
 ---
 

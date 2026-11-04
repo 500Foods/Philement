@@ -11,6 +11,11 @@ import { readViewScale } from './scale.js';
 
 export const TEXT_DROP_KIND = 'reports-text';
 
+/** Drag kind for a field button: `reports-field:<typeKey>`. */
+export const FIELD_DROP_PREFIX = 'reports-field:';
+const FIELD_DROP_TYPES = new Set([20, 21, 24]);
+const FIELD_GHOST = { 20: 'Text field', 21: 'Number field', 24: 'Datetime field' };
+
 /**
  * Top-left of a default text box centered on the pointer.
  * Coordinates are CSS pixels in the band body, before view scale.
@@ -37,6 +42,11 @@ export const reportDropMethods = {
     this._onTextDragEnd = () => this._endTextDrag();
     this._onTextDragOver = (event) => this._overTextDrag(event);
     this._onTextDrop = (event) => this._dropTextDrag(event);
+    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key]')];
+    this._fieldDragBtns.forEach((btn) => {
+      btn.addEventListener('dragstart', this._onTextDragStart);
+      btn.addEventListener('dragend', this._onTextDragEnd);
+    });
     textBtn.addEventListener('dragstart', this._onTextDragStart);
     textBtn.addEventListener('dragend', this._onTextDragEnd);
     stage.addEventListener('dragover', this._onTextDragOver);
@@ -47,6 +57,11 @@ export const reportDropMethods = {
     const elements = this.elements || {};
     if (this._textGhost) this._textGhost.remove();
     this._textGhost = null;
+    (this._fieldDragBtns || []).forEach((btn) => {
+      btn.removeEventListener('dragstart', this._onTextDragStart);
+      btn.removeEventListener('dragend', this._onTextDragEnd);
+    });
+    this._fieldDragBtns = null;
     elements.textBtn?.removeEventListener('dragstart', this._onTextDragStart);
     elements.textBtn?.removeEventListener('dragend', this._onTextDragEnd);
     elements.stage?.removeEventListener('dragover', this._onTextDragOver);
@@ -61,11 +76,13 @@ export const reportDropMethods = {
     this._textDragged = true;
     const transfer = event.dataTransfer;
     if (!transfer) return;
-    transfer.setData('text/plain', TEXT_DROP_KIND);
+    const typeKey = Number(event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.typeKey);
+    const isField = FIELD_DROP_TYPES.has(typeKey);
+    transfer.setData('text/plain', isField ? `${FIELD_DROP_PREFIX}${typeKey}` : TEXT_DROP_KIND);
     transfer.effectAllowed = 'copy';
     const ghost = document.createElement('div');
     ghost.className = 'reports-drag-ghost';
-    ghost.textContent = 'Text';
+    ghost.textContent = isField ? FIELD_GHOST[typeKey] : 'Text';
     document.body.append(ghost);
     if (typeof transfer.setDragImage === 'function') transfer.setDragImage(ghost, 72, 10);
     this._textGhost = ghost;
@@ -95,7 +112,11 @@ export const reportDropMethods = {
     const bandId = bandEl && bandEl.dataset.bandId;
     if (!bandId || !body) return;
     const kind = event.dataTransfer && event.dataTransfer.getData('text/plain');
-    if (kind !== TEXT_DROP_KIND) return;
+    const fieldType = typeof kind === 'string' && kind.startsWith(FIELD_DROP_PREFIX)
+      ? Number(kind.slice(FIELD_DROP_PREFIX.length))
+      : NaN;
+    const isField = FIELD_DROP_TYPES.has(fieldType);
+    if (kind !== TEXT_DROP_KIND && !isField) return;
     event.preventDefault();
     const origin = textDropOrigin(
       body.getBoundingClientRect(),
@@ -106,7 +127,7 @@ export const reportDropMethods = {
     let next;
     let addedId;
     try {
-      next = addItem(this.doc, bandId, { typeKey: 0 });
+      next = addItem(this.doc, bandId, isField ? { typeKey: fieldType, field: '' } : { typeKey: 0 });
       const band = next.bands.find((entry) => entry.id === bandId);
       const added = band && band.items[band.items.length - 1];
       if (!added) return;
@@ -122,6 +143,6 @@ export const reportDropMethods = {
     this._selectedBandId = bandId;
     this._selectedItemId = addedId;
     this._commitDocument(next);
-    log(Subsystems.MANAGER, Status.INFO, `[Reports] Dropped static text ${addedId} on ${bandId}`);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Dropped ${isField ? FIELD_GHOST[fieldType].toLowerCase() : 'static text'} ${addedId} on ${bandId}`);
   },
 };

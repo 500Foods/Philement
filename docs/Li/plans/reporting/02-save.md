@@ -840,13 +840,30 @@ Phase 15 Status complete.
 
 ### Work items
 
-- [ ] 16.1 The palette adds one group header and one group footer.
+- [x] 16.1 The palette adds one group header and one group footer.
        Each is `0.25 in` tall. The header stores `field`. The footer
        shares that grouping. A second group level is refused with a
        toast.
-- [ ] 16.2 The canvas shows the three bands in order: group header,
+- [x] 16.2 The canvas shows the three bands in order: group header,
        detail, group footer.
-- [ ] 16.3 Browser: set the group field, export, undo.
+- [x] 16.3 Browser: set the group field, export, undo.
+- [x] 16.4 (added 2026-11-03, Andrew) Band strip label shows the group
+       field (`Group header gh1 customer`; the footer shows its header's
+       field). Generated band ids are short per type: rh1, ph1, gh1, d1,
+       gf1, pf1, rf1 (not b1).
+- [x] 16.5 (added) Bands category beside Static / Field: Report
+       Header, Page Header, Group (header + footer pair), Detail, Page
+       Footer, Report Footer. Each lands at its place in canvas order.
+- [x] 16.6 (added) Trash button at the right of each band strip. A
+       group header or footer deletes its pair.
+- [x] 16.7 (added) Multiple group levels: each new group is innermost
+       (gh1 gh2 detail gf2 gf1). Pairing is by nesting, no new keys.
+- [x] 16.8 Browser: Bands palette adds, trash deletes (pairs), labels,
+       two-level export, undo.
+- [x] 16.9 (added, Andrew browser feedback) First band strip no longer
+       indented by the ruler width. New reports start with ph1, d1, pf1.
+       The last detail band has no trash and cannot be removed. Field
+       buttons (text, number, datetime) drag onto a band like Text.
 
 ### Done means
 
@@ -859,7 +876,43 @@ Lint, unit tests, and the browser check.
 
 ### Status
 
-**not started**
+**complete — 2026-11-03.** Andrew checked groups, the Bands palette,
+band delete, labels, and field drag in the browser: "Seems to be
+working pretty well. Let's close Phase 16." 87 files, 1427 passed,
+12 skipped. ESLint clean on reports code and tests. Stylelint clean.
+
+### Accomplished
+
+- Group header (14) and footer (16) at 0.25 in. The header stores
+  `field`; the footer pairs with it by nesting and shows its field.
+  Gh and gf keys match `grouped.definition.json`.
+- Widened in the sitting (Andrew): multiple group levels (gh1 gh2
+  detail gf2 gf1), a Bands category (Report Header, Page Header,
+  Group, Detail, Page Footer, Report Footer) inserted in canvas order,
+  a trash button on each band strip (group pairs delete together, the
+  last detail cannot be deleted), short ids from the start (ph1, d1,
+  pf1, rh1, gh1, gf1, rf1), the group field on the strip label, and
+  drag-drop for the Text / Number / Datetime field buttons.
+- First band strip no longer indented by the ruler column.
+- Band trash buttons are hidden entirely outside edit mode (CSS on
+  `data-editing='false'`); in edit mode the last-detail hide still applies.
+
+### Lessons learned
+
+- Pair group bands by position around the detail run, not by id or a
+  new key, so imported definitions need no extra fields.
+- Changing `createBlank` ids touches many tests; fixture-based tests
+  keep the fixture ids (`detail`), blank-based tests move to d1.
+- The headed first band hid its strip behind a ruler pad column; the
+  strip should span all columns like the other bands.
+
+### Handoff
+
+Phase 16 is complete. Phase 17 (Save and load packet) and Phase 18
+(Revisions in the manager) were already complete (2026-10-31). The
+next not-started phase in index order is Phase 19 (Compose skeleton).
+flatpickr-ce stays parked on Phase 22. The next Acuranzo file is 1444.
+The next caller-facing QueryRef is 173.
 
 ---
 

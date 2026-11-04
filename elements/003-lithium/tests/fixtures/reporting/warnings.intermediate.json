@@ -1,0 +1,56 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "id": "ph1",
+          "typeKey": 13,
+          "height": "0.4 in",
+          "items": []
+        },
+        {
+          "id": "pf1",
+          "typeKey": 17,
+          "height": "0.4 in",
+          "items": [
+            {
+              "id": "nofield",
+              "typeKey": 20,
+              "text": "",
+              "align": "Left",
+              "font": {
+                "family": "Vanadium Sans",
+                "size": "10 pt",
+                "style": "Normal"
+              },
+              "box": {
+                "height": "0.2 in",
+                "left": "0 in",
+                "top": "0 in",
+                "width": "2 in"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "log": [
+    {
+      "level": "warn",
+      "message": "band x1 has unknown typeKey 77; skipped"
+    },
+    {
+      "level": "warn",
+      "message": "detail d1 names datasource missing which is not declared; no rows"
+    },
+    {
+      "level": "warn",
+      "message": "item odd in band ph1 has unknown typeKey 99; skipped"
+    },
+    {
+      "level": "warn",
+      "message": "item nofield in band pf1 has no field; printed blank"
+    }
+  ]
+}

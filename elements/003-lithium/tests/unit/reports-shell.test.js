@@ -111,9 +111,9 @@ describe('report file helpers', () => {
       gridText: 'dots, 0.125 in',
       fontText: 'Vanadium Sans, 10 pt, Normal',
       bands: [
-        { line: 'Page header, ph, 0.4 in', items: [] },
-        { line: 'Detail, detail, 0.25 in', items: [] },
-        { line: 'Page footer, pf, 0.4 in', items: [] },
+        { line: 'Page header, ph1, 0.4 in', items: [] },
+        { line: 'Detail, d1, 0.25 in', items: [] },
+        { line: 'Page footer, pf1, 0.4 in', items: [] },
       ],
     });
 
@@ -260,11 +260,11 @@ describe('Report Manager shell', () => {
     expect(doc.page.sizeKey).toBe(0);
     expect(doc.font.style).toBe('Normal');
     expect(doc.grid.style).toBe('dots');
-    expect(doc.bands.map((band) => band.id)).toEqual(['ph', 'detail', 'pf']);
+    expect(doc.bands.map((band) => band.id)).toEqual(['ph1', 'd1', 'pf1']);
     expect(Object.hasOwn(doc.bands[1], 'datasource')).toBe(false);
     expect(container.querySelector('.reports-summary')).toBeNull();
     const rows = [...container.querySelectorAll('#reports-outline .reports-outline-row')];
-    expect(rows.map((row) => row.textContent)).toEqual(['Report', 'ph', 'detail', 'pf', 'End of Report']);
+    expect(rows.map((row) => row.textContent)).toEqual(['Report', 'ph1', 'd1', 'pf1', 'End of Report']);
   });
 
   it('shows an imported report on the stage and New restores the blank lines', async () => {
@@ -273,7 +273,7 @@ describe('Report Manager shell', () => {
     expect(outlineText()).toContain('Orders');
     expect(outlineText()).toContain('customer');
     manager.newReport();
-    expect(outlineText()).toContain('detail');
+    expect(outlineText()).toContain('d1');
     expect(outlineText()).not.toContain('customer');
     expect(outlineText()).not.toContain('Orders');
   });
@@ -315,9 +315,9 @@ describe('Report Manager shell', () => {
     expect(pageEl().querySelectorAll('.reports-band-ruler-bottom .reports-ruler-top')).toHaveLength(1);
     expect(pageEl().querySelectorAll('.reports-ruler-left')).toHaveLength(3);
     expect(pageEl().querySelectorAll('.reports-ruler-right')).toHaveLength(3);
-    expect(pageEl().querySelector('[data-band-id="ph"] .reports-ruler-left').getAttribute('height'))
+    expect(pageEl().querySelector('[data-band-id="ph1"] .reports-ruler-left').getAttribute('height'))
       .toBe(String(toCssPx('0.4 in')));
-    expect(pageEl().querySelector('[data-band-id="detail"] .reports-ruler-left').getAttribute('height'))
+    expect(pageEl().querySelector('[data-band-id="d1"] .reports-ruler-left').getAttribute('height'))
       .toBe(String(toCssPx('0.25 in')));
 
     const card = {
@@ -349,9 +349,9 @@ describe('Report Manager shell', () => {
     await open();
     const roles = [...pageEl().querySelectorAll('.reports-band-role')].map((el) => el.textContent);
     expect(roles).toEqual(['Page header', 'Detail', 'Page footer', 'End of Report']);
-    expect(bandBody('detail').style.height).toBe('');
-    expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
-    expect(bandBody('ph').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.4 in')}px`);
+    expect(bandBody('d1').style.height).toBe('');
+    expect(bandBody('d1').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
+    expect(bandBody('ph1').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.4 in')}px`);
     expect(pageEl().querySelector('.reports-margin-guide')).toBeNull();
     expect(pageEl().querySelector('.reports-band-edge').getAttribute('style')).toBeNull();
     expect(manager.elements.undoBtn.disabled).toBe(true);
@@ -360,33 +360,33 @@ describe('Report Manager shell', () => {
     reversed.bands.reverse();
     manager.loadReport(reversed);
     const next = [...pageEl().querySelectorAll('.reports-band-id')].map((el) => el.textContent);
-    expect(next).toEqual(['pf', 'detail', 'ph']);
+    expect(next).toEqual(['pf1', 'd1', 'ph1']);
   });
 
   it('resizes Detail, exports the new height, and undo restores it', async () => {
     const saved = await open();
-    const handle = pageEl().querySelector('[data-band-id="detail"] .reports-band-edge');
+    const handle = pageEl().querySelector('[data-band-id="d1"] .reports-band-edge');
     handle.dispatchEvent(pointer('pointerdown', 100));
     document.dispatchEvent(pointer('pointermove', 196));
-    expect(bandBody('detail').style.height).toBe(`${dragBandHeight(toCssPx('0.25 in'), 96)}px`);
-    const growing = pageEl().querySelector('[data-band-id="detail"] .reports-ruler-left');
+    expect(bandBody('d1').style.height).toBe(`${dragBandHeight(toCssPx('0.25 in'), 96)}px`);
+    const growing = pageEl().querySelector('[data-band-id="d1"] .reports-ruler-left');
     const inch = [...growing.querySelectorAll('text')].find((node) => node.textContent === '1');
     expect(inch.getAttribute('y')).toBe('94');
     expect([...growing.querySelectorAll('line')].some((node) => node.getAttribute('y1') === '0')).toBe(true);
     document.dispatchEvent(pointer('pointerup', 196));
 
-    const detail = () => manager.doc.bands.find((band) => band.id === 'detail');
+    const detail = () => manager.doc.bands.find((band) => band.id === 'd1');
     expect(detail().height).toBe('1.25 in');
-    expect(bandBody('detail').style.height).toBe('');
-    expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('1.25 in')}px`);
+    expect(bandBody('d1').style.height).toBe('');
+    expect(bandBody('d1').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('1.25 in')}px`);
     expect(manager.elements.undoBtn.disabled).toBe(false);
     expect(manager.elements.redoBtn.disabled).toBe(true);
     manager.elements.exportBtn.click();
-    expect(JSON.parse(saved[0].json).bands.find((band) => band.id === 'detail').height).toBe('1.25 in');
+    expect(JSON.parse(saved[0].json).bands.find((band) => band.id === 'd1').height).toBe('1.25 in');
 
     manager.elements.undoBtn.click();
     expect(detail().height).toBe('0.25 in');
-    expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
+    expect(bandBody('d1').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
     expect(manager.elements.undoBtn.disabled).toBe(true);
     expect(manager.elements.redoBtn.disabled).toBe(false);
     manager.elements.redoBtn.click();
@@ -396,7 +396,7 @@ describe('Report Manager shell', () => {
     manager.elements.undoBtn.click();
     manager.elements.exportBtn.click();
     const undone = JSON.parse(saved[1].json);
-    expect(undone.bands.find((band) => band.id === 'detail').height).toBe('0.25 in');
+    expect(undone.bands.find((band) => band.id === 'd1').height).toBe('0.25 in');
     expect(undone.history.redo).toHaveLength(1);
     delete undone.history;
     expect(undone).toEqual(createBlank());
@@ -404,7 +404,7 @@ describe('Report Manager shell', () => {
 
   it('reopens an exported undo trail and clear removes it', async () => {
     const saved = await open();
-    dragBand('detail', 100, 196);
+    dragBand('d1', 100, 196);
     expect(manager.elements.clearBtn.disabled).toBe(false);
     manager.elements.exportBtn.click();
     const exported = JSON.parse(saved[0].json);
@@ -413,7 +413,7 @@ describe('Report Manager shell', () => {
     manager._importText(saved[0].json);
     expect(manager.elements.undoBtn.disabled).toBe(false);
     manager.elements.undoBtn.click();
-    expect(manager.doc.bands.find((band) => band.id === 'detail').height).toBe('0.25 in');
+    expect(manager.doc.bands.find((band) => band.id === 'd1').height).toBe('0.25 in');
     expect(manager.elements.redoBtn.disabled).toBe(false);
 
     manager.elements.clearBtn.click();
@@ -422,7 +422,7 @@ describe('Report Manager shell', () => {
       expect(document.querySelector('.lithium-confirm')).toBeNull();
     });
     expect(manager.doc.history.redo).toHaveLength(1);
-    expect(manager.doc.bands.find((band) => band.id === 'detail').height).toBe('0.25 in');
+    expect(manager.doc.bands.find((band) => band.id === 'd1').height).toBe('0.25 in');
 
     manager.elements.clearBtn.click();
     document.querySelector('.lithium-confirm .btn-primary').click();
@@ -434,14 +434,14 @@ describe('Report Manager shell', () => {
     expect(manager.elements.clearBtn.disabled).toBe(true);
     manager.elements.exportBtn.click();
     expect(JSON.parse(saved[1].json).history).toBeUndefined();
-    expect(JSON.parse(saved[1].json).bands.find((band) => band.id === 'detail').height).toBe('0.25 in');
+    expect(JSON.parse(saved[1].json).bands.find((band) => band.id === 'd1').height).toBe('0.25 in');
   });
 
   it('clamps a short drag to 0.15 in and stores a millimetre page in mm', async () => {
     await open();
-    dragBand('detail', 100, 100 - 1000);
-    expect(manager.doc.bands.find((band) => band.id === 'detail').height).toBe('0.15 in');
-    expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.15 in')}px`);
+    dragBand('d1', 100, 100 - 1000);
+    expect(manager.doc.bands.find((band) => band.id === 'd1').height).toBe('0.15 in');
+    expect(bandBody('d1').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.15 in')}px`);
 
     manager.loadReport({
       format: 1,
@@ -451,11 +451,11 @@ describe('Report Manager shell', () => {
         width: '210 mm',
         height: '297 mm',
       },
-      bands: [{ id: 'detail', typeKey: 15, height: '10 mm', items: [] }],
+      bands: [{ id: 'd1', typeKey: 15, height: '10 mm', items: [] }],
     });
     const start = toCssPx('10 mm');
     const preview = snapBandHeight(dragBandHeight(start, 96), toCssPx('0.125 in'), toCssPx('0.15 in'));
-    dragBand('detail', 40, 40 + 96);
+    dragBand('d1', 40, 40 + 96);
     const height = manager.doc.bands[0].height;
     expect(height).toBe(convertLength(`${preview} px`, 'mm'));
     expect(height.endsWith(' mm')).toBe(true);
@@ -493,7 +493,7 @@ describe('Report Manager shell', () => {
     expect(manager.elements.undoBtn.disabled).toBe(true);
     expect(manager.elements.redoBtn.disabled).toBe(true);
     expect(manager.elements.clearBtn.disabled).toBe(true);
-    expect(manager.doc.bands.find((band) => band.id === 'detail').height).toBe('0.25 in');
+    expect(manager.doc.bands.find((band) => band.id === 'd1').height).toBe('0.25 in');
     expect(manager.doc.name).toBe('Report');
   });
 
@@ -503,16 +503,16 @@ describe('Report Manager shell', () => {
       format: 1,
       name: 'Plain',
       page: { units: 'in', width: '8.5 in', height: '11 in' },
-      bands: [{ id: 'detail', typeKey: 15, items: [] }],
+      bands: [{ id: 'd1', typeKey: 15, items: [] }],
     });
-    expect(bandBody('detail').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
+    expect(bandBody('d1').style.getPropertyValue('--reports-band-height')).toBe(`${toCssPx('0.25 in')}px`);
     manager.elements.exportBtn.click();
     expect(Object.hasOwn(JSON.parse(saved[0].json).bands[0], 'height')).toBe(false);
 
     manager.loadReport({
       format: 1,
       page: { width: '8.5 in', height: '11 in' },
-      bands: [{ id: 'detail', typeKey: 15, height: '4', items: [] }],
+      bands: [{ id: 'd1', typeKey: 15, height: '4', items: [] }],
     });
     expect(pageEl().querySelector('.reports-band-body')).toBeNull();
     expect(pageEl().querySelector('.reports-band-edge')).toBeNull();
@@ -521,11 +521,11 @@ describe('Report Manager shell', () => {
 
   it('paints the five grid styles from the band origin', async () => {
     const saved = await open();
-    const pattern = () => bandBody('detail').querySelector('pattern');
+    const pattern = () => bandBody('d1').querySelector('pattern');
     expect(pattern().getAttribute('x')).toBe('0');
     expect(pattern().getAttribute('y')).toBe('0');
     expect(pattern().getAttribute('width')).toBe(String(toCssPx('0.125 in')));
-    const circles = [...bandBody('detail').querySelectorAll('circle')];
+    const circles = [...bandBody('d1').querySelectorAll('circle')];
     expect(circles).toHaveLength(4);
     expect(circles[0].getAttribute('cx')).toBe('0');
     expect(circles[0].getAttribute('cy')).toBe('0');
@@ -540,18 +540,18 @@ describe('Report Manager shell', () => {
       });
       expect(pattern().getAttribute('x')).toBe('0');
       expect(pattern().getAttribute('width')).toBe('12');
-      expect(bandBody('detail').querySelector('path').getAttribute('d')).toBe('M 0 0 V 12 M 0 0 H 12');
+      expect(bandBody('d1').querySelector('path').getAttribute('d')).toBe('M 0 0 V 12 M 0 0 H 12');
     }
     manager.loadReport({
       format: 1, page, bands, grid: { style: 'none', spacing: '1 in' },
     });
     expect(pageEl().querySelector('.reports-band-grid')).toBeNull();
-    expect(bandBody('detail').style.getPropertyValue('--reports-grid-background')).toBe('white');
+    expect(bandBody('d1').style.getPropertyValue('--reports-grid-background')).toBe('white');
 
     const bare = createBlank();
     delete bare.grid;
     manager.loadReport(bare);
-    expect(bandBody('detail').querySelector('circle')).not.toBeNull();
+    expect(bandBody('d1').querySelector('circle')).not.toBeNull();
     manager.elements.exportBtn.click();
     expect(Object.hasOwn(JSON.parse(saved[0].json), 'grid')).toBe(false);
 
@@ -562,7 +562,7 @@ describe('Report Manager shell', () => {
       grid: { style: 'dots', spacing: '4' },
     });
     expect(pageEl().querySelector('.reports-band-grid')).toBeNull();
-    expect(bandBody('detail')).not.toBeNull();
+    expect(bandBody('d1')).not.toBeNull();
     expect(stageText()).toMatch(/needs a unit/);
   });
 
@@ -579,7 +579,7 @@ describe('Report Manager shell', () => {
     expect(inch.getAttribute('x')).toBe(String(toCssPx('1 in') - 2));
     expect(inch.getAttribute('y')).toBe('7');
     const sheetBox = () => manager.elements.stage.querySelector('#reports-sheet');
-    const detailBody = () => sheetBox().querySelector('[data-band-id="detail"] .reports-band-body');
+    const detailBody = () => sheetBox().querySelector('[data-band-id="d1"] .reports-band-body');
     sheetBox().getBoundingClientRect = () => ({
       left: 0, top: 0, width: 796, height: 220, right: 796, bottom: 220,
     });
@@ -596,7 +596,7 @@ describe('Report Manager shell', () => {
     manager.loadReport(createBlank());
     const again = pageEl();
     const againSheet = again.closest('#reports-sheet');
-    const againBody = againSheet.querySelector('[data-band-id="detail"] .reports-band-body');
+    const againBody = againSheet.querySelector('[data-band-id="d1"] .reports-band-body');
     againSheet.getBoundingClientRect = () => ({
       left: 0, top: 0, width: 796, height: 220, right: 796, bottom: 220,
     });
@@ -617,16 +617,16 @@ describe('Report Manager shell', () => {
   it('inverts the vertical ruler across the band edge that moved', async () => {
     await open();
     const page = pageEl();
-    const handle = page.querySelector('[data-band-id="detail"] .reports-band-edge');
+    const handle = page.querySelector('[data-band-id="d1"] .reports-band-edge');
     handle.dispatchEvent(pointer('pointerdown', 400));
     document.dispatchEvent(pointer('pointermove', 496));
-    const bar = () => page.querySelector('[data-band-id="detail"] .reports-ruler-left .reports-ruler-span');
+    const bar = () => page.querySelector('[data-band-id="d1"] .reports-ruler-left .reports-ruler-span');
     expect(bar().getAttribute('y')).toBe(String(toCssPx('0.25 in')));
     expect(bar().getAttribute('height')).toBe('96');
-    expect(page.querySelector('[data-band-id="detail"] .reports-ruler-left').style.height)
+    expect(page.querySelector('[data-band-id="d1"] .reports-ruler-left').style.height)
       .toBe(`${toCssPx('0.25 in') + 96}px`);
     // The right ruler grows too, with ticks and numbers for the new length.
-    const right = page.querySelector('[data-band-id="detail"] .reports-ruler-right');
+    const right = page.querySelector('[data-band-id="d1"] .reports-ruler-right');
     const grown = toCssPx('0.25 in') + 96;
     expect(right.style.height).toBe(`${grown}px`);
     const rightTicks = [...right.querySelectorAll('.reports-ruler-marks line')].map((line) => Number(line.getAttribute('y1')));
@@ -949,7 +949,7 @@ describe('Report Manager shell', () => {
     for (let step = 0; step < 10; step += 1) manager.elements.zoomOutBtn.click();
     expect(viewScale()).toBe('0.5');
     const page = pageEl();
-    const body = bandBody('detail');
+    const body = bandBody('d1');
     const sheet = page.closest('#reports-sheet');
     sheet.getBoundingClientRect = () => ({
       top: 0, left: 0, width: 398, height: 200, right: 398, bottom: 200,
@@ -957,10 +957,10 @@ describe('Report Manager shell', () => {
     body.getBoundingClientRect = () => ({
       top: 40, left: 14, right: 398, bottom: 52, width: 384, height: 12,
     });
-    const handle = page.querySelector('[data-band-id="detail"] .reports-band-edge');
+    const handle = page.querySelector('[data-band-id="d1"] .reports-band-edge');
     handle.dispatchEvent(pointer('pointerdown', 0));
     document.dispatchEvent(pointerAt('pointermove', 62, 48));
-    const bar = page.querySelector('[data-band-id="detail"] .reports-ruler-left .reports-ruler-span');
+    const bar = page.querySelector('[data-band-id="d1"] .reports-ruler-left .reports-ruler-span');
     expect(bar.getAttribute('y')).toBe(String(toCssPx('0.25 in')));
     expect(bar.getAttribute('height')).toBe('96');
     const cursor = body.parentElement.querySelector('.reports-cursor-y');

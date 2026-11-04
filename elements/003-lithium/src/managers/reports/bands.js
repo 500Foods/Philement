@@ -14,7 +14,7 @@ export const BAND_STRIP_PX = 22;
 
 import { paintBandGrid } from './grid.js';
 import { paintBandItems } from './items.js';
-import { bandHeight } from './model/document.js';
+import { GROUP_HEADER_TYPE, GROUP_FOOTER_TYPE, bandHeight, canRemoveBand, groupPartner } from './model/document.js';
 import { toCssPx } from './model/units.js';
 import { bandRoleName } from './reports-file.js';
 
@@ -31,21 +31,27 @@ export function dragBandHeight(startPx, deltaPx) {
   return next;
 }
 
-function frameFor(band) {
+function frameFor(band, doc) {
   const entry = band && typeof band === 'object' && !Array.isArray(band) ? band : null;
   const role = bandRoleName(entry ? entry.typeKey : undefined);
   const id = entry && typeof entry.id === 'string' ? entry.id : '';
   if (!entry) return { id, role, error: 'Each band must be an object.' };
+  let field = '';
+  if (entry.typeKey === GROUP_HEADER_TYPE) field = typeof entry.field === 'string' ? entry.field : '';
+  else if (entry.typeKey === GROUP_FOOTER_TYPE) {
+    const header = groupPartner(doc, id);
+    field = header && typeof header.field === 'string' ? header.field : '';
+  }
   try {
     const height = bandHeight(entry);
     return {
-      id, role, height, heightPx: toCssPx(height),
+      id, role, field, deletable: canRemoveBand(doc, id), height, heightPx: toCssPx(height),
     };
   } catch (error) {
     const message = error instanceof Error && error.message
       ? error.message
       : 'Band could not be measured.';
-    return { id, role, error: message };
+    return { id, role, field, deletable: canRemoveBand(doc, id), error: message };
   }
 }
 
@@ -58,7 +64,7 @@ function frameFor(band) {
  */
 export function bandFrames(doc) {
   const bands = Array.isArray(doc && doc.bands) ? doc.bands : [];
-  return bands.map(frameFor);
+  return bands.map((band) => frameFor(band, doc));
 }
 
 function roleLabel(frame) {
@@ -73,6 +79,21 @@ function roleLabel(frame) {
     id.className = 'reports-band-id';
     id.textContent = frame.id;
     strip.append(id);
+  }
+  if (frame.field) {
+    const field = document.createElement('span');
+    field.className = 'reports-band-field';
+    field.textContent = frame.field;
+    strip.append(field);
+  }
+  if (frame.id && frame.deletable !== false) {
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'reports-band-delete';
+    del.title = 'Delete band';
+    del.setAttribute('aria-label', `Delete band ${frame.id}`);
+    del.innerHTML = '<fa fa-trash-can></fa>';
+    strip.append(del);
   }
   return strip;
 }

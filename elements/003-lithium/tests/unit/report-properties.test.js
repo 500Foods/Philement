@@ -32,18 +32,18 @@ const lookups = {
 };
 
 function withText() {
-  return addItem(createBlank(), 'detail', { typeKey: 0, id: 't1' });
+  return addItem(createBlank(), 'd1', { typeKey: 0, id: 't1' });
 }
 
 describe('report property rows', () => {
   it('attribute list filters the panel', () => {
     const doc = withText();
-    const item = attributeKeys(doc, { bandId: 'detail', itemId: 't1' }, lookups);
+    const item = attributeKeys(doc, { bandId: 'd1', itemId: 't1' }, lookups);
     expect(item).toEqual([0, 1, 2, 3, 4, 14, 29]);
     expect(item).not.toContain(24);
-    const report = attributeKeys(doc, { bandId: 'detail', itemId: '' }, lookups);
+    const report = attributeKeys(doc, { bandId: 'd1', itemId: '' }, lookups);
     expect(report).toEqual([6, 18, 29, 30, 21, 24, 16]);
-    const labels = propertyRows(doc, { bandId: 'detail', itemId: 't1' }, lookups).map((row) => row.label);
+    const labels = propertyRows(doc, { bandId: 'd1', itemId: 't1' }, lookups).map((row) => row.label);
     expect(labels).toEqual(['Text', 'Top', 'Left', 'Width', 'Height', 'Align', 'Rotation', 'Link']);
   });
 
@@ -68,7 +68,7 @@ describe('report property rows', () => {
     expect(bg).toMatchObject({ value: 'white', omitted: true });
     expect(rows.find((row) => row.key === 16)).toMatchObject({ value: '10 pt', omitted: true });
     expect(rows.find((row) => row.key === 18)).toMatchObject({ value: 'Report', omitted: false });
-    const link = propertyRows(withText(), { bandId: 'detail', itemId: 't1' }, lookups).find((row) => row.key === 29);
+    const link = propertyRows(withText(), { bandId: 'd1', itemId: 't1' }, lookups).find((row) => row.key === 29);
     expect(link).toMatchObject({ value: '', omitted: true });
   });
 
@@ -80,7 +80,7 @@ describe('report property rows', () => {
     const sized = applyProperty(doc, {}, '30', 3, { pageSizes: lookups.pageSizes });
     expect(sized.page).toMatchObject({ sizeKey: 3, width: '14 in', height: '8.5 in', orientation: 'landscape' });
     expect(sized.page.margin.top).toBe('0.5 in');
-    const sel = { bandId: 'detail', itemId: 't1' };
+    const sel = { bandId: 'd1', itemId: 't1' };
     const moved = applyProperty(doc, sel, '1', '0.5');
     expect(moved.bands[1].items[0].box.left).toBe('0.5 in');
     const texted = applyProperty(doc, sel, 'text', 'Hello');
@@ -112,6 +112,6 @@ describe('report property rows', () => {
       { id: 8, label: 'Grid', sortSeq: 8 },
     ]);
     expect([...new Set(data.map((row) => row.sectionName))]).toEqual(['00 Report', '01 Page Layout', '02 Object', '03 Fonts', '04 Grid', '05 Other']);
-    expect(outlineEntries(withText()).map((entry) => entry.label)).toEqual(['Report', 'ph', 'detail', 'Text', 'pf', 'End of Report']);
+    expect(outlineEntries(withText()).map((entry) => entry.label)).toEqual(['Report', 'ph1', 'd1', 'Text', 'pf1', 'End of Report']);
   });
 });

@@ -129,16 +129,16 @@ describe('Report Manager snap', () => {
   it('snaps a band and an item when the pointer stops, and previews the landing', async () => {
     await open();
     expect(manager.elements.snapBtn.getAttribute('aria-pressed')).toBe('true');
-    const handle = page().querySelector('[data-band-id="detail"] .reports-band-edge');
+    const handle = page().querySelector('[data-band-id="d1"] .reports-band-edge');
     handle.dispatchEvent(pointer('pointerdown', 0, 100));
     document.dispatchEvent(pointer('pointermove', 0, 110));
-    const line = page().querySelector('[data-band-id="detail"] .reports-snap-line');
+    const line = page().querySelector('[data-band-id="d1"] .reports-snap-line');
     expect(line).not.toBeNull();
     expect(line.style.top).toBe('36px');
-    expect(page().querySelector('[data-band-id="detail"]').classList.contains('reports-band-snapping'))
+    expect(page().querySelector('[data-band-id="d1"]').classList.contains('reports-band-snapping'))
       .toBe(true);
     document.dispatchEvent(pointer('pointerup', 0, 110));
-    const detail = () => manager.doc.bands.find((band) => band.id === 'detail');
+    const detail = () => manager.doc.bands.find((band) => band.id === 'd1');
     expect(detail().height).toBe('0.375 in');
     expect(page().querySelector('.reports-snap-line')).toBeNull();
     expect(Object.hasOwn(manager.doc, 'snap')).toBe(false);
@@ -146,7 +146,7 @@ describe('Report Manager snap', () => {
     manager.elements.snapBtn.click();
     expect(manager.elements.snapBtn.getAttribute('aria-pressed')).toBe('false');
     expect(manager.elements.snapBtn.classList.contains('lithium-nav-btn-active')).toBe(false);
-    const again = page().querySelector('[data-band-id="detail"] .reports-band-edge');
+    const again = page().querySelector('[data-band-id="d1"] .reports-band-edge');
     again.dispatchEvent(pointer('pointerdown', 0, 100));
     document.dispatchEvent(pointer('pointermove', 0, 110));
     expect(page().querySelector('.reports-snap-line')).toBeNull();

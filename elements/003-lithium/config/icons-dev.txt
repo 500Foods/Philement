@@ -10,6 +10,8 @@
 <fa fa-angles-left id="collapse-icon"></fa>
 <fa fa-aperture></fa>
 <fa fa-arrow-down-a-z></fa>
+<fa fa-arrow-down-to-line></fa>
+<fa fa-arrow-down></fa>
 <fa fa-arrow-right-to-line></fa>
 <fa fa-arrow-rotate-left-10></fa>
 <fa fa-arrow-rotate-left-30></fa>
@@ -18,6 +20,8 @@
 <fa fa-arrow-rotate-right-30></fa>
 <fa fa-arrow-rotate-right></fa>
 <fa fa-arrow-up-right-from-square></fa>
+<fa fa-arrow-up-to-line></fa>
+<fa fa-arrow-up></fa>
 <fa fa-arrows-rotate></fa>
 <fa fa-at></fa>
 <fa fa-atom-simple></fa>

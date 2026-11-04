@@ -159,7 +159,7 @@ describe('ruler paint', () => {
     expect(inch.getAttribute('dominant-baseline')).toBe('text-before-edge');
     expect(labeled(top, '0')).toBeUndefined();
     expect(labeled(lefts[1], '1')).toBeUndefined();
-    const first = sheet.querySelector('[data-band-id="ph"]');
+    const first = sheet.querySelector('[data-band-id="ph1"]');
     const names = [...first.children].map((node) => node.className);
     expect(names[0]).toContain('reports-band-ruler-top');
     expect(names[1]).toContain('reports-band-ruler-pad');
@@ -167,7 +167,7 @@ describe('ruler paint', () => {
     expect(names[3]).toContain('reports-band-measure');
     expect(first.classList.contains('reports-band-headed')).toBe(true);
     expect(first.querySelector('.reports-band-measure .reports-ruler-left')).not.toBeNull();
-    const detail = sheet.querySelector('[data-band-id="detail"]');
+    const detail = sheet.querySelector('[data-band-id="d1"]');
     expect(detail.querySelector('.reports-band-ruler-top')).toBeNull();
     expect(detail.querySelector('.reports-band-ruler-pad')).toBeNull();
     expect(detail.classList.contains('reports-band-headed')).toBe(false);
@@ -198,7 +198,7 @@ describe('ruler paint', () => {
     paintReportPage(host, createBlank());
     const page = host.querySelector('#reports-page');
     const sheet = host.querySelector('#reports-sheet');
-    const body = sheet.querySelector('[data-band-id="detail"] .reports-band-body');
+    const body = sheet.querySelector('[data-band-id="d1"] .reports-band-body');
     sheet.getBoundingClientRect = () => ({
       left: 8,
       top: 12,
@@ -242,7 +242,7 @@ describe('ruler paint', () => {
     expect(host.classList.contains('reports-canvas-fitted')).toBe(true);
     const page = host.querySelector('#reports-page');
     const sheet = host.querySelector('#reports-sheet');
-    const body = sheet.querySelector('[data-band-id="ph"] .reports-band-body');
+    const body = sheet.querySelector('[data-band-id="ph1"] .reports-band-body');
     expect(page.style.getPropertyValue('--reports-content-width')).toBe('768px');
     sheet.getBoundingClientRect = () => ({
       left: 0,

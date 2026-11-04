@@ -2,17 +2,19 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { foldedRanges } from '@codemirror/language';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { authQuery } from '../../src/shared/conduit.js';
+import { authQuery, invokeScript } from '../../src/shared/conduit.js';
 import { toast } from '../../src/shared/toast.js';
 import { createBlank } from '../../src/managers/reports/model/document.js';
 import { definitionText } from '../../src/managers/reports/reports-file.js';
 import { reportEditorContent, reportJsonEdit, reportJsonText } from '../../src/managers/reports/reports-json.js';
 import { reportListColtypes, reportListTableDef, reportListUnavailable } from '../../src/managers/reports/reports-table.js';
+import { composeParams, composeResult, normalizeIr } from '../../src/managers/reports/reports-compose.js';
 import ReportsManager from '../../src/managers/reports/reports.js';
 import { resolveColumn } from '../../src/tables/lithium-table.js';
 
 vi.mock('../../src/shared/conduit.js', () => ({
   authQuery: vi.fn(),
+  invokeScript: vi.fn(),
 }));
 
 vi.mock('../../src/tables/lithium-table-main.js', () => ({
@@ -96,6 +98,33 @@ describe('report list columns', () => {
   });
 });
 
+describe('compose helpers', () => {
+  it('sends the sample under each datasource, or empty sources when static', () => {
+    const blank = createBlank();
+    expect(composeParams(blank, { rows: [{ a: 1 }] }).sources).toEqual({});
+    const doc = { ...blank, datasources: [{ name: 'main', kind: 'json' }] };
+    const params = composeParams(doc, { rows: [{ a: 1 }] });
+    expect(params.stage).toBe('compose');
+    expect(params.sources).toEqual({ main: [{ a: 1 }] });
+    expect(params.definition.history).toBeUndefined();
+    expect(composeParams(doc, null).sources).toEqual({});
+  });
+
+  it('turns empty objects into lists for log, pages, bands and items', () => {
+    const ir = normalizeIr({ log: {}, pages: [{ bands: [{ id: 't', items: {} }] }] });
+    expect(ir.log).toEqual([]);
+    expect(ir.pages[0].bands[0].items).toEqual([]);
+    expect(normalizeIr({ pages: {}, log: ['x'] })).toEqual({ pages: [], log: ['x'] });
+  });
+
+  it('reads envelopes, string results, and script errors', () => {
+    expect(composeResult({ status: 'completed', result: '{"pages":[],"log":{}}' }).ir).toEqual({ pages: [], log: [] });
+    expect(composeResult({ status: 'completed', result: { error: 'bad band', log: {} } }).error).toBe('bad band');
+    expect(composeResult({ status: 'failed', error: 'boom' }).error).toBe('boom');
+    expect(composeResult({ status: 'completed', result: '{' }).error).toMatch(/unreadable/);
+  });
+});
+
 describe('Report Manager chrome', () => {
   let container;
   let manager;
@@ -105,6 +134,7 @@ describe('Report Manager chrome', () => {
     localStorage.removeItem('lithium_reports_left_width');
     toast.dismissAll();
     authQuery.mockReset();
+    invokeScript.mockReset();
     const toastBox = document.getElementById('toast-container');
     if (toastBox) toastBox.innerHTML = '';
     vi.stubGlobal('fetch', vi.fn(async (url) => {
@@ -190,7 +220,7 @@ describe('Report Manager chrome', () => {
     expect(container.querySelector('#reports-new-btn')).toBeNull();
     expect(container.querySelector('#reports-page-size')).toBeNull();
     expect(container.querySelector('.reports-properties')).toBeNull();
-    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(2);
+    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(3);
     expect(container.querySelector('#reports-text-btn')).not.toBeNull();
 
     manager.elements.jsonTab.click();
@@ -255,17 +285,17 @@ describe('Report Manager chrome', () => {
     await open();
     expect(manager.elements.cloneBtn.disabled).toBe(true);
     manager.elements.textBtn.click();
-    const original = manager.doc.bands.find((band) => band.id === 'detail').items[0];
+    const original = manager.doc.bands.find((band) => band.id === 'd1').items[0];
     expect(manager.elements.cloneBtn.disabled).toBe(false);
     manager.elements.cloneBtn.click();
-    const items = manager.doc.bands.find((band) => band.id === 'detail').items;
+    const items = manager.doc.bands.find((band) => band.id === 'd1').items;
     expect(items.map((entry) => entry.id)).toEqual(['i1', 'i2']);
     expect(items[1].box).toEqual(original.box);
     expect(items[0].box).toEqual(original.box);
     const selected = manager.elements.stage.querySelector('.reports-item-selected');
     expect(selected.dataset.itemId).toBe('i2');
 
-    manager.elements.stage.querySelector('[data-band-id="ph"] .reports-band-strip')
+    manager.elements.stage.querySelector('[data-band-id="ph1"] .reports-band-strip')
       .dispatchEvent(new CustomEvent('pointerdown', { bubbles: true }));
     expect(manager.elements.cloneBtn.disabled).toBe(true);
     const before = definitionText(manager.doc);
@@ -453,5 +483,68 @@ describe('Report Manager chrome', () => {
     expect(draft.delete).toHaveBeenCalledTimes(1);
     expect(manager.doc.name).toBe('Report');
     expect(manager._openReportId).toBe(0);
+  });
+
+  it('orders the tabs and labels the definition tab', async () => {
+    await open();
+    const ids = [...container.querySelectorAll('.lithium-toolbar-tab')].map((tab) => tab.id);
+    expect(ids).toEqual([
+      'reports-report-tab', 'reports-editor-tab', 'reports-json-tab', 'reports-revisions-tab',
+      'reports-compose-tab', 'reports-html-tab', 'reports-pdf-tab',
+    ]);
+    expect(manager.elements.jsonTab.textContent.trim()).toBe('Definition');
+    expect(manager.elements.jsonTab.getAttribute('aria-label')).toBe('Definition');
+    manager.elements.htmlTab.click();
+    expect(container.querySelector('#reports-page-html').hidden).toBe(false);
+    expect(container.querySelector('#reports-page-html').textContent).toMatch(/not wired yet/);
+    manager.elements.pdfTab.click();
+    expect(manager.elements.pdfTab.classList.contains('active')).toBe(true);
+    expect(manager.elements.composeBtn.hidden).toBe(true);
+  });
+
+  it('runs compose, shows the result, and keeps it after an error', async () => {
+    await open();
+    manager.app.api = {};
+    manager.elements.composeTab.click();
+    expect(manager.elements.composeBtn.hidden).toBe(false);
+    expect(manager._compose.text()).toContain('"pages": []');
+    invokeScript.mockResolvedValueOnce({ status: 'completed', result: { pages: [{ bands: [{ id: 't1', items: {} }] }], log: {} } });
+    await manager.runCompose();
+    expect(invokeScript.mock.calls[0][1].script).toBe('Reports.Render');
+    expect(invokeScript.mock.calls[0][1].params.stage).toBe('compose');
+    expect(invokeScript.mock.calls[0][1].params.sources).toEqual({});
+    expect(manager._compose.text()).toContain('"t1"');
+    expect(manager._compose.text()).toContain('"items": []');
+    invokeScript.mockResolvedValueOnce({ status: 'failed', error: 'no script' });
+    await manager.runCompose();
+    expect(manager._compose.text()).toContain('"t1"');
+    expect(document.body.textContent.match(/Compose failed/g)).toHaveLength(1);
+  });
+
+  it('swaps import and export for fold and font tools on Definition and Compose', async () => {
+    localStorage.removeItem('lithium_reports_font_compose');
+    await open();
+    const shown = (id) => !container.querySelector(id).hidden;
+    expect(shown('#reports-import-btn')).toBe(true);
+    expect(shown('#reports-font-btn')).toBe(false);
+    for (const tab of [manager.elements.jsonTab, manager.elements.composeTab]) {
+      tab.click();
+      expect(shown('#reports-import-btn')).toBe(false);
+      expect(shown('#reports-export-btn')).toBe(false);
+      expect(shown('#reports-fold-btn')).toBe(true);
+      expect(shown('#reports-unfold-btn')).toBe(true);
+      expect(shown('#reports-font-btn')).toBe(true);
+    }
+    const right = [...container.querySelectorAll('.lithium-toolbar-placeholder ~ button')].map((b) => b.id);
+    expect(right[0]).toBe('reports-compose-btn');
+    manager.elements.revisionsTab.click();
+    expect(shown('#reports-export-btn')).toBe(true);
+    localStorage.setItem('lithium_reports_font_compose', JSON.stringify({ fontSize: '18px', fontFamily: 'serif', fontWeight: 'bold' }));
+    manager.elements.composeTab.click();
+    expect(manager._compose.view.dom.style.fontSize).toBe('18px');
+    expect(manager._compose.view.dom.style.fontWeight).toBe('bold');
+    manager.elements.fontBtn.click();
+    expect(document.querySelector('.manager-font-popup.visible')).not.toBeNull();
+    localStorage.removeItem('lithium_reports_font_compose');
   });
 });
