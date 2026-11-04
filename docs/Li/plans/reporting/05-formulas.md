@@ -1109,7 +1109,7 @@ Phase 44 Status complete.
        arrows nor the outline Prev/Next angles. A drag in the
        outline reorders within that band. There is no `order`
        property. Later items paint over earlier ones.
-- [ ] 44a.5 Fixture: a rectangle, a rounded rectangle with unequal
+- [x] 44a.5 Fixture: a rectangle, a rounded rectangle with unequal
        corners, a bottom line, a point-up hexagon rotated 30
        degrees, and two overlapping shapes with the later one on
        top. Hand the amendment over. The preview shows those
@@ -1126,26 +1126,26 @@ The script packet apply, the fixture call, and the browser preview.
 
 ### Status
 
-**In progress** (2026-11-04). Work items 44a.1 through 44a.4 are
-checked. Work item 44a.5 stays open until Andrew sees the
-preview. The packets are
+**Complete** (2026-11-04). Andrew said everything else looks
+good and asked to wrap the phase. He did not quote the fixture
+colours. The packets are
 [`/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua)
 and
 [`/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua).
-Andrew reports 1466 is already applied (2026-11-04). Do not
-edit that file and do not apply it again. 1465 is still the
-lookup packet. The next free Acuranzo file is **1467**.
-The same day the property header centers the four stack
-icons. Object starts with a read-only id, Link is its last
-row, and Notes is a client text block. Shapes omit Align.
-The Notes editor uses the same transparent field and inherited
-text colour as the other property inputs. A new item id is a
-word and a number (`text_1`, `shape_1`). Band ids stay `ph1`
-and `d1`. An id already stored is kept. The outline stays
-text.
-Those edits do not change a migration.
+Andrew reports 1466 is the last migration he sees and it is
+applied (2026-11-04). There is no `acuranzo_1467.lua`. That
+number is the next free slot. Phase 44b writes it when it
+changes `Reports.Render`. Do not edit 1466. 1465 is the
+lookup packet, the file before 1466.
+The property header centers the four stack icons. Object
+starts with a read-only id, Link is its last row, and Notes
+is a client text block. Shapes omit Align. The Notes editor
+uses `--text-primary` on a transparent field. A new item id
+is a word and a number (`text_1`, `shape_1`). Band ids stay
+`ph1` and `d1`. An id already stored is kept.
 QueryRef **175** stays unused. Lookup **078** is taken. The next
 free lookup id is **079**. The next free lookup 054 key is **52**.
+Phase 44b has not started.
 
 ### Accomplished
 
@@ -1256,12 +1256,13 @@ free lookup id is **079**. The next free lookup 054 key is **52**.
   no name stays `d1`. Link (key 29) is the last Object row.
   It is the old designer link string. `Reports.Render` does
   not read it.
-- The Notes editor is a textarea. The property input rule
-  covered `input` and `select`. The browser's white field sat
-  under the light text colour. The editor rule in
-  `reports-shape.css` uses the same transparent field, the
-  inherited colour, and no border. `reports.css` stays at
-  1048 lines.
+- The Notes editor is a textarea. A transparent field lets
+  the dark row show through, and the browser then paints the
+  textarea's own black text. `color: inherit` does not keep
+  the panel colour on that control. The editor sets
+  `color` and `-webkit-text-fill-color` to `--text-primary`.
+  The field stays transparent. `reports.css` stays at 1048
+  lines.
 - A new item id is a word, an underscore, and a number, counted
   per word. The first text is `text_1` and the first shape is
   `shape_1`. The underscore stays clear of a formula that
@@ -1279,18 +1280,19 @@ free lookup id is **079**. The next free lookup 054 key is **52**.
   next load. The toolbar tweaks do not change `Reports.Render`,
   so do not write a replacement for 1466. The next change to
   that script is a new file, and its old body is the 1466 body.
-  Apply `acuranzo_1465.lua` if it is not applied. That file
-  was edited in place for Stroke, Fill, and Corners. If 1465
-  was applied before that edit, say so. The follow-up is then
-  **1467**. Otherwise 1467 stays free. Regenerate the Hydrogen
+  Andrew says 1466 is the last file he sees and it is applied.
+  There is no `acuranzo_1467.lua`. That number is the next
+  free slot. `acuranzo_1465.lua` is the lookup packet, the
+  file before 1466. Regenerate the Hydrogen
   payload and restart Hydrogen. Import
   [`/elements/003-lithium/tests/fixtures/reporting/shapes.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shapes.definition.json)
   and run Preview HTML on `https://lithium.500courses.com`.
   The preview should show the rectangle, the rounded rectangle,
   the bottom line, the hexagon rotated 30 degrees, and the
-  later shape on top of the earlier one. This phase stays in
-  progress until that check. Phase 44b stays closed until the
-  check is recorded. Phase 45 stays closed.
+  later shape on top of the earlier one. Andrew asked to wrap
+  the phase on 2026-11-04. He said everything else looks good.
+  He did not quote those colours. Phase 44b starts in a new
+  conversation. Phase 45 stays closed.
 - Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as
   written. Next free file **1467**. QueryRef **175** stays
   unused. Next free lookup id **079**. Next free lookup 054
@@ -1314,7 +1316,7 @@ free lookup id is **079**. The next free lookup 054 key is **52**.
   with a read-only id, and the outline shows that id with the
   name. Link is the last Object row. Notes is a client text
   block stored as `notes`. A blank value is omitted. The
-  editor uses the same transparent field as the other inputs.
+  editor uses `--text-primary` on a transparent field.
   A new item is `text_1`, `shape_1`, `textfield_1`,
   `number_1`, `datetime_1`, `date_1`, `user_1`, `agg_1`,
   `calctext_1`, `calcnum_1`, `calctime_1`, `chart_1`,
@@ -1327,13 +1329,21 @@ free lookup id is **079**. The next free lookup 054 key is **52**.
   lookup 078. 1466 stays frozen. If 1465 was already applied
   before the section edit, say so. The panel still shows
   Stroke, Fill, and Corners when that lookup has not loaded.
-- After the notes field and the item ids, `npm test` was 94
-  files, 1499 passed, 12 skipped. `npm run lint` exited 0.
-  `npm run lint:css` exited 0. 1465 and 1466 were not edited.
-  The live preview is still Andrew's check. The designer
-  was not opened in a browser. happy-dom applied the notes
-  rule: the field is transparent and the text colour is
-  inherited.
+- Phase 44b starts in a new conversation. Its entry gate is
+  this phase, now complete. It adds fill styles and gradient
+  paint and draws them in Preview HTML. PDF still does not
+  draw the shape. The script change is a new file. Its old
+  body is the 1466 body. Do not edit 1466. That file is
+  **1467**, and it does not exist yet. Leave `acuranzo_1455.lua` through
+  `acuranzo_1464.lua` and `acuranzo_1466.lua` as written.
+- On the close, `npm test` reported 1498 passed, 1 failed,
+  and 12 skipped. The failure was the JSON fold wait in
+  `reports-chrome.test.js`. A rerun of that file passed 19
+  tests. `npm run lint` exited 0. `npm run lint:css` exited
+  0. 1465 and 1466 were not edited. happy-dom computed the
+  notes text as `rgb(224, 224, 224)` on a transparent field
+  while the cell colour was black. The designer was not
+  opened in a browser.
 
 ---
 

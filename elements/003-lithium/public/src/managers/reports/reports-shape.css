@@ -47,21 +47,36 @@
   justify-content: flex-end;
 }
 
-/* Same chrome as the other property inputs: the cell colour and
-   background, no white browser field. */
+/* The editing cell is a short centred flex row. A tall textarea
+   was clipped to its middle, so the first line sat out of sight.
+   Pin the top and let the box grow with the text. */
+.lithium-properties .tabulator-cell.tabulator-editing.lithium-properties-editing-memo {
+  align-items: flex-start;
+  overflow: visible;
+}
+
+/* Same chrome as the other property inputs. A textarea does not
+   keep an inherited colour once its field is transparent: the
+   browser paints black text. Name the panel colour. */
 .lithium-properties .tabulator-cell.tabulator-editing > textarea.lithium-properties-memo {
+  display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: 4.5em;
+  min-height: 1.4em;
   margin: 0;
   padding: 0;
   font: inherit;
-  color: inherit;
-  background: transparent;
+  line-height: 1.4;
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  background-color: transparent;
   border: none;
   border-radius: 0;
   outline: none;
   box-shadow: none;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   white-space: pre-wrap;
+  color-scheme: dark;
 }

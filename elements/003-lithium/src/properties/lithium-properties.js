@@ -605,7 +605,7 @@ export class LithiumProperties {
     event.stopPropagation();
     const target = nextEditableId(this._visibleRows(), row.getData().id, event.shiftKey ? -1 : 1);
     this._editNext = target;
-    const field = editing.querySelector('input, select');
+    const field = editing.querySelector('input, select, textarea');
     if (field) field.blur();
     setTimeout(() => this._resumeEdit(), 0);
   }
@@ -877,7 +877,7 @@ export class LithiumProperties {
     if (data.multiline) {
       const area = document.createElement('textarea');
       area.className = 'lithium-properties-memo';
-      area.rows = 4;
+      area.rows = 1;
       area.value = cell.getValue() ?? '';
       let done = false;
       const commit = () => {
@@ -885,7 +885,20 @@ export class LithiumProperties {
         done = true;
         success(area.value);
       };
+      // One line tall, then the text. A fixed tall box was centred in
+      // the short row, so the first line sat above the visible strip.
+      const fit = () => {
+        area.style.height = 'auto';
+        const next = area.scrollHeight;
+        if (next > 0) area.style.height = `${next}px`;
+        cell.getRow?.()?.normalizeHeight?.();
+      };
+      const stay = new Set([
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'Home', 'End', 'PageUp', 'PageDown',
+      ]);
       area.addEventListener('blur', commit);
+      area.addEventListener('input', fit);
       area.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
           event.stopPropagation();
@@ -893,12 +906,17 @@ export class LithiumProperties {
           cancel();
         } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
           event.preventDefault();
+          event.stopPropagation();
           commit();
-        } else if (event.key === 'Enter') {
+        } else if (event.key === 'Enter' || stay.has(event.key)) {
           event.stopPropagation();
         }
       });
-      onRendered(() => area.focus());
+      onRendered(() => {
+        area.closest('.tabulator-cell')?.classList.add('lithium-properties-editing-memo');
+        area.focus();
+        fit();
+      });
       return area;
     }
     const input = document.createElement('input');

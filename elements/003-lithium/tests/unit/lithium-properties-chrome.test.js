@@ -111,11 +111,20 @@ describe('LithiumProperties chrome', () => {
       () => {},
     );
     expect(area.tagName).toBe('TEXTAREA');
+    expect(Number(area.rows)).toBe(1);
+    const host = document.createElement('div');
+    host.append(area);
+    const bubbled = [];
+    host.addEventListener('keydown', (event) => bubbled.push(event.key));
     area.value = 'line one';
     const enter = new globalThis.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
     area.dispatchEvent(enter);
     expect(enter.defaultPrevented).toBe(false);
     expect(saved).toBeUndefined();
+    area.dispatchEvent(new globalThis.KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    area.dispatchEvent(new globalThis.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(bubbled).toEqual([]);
+    host.remove();
     area.value = 'a note';
     area.dispatchEvent(new globalThis.Event('blur'));
     expect(saved).toBe('a note');

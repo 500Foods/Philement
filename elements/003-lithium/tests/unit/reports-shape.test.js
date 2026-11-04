@@ -259,7 +259,8 @@ describe('shape items', () => {
 });
 
 describe('notes editor', () => {
-  it('keeps the cell colour on a transparent field', () => {
+  it('keeps light text on a transparent field when the cell colour is black', () => {
+    document.documentElement.style.setProperty('--text-primary', 'rgb(224, 224, 224)');
     const css = readFileSync(resolve(process.cwd(), 'src/managers/reports/reports-shape.css'), 'utf8');
     const style = document.createElement('style');
     style.textContent = css;
@@ -268,7 +269,7 @@ describe('notes editor', () => {
     root.className = 'lithium-properties';
     const editing = document.createElement('div');
     editing.className = 'tabulator-cell tabulator-editing';
-    editing.style.color = 'rgb(255, 255, 255)';
+    editing.style.color = 'rgb(0, 0, 0)';
     editing.style.backgroundColor = 'rgb(26, 26, 26)';
     const area = document.createElement('textarea');
     area.className = 'lithium-properties-memo';
@@ -276,11 +277,12 @@ describe('notes editor', () => {
     root.append(editing);
     document.body.append(root);
     const computed = getComputedStyle(area);
-    expect(computed.color).toBe('rgb(255, 255, 255)');
+    expect(computed.color).toBe('rgb(224, 224, 224)');
     expect(computed.backgroundColor).toBe('transparent');
     expect(computed.borderTopStyle).toBe('none');
     expect(computed.whiteSpace).toBe('pre-wrap');
     root.remove();
     style.remove();
+    document.documentElement.style.removeProperty('--text-primary');
   });
 });
