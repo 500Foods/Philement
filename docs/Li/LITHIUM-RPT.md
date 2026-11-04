@@ -275,23 +275,44 @@ adds a fixture that walks the rest of it.
 
 ## HTML
 
-`stage=html` emits one section per page of the composed document.
-Phase 24 writes the skeleton file for the detail fixture. This note
-locks the properties that file has to show.
+`stage=html` returns `{ "html": "<section...>", "log": [] }`. It emits
+one section per page of the composed document. The skeleton for the
+detail fixture is
+[`/elements/003-lithium/tests/fixtures/reporting/detail.html`](/elements/003-lithium/tests/fixtures/reporting/detail.html).
+That file is the `html` value, including its final newline.
 
-- Each page is one section, and the section uses `break-after: page`.
-- The section contains the composed text.
-- Positions use the physical unit already stored on the box. They do
-  not use the designer's 96 CSS pixels per inch.
+- Each page is one section at the definition page size. `box-sizing`
+  is `border-box`. Padding is the four margins, in the CSS order top,
+  right, bottom, left. The section uses `break-after: page`.
+- Bands stack in that content box at their stored heights. An item is
+  absolutely positioned from its box.
+- A stored length drops the space between the number and the unit, so
+  `0 in` is `0in`. The unit stays the one stored on the box.
 - Align is the item's `align`. Font family, size, and style come from
-  the item, then the definition font.
-- Text clips to the item box.
+  the item, then the definition font. `Normal`, `Bold`, `Italic`, and
+  `Bold + Italic` map to weight 400 or 700 and style normal or italic.
+- Text is escaped and clips to the item box (`overflow: hidden` and
+  `white-space: pre-line`).
 - The same intermediate is the oracle for the Lua result and the
   preview.
 
-The preview is that HTML in a sandboxed iframe. DOMPurify runs before
-`srcdoc`. The parent page does not assign report HTML to `innerHTML`.
-That is Phase 25.
+The preview is that HTML in a sandboxed iframe. `sanitizeHtml` runs
+before `srcdoc`. The parent page does not assign report HTML to
+`innerHTML`. Preview HTML's Run button does this. Font settings stay
+off that tab, because each item already carries its font. Phase 25
+is complete (2026-11-04). Andrew declined auto-render, so Run is the
+only trigger. He previewed two detail rows and the second band
+rendered. Phase 26 is complete (2026-11-04). Andrew said the Log
+tab is working. The text is aligned columns in CodeMirror, in
+Vanadium Mono: info, warn, and error counts, then each entry's level
+and message. The last Run fills it, from Compose or from Preview
+HTML. He did not quote the warn line, the warn count, or a
+clean-detail zero dump. Andrew confirmed the rendered page on 2026-11-04
+(`acuranzo_1455.lua`). The
+paper sits in the Editor stage. Its width and height come from the
+first section. Several pages stack in one frame as
+`calc(page height * section count)`. Definition and Compose use the
+same inset under the toolbar as the Editor.
 
 There is no script stage `png`. PDF is the default stage. A call that
 omits `stage` still runs `compose` until Phase 31 switches the default

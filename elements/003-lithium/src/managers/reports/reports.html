@@ -33,12 +33,20 @@
         <fa fa-globe></fa>
         <span>Preview HTML</span>
       </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-log-tab" data-page="log" title="Log: the last Reports.Render generation" aria-label="Log" data-collapsible-text>
+        <fa fa-list></fa>
+        <span>Log</span>
+      </button>
       <button type="button" class="lithium-toolbar-tab" id="reports-pdf-tab" data-page="pdf" title="Preview PDF" aria-label="Preview PDF" data-collapsible-text>
         <fa fa-file-pdf></fa>
         <span>Preview PDF</span>
       </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-compose-btn" data-reports-page="compose" title="Run Reports.Render (compose) on the current definition" hidden>
+        <fa fa-arrows-rotate></fa>
+        <span>Run</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-preview-btn" data-reports-page="html" title="Render the report as HTML" hidden>
         <fa fa-arrows-rotate></fa>
         <span>Run</span>
       </button>
@@ -58,7 +66,7 @@
         <fa fa-expand></fa>
         <span>Expand all</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-font-btn" data-reports-page="json compose" title="Font Settings" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-font-btn" data-reports-page="json compose log" title="Font Settings" hidden>
         <fa fa-font-case></fa>
       </button>
       <span class="reports-view-controls" id="reports-view-controls" data-reports-page="editor">
@@ -279,7 +287,17 @@
         </div>
       </div>
       <div class="reports-page-pane" id="reports-page-html" data-reports-page="html" hidden>
-        <p class="reports-revisions-note">Preview HTML is not wired yet (Phases 24 and 25).</p>
+        <div class="reports-stage">
+          <div class="reports-stage-body">
+            <iframe class="reports-preview-frame" id="reports-preview-frame" sandbox="" title="HTML preview" srcdoc=""></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="reports-page-pane" id="reports-page-log" data-reports-page="log" hidden>
+        <div class="reports-json-wrap">
+          <div class="reports-json-host reports-log-host" id="reports-log-editor" aria-label="Generation log"></div>
+          <div class="lithium-toolbar lithium-editor-footer" id="reports-log-footer"></div>
+        </div>
       </div>
       <div class="reports-page-pane" id="reports-page-pdf" data-reports-page="pdf" hidden>
         <p class="reports-revisions-note">Preview PDF is not wired yet.</p>

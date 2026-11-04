@@ -1,16 +1,16 @@
 /**
  * Page switch for Manager 24.
  * Report, Editor, Definition (page id json), Revisions, Compose,
- * Preview HTML, and Preview PDF. Leaving Report commits
+ * Preview HTML, Log, and Preview PDF. Leaving Report commits
  * the meta fields. Leaving JSON commits a parsed edit first.
  * Editor stays the page that opens.
  */
 
-const PAGES = new Set(['report', 'editor', 'json', 'revisions', 'compose', 'html', 'pdf']);
+const PAGES = new Set(['report', 'editor', 'json', 'revisions', 'compose', 'html', 'log', 'pdf']);
 
 export const reportPageMethods = {
   /**
-   * @param {'report'|'editor'|'json'|'revisions'|'compose'|'html'|'pdf'} page
+   * @param {'report'|'editor'|'json'|'revisions'|'compose'|'html'|'log'|'pdf'} page
    * @returns {Promise<void>|undefined}
    */
   showPage(page) {
@@ -39,10 +39,13 @@ export const reportPageMethods = {
     if (elements.revisionsTab) elements.revisionsTab.classList.toggle('active', next === 'revisions');
     if (elements.composeTab) elements.composeTab.classList.toggle('active', next === 'compose');
     if (elements.htmlTab) elements.htmlTab.classList.toggle('active', next === 'html');
+    if (elements.logTab) elements.logTab.classList.toggle('active', next === 'log');
     if (elements.pdfTab) elements.pdfTab.classList.toggle('active', next === 'pdf');
     if (next === 'compose' && typeof this._openCompose === 'function') this._openCompose();
     if (next === 'json' && typeof this._openJson === 'function') this._openJson();
-    if ((next === 'json' || next === 'compose') && typeof this._applyReportFont === 'function') this._applyReportFont(next);
+    if (next === 'log' && typeof this._openLog === 'function') this._openLog();
+    if ((next === 'json' || next === 'compose' || next === 'log') && typeof this._applyReportFont === 'function') this._applyReportFont(next);
+    if (next === 'html' && typeof this._sizePreviewFrame === 'function') this._sizePreviewFrame();
     if (next === 'revisions' && typeof this.openRevisions === 'function') return this.openRevisions();
     return undefined;
   },

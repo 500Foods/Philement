@@ -11,7 +11,7 @@ const DEFAULT_FONT = {
   fontFamily: '"Vanadium Mono", var(--font-mono, monospace)',
   fontWeight: 'normal',
 };
-const FONT_PAGES = new Set(['json', 'compose']);
+const FONT_PAGES = new Set(['json', 'compose', 'log']);
 const fontKey = (page) => `lithium_reports_font_${page}`;
 
 export function loadReportFont(page) {
@@ -25,7 +25,9 @@ export function loadReportFont(page) {
 
 export const reportFontMethods = {
   _fontView(page) {
-    const editor = page === 'compose' ? this._compose : this._json;
+    let editor = this._json;
+    if (page === 'compose') editor = this._compose;
+    if (page === 'log') editor = this._log;
     return editor && editor.view ? editor.view : null;
   },
 

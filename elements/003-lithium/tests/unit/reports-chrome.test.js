@@ -9,6 +9,7 @@ import { definitionText } from '../../src/managers/reports/reports-file.js';
 import { reportEditorContent, reportJsonEdit, reportJsonText } from '../../src/managers/reports/reports-json.js';
 import { reportListColtypes, reportListTableDef, reportListUnavailable } from '../../src/managers/reports/reports-table.js';
 import { composeParams, composeResult, normalizeIr } from '../../src/managers/reports/reports-compose.js';
+import { openListedReport } from '../../src/managers/reports/reports-save.js';
 import ReportsManager from '../../src/managers/reports/reports.js';
 import { resolveColumn } from '../../src/tables/lithium-table.js';
 
@@ -502,16 +503,24 @@ describe('Report Manager chrome', () => {
     const ids = [...container.querySelectorAll('.lithium-toolbar-tab')].map((tab) => tab.id);
     expect(ids).toEqual([
       'reports-report-tab', 'reports-editor-tab', 'reports-json-tab', 'reports-revisions-tab',
-      'reports-compose-tab', 'reports-html-tab', 'reports-pdf-tab',
+      'reports-compose-tab', 'reports-html-tab', 'reports-log-tab', 'reports-pdf-tab',
     ]);
     expect(manager.elements.jsonTab.textContent.trim()).toBe('Definition');
     expect(manager.elements.jsonTab.getAttribute('aria-label')).toBe('Definition');
     manager.elements.htmlTab.click();
     expect(container.querySelector('#reports-page-html').hidden).toBe(false);
-    expect(container.querySelector('#reports-page-html').textContent).toMatch(/not wired yet/);
+    const frame = container.querySelector('#reports-preview-frame');
+    expect(frame).not.toBeNull();
+    expect(frame.closest('.reports-stage-body')).not.toBeNull();
+    expect(frame.getAttribute('sandbox')).toBe('');
+    expect(frame.style.getPropertyValue('--reports-preview-width')).toBe('8.5in');
+    expect(frame.style.getPropertyValue('--reports-preview-height')).toBe('11in');
+    expect(manager.elements.previewBtn.hidden).toBe(false);
+    expect(manager.elements.fontBtn.hidden).toBe(true);
     manager.elements.pdfTab.click();
     expect(manager.elements.pdfTab.classList.contains('active')).toBe(true);
     expect(manager.elements.composeBtn.hidden).toBe(true);
+    expect(manager.elements.previewBtn.hidden).toBe(true);
   });
 
   it('runs compose, shows the result, and keeps it after an error', async () => {
@@ -531,6 +540,43 @@ describe('Report Manager chrome', () => {
     await manager.runCompose();
     expect(manager._compose.text()).toContain('"t1"');
     expect(document.body.textContent.match(/Compose failed/g)).toHaveLength(1);
+  });
+
+  it('renders preview HTML into a sandboxed iframe and keeps it after an error', async () => {
+    await open();
+    manager.app.api = {};
+    manager.elements.htmlTab.click();
+    const frame = container.querySelector('#reports-preview-frame');
+    const pane = container.querySelector('#reports-page-html');
+    const assignHtml = vi.spyOn(pane, 'innerHTML', 'set');
+    invokeScript.mockResolvedValueOnce({
+      status: 'completed',
+      result: {
+        html: '<section style="width:8.5in"><div style="position:absolute">North</div></section>',
+        log: [{ level: 'info', message: 'ok' }],
+      },
+    });
+    manager.elements.previewBtn.click();
+    await vi.waitFor(() => {
+      expect(frame.srcdoc).toContain('North');
+    });
+    expect(invokeScript.mock.calls[0][1].script).toBe('Reports.Render');
+    expect(invokeScript.mock.calls[0][1].params.stage).toBe('html');
+    expect(frame.srcdoc).toContain('position:absolute');
+    expect(frame.style.getPropertyValue('--reports-preview-width')).toBe('8.5in');
+    expect(frame.getAttribute('sandbox')).toBe('');
+    expect(manager._previewLog).toEqual([{ level: 'info', message: 'ok' }]);
+    expect(manager._generationLog).toEqual([{ level: 'info', message: 'ok' }]);
+    expect(manager.elements.logTab.dataset.generationFlag).toBe('info');
+    expect(assignHtml).not.toHaveBeenCalled();
+    const kept = frame.srcdoc;
+    invokeScript.mockResolvedValueOnce({ status: 'failed', error: 'stage html is not available yet' });
+    manager.elements.previewBtn.click();
+    await vi.waitFor(() => {
+      expect(document.body.textContent.match(/Preview failed/g)).toHaveLength(1);
+    });
+    expect(frame.srcdoc).toBe(kept);
+    expect(assignHtml).not.toHaveBeenCalled();
   });
 
   it('swaps import and export for fold and font tools on Definition and Compose', async () => {
@@ -558,5 +604,37 @@ describe('Report Manager chrome', () => {
     manager.elements.fontBtn.click();
     expect(document.querySelector('.manager-font-popup.visible')).not.toBeNull();
     localStorage.removeItem('lithium_reports_font_compose');
+  });
+
+  it('fills the Log tab from the last run and clears it for another report', async () => {
+    await open();
+    manager.app.api = {};
+    manager._openReportId = 1;
+    invokeScript.mockResolvedValueOnce({
+      status: 'completed',
+      result: {
+        pages: [],
+        log: [{ level: 'warn', message: 'datasource orders has no array in sources; no rows' }],
+      },
+    });
+    await manager.runCompose();
+    manager.elements.logTab.click();
+    const text = manager._log.view.state.doc.toString();
+    expect(text).toContain('   0     1      0  warn');
+    expect(text).toContain('datasource orders has no array in sources; no rows');
+    expect(manager.elements.logTab.dataset.generationFlag).toBe('warn');
+    expect(manager.elements.fontBtn.hidden).toBe(false);
+    expect(manager.elements.foldBtn.hidden).toBe(true);
+    expect(manager.elements.importBtn.hidden).toBe(true);
+    const scroller = manager._log.view.dom.querySelector('.cm-scroller');
+    expect(getComputedStyle(scroller).fontFamily).toContain('Vanadium Mono');
+    await openListedReport(manager, {
+      report_id: 2,
+      rev_id: 1,
+      name: 'Other',
+      report: definitionText(manager.doc),
+    });
+    expect(manager.elements.logTab.dataset.generationFlag).toBeUndefined();
+    expect(manager._log.view.state.doc.toString()).not.toContain('datasource orders');
   });
 });

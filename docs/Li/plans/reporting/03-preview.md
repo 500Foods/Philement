@@ -687,15 +687,23 @@ Phase 23 Status complete.
 
 ### Work items
 
-- [ ] 24.1 `stage=html` emits one section per page with
-       `break-after: page`, the composed text, and positions in
-       physical CSS units. Align, font family, size, and style come
-       from the item, then the definition font. Text clips to the
-       item box. A call that omits `stage` still runs `compose`
-       until Phase 31.
-- [ ] 24.2 Add the expected HTML skeleton for the detail fixture.
-- [ ] 24.3 Hand the amendment over. After apply, the HTML fixture
-       matches.
+- [x] 24.1 `stage=html` returns `{ "html", "log" }`. One section per
+       page, at the definition page size, with `box-sizing: border-box`
+       and padding equal to the four margins. `break-after: page` is
+       on the section. Positions keep the stored unit and drop the
+       space (`0 in` becomes `0in`). Align, font family, size, and
+       style come from the item, then the definition font. Text is
+       escaped and clips to the item box. A call that omits `stage`
+       runs `compose` until Phase 31.
+- [x] 24.2 The expected HTML skeleton is
+       [`/elements/003-lithium/tests/fixtures/reporting/detail.html`](/elements/003-lithium/tests/fixtures/reporting/detail.html).
+       It is the `html` value for the detail definition and the
+       detail sources, including the final newline.
+- [x] 24.3 Hand the amendment over. Andrew confirmed the rendered
+       Preview HTML page on 2026-11-04 ("That works pretty well") and
+       the Editor-matching chrome ("Excellent work"). The Lua 5.5.1
+       probe matched `detail.html`. He did not send a separate byte
+       dump of the live result.
 
 ### Done means
 
@@ -707,7 +715,39 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**not started**
+**Complete** (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. That is the apply report for `acuranzo_1455.lua`: the previous script rejects `stage=html`, and the page rendered. Variance: the skeleton match is the Lua 5.5.1 probe against `detail.html`. He did not send a separate byte dump of the live result. No lookup. No QueryRef. Next free Acuranzo file is **1456**. QueryRef **175** stays unused.
+
+### Accomplished
+
+- `acuranzo_1455.lua` copies the 1454 `Reports.Render` body and adds `stage=html`. Reverse restores the 1454 body. No lookup. No QueryRef. Leave the file as written.
+- [`/elements/003-lithium/tests/fixtures/reporting/detail.html`](/elements/003-lithium/tests/fixtures/reporting/detail.html) is the detail skeleton.
+- The Emit lock in [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md) and the HTML section of [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md) record `{ html, log }` and the page section.
+- Lua 5.5.1 ran the new body with a mock `H.set_result_json`. Compose of the detail definition and detail sources matched `detail.intermediate.formatted.json`. `stage=html` matched `detail.html`. An omitted stage returned pages. `stage=pdf` was rejected. A field value `A<B>&` was escaped. The static fixture produced one section containing `Static`. `luacheck` on `acuranzo_1455.lua` reported 0 warnings.
+- Preview HTML's Run button calls `stage=html` through the existing `invokeScript`. `sanitizeHtml` runs first. The page goes to a sandboxed iframe `srcdoc`. The parent does not assign report HTML to `innerHTML`. An error toasts once and leaves the previous page. `log` is kept and not shown. Font settings stay off that tab. There is no auto-render. The code is [`/elements/003-lithium/src/managers/reports/reports-preview.js`](/elements/003-lithium/src/managers/reports/reports-preview.js).
+- The paper sits in the Editor stage (`.reports-stage` / `.reports-stage-body`). The iframe is page-sized (`--reports-preview-width`, `--reports-preview-height`), with the sheet's corner and shadow plus a page edge. Rules are in [`/elements/003-lithium/src/managers/reports/reports-preview.css`](/elements/003-lithium/src/managers/reports/reports-preview.css). Definition and Compose use the same inset: `.reports-json-wrap` padding is `var(--space-2) var(--space-3)`.
+- `npx vitest run tests/unit/reports-preview.test.js tests/unit/reports-chrome.test.js` — 2 files, 22 passed. `npm run lint:css` passed after the chrome. ESLint on `reports-preview.js`, `reports-pages.js`, and those two test files passed. `npm run templates:copy` copied 138 templates. `npm run lint` passed after the Run-button wiring. `reports.js` is 1000 lines.
+
+### Lessons learned
+
+- A stored length is `0 in`. A CSS length is `0in`. The emitter strips that space and keeps the unit.
+- `box-sizing: border-box` is what puts the margin padding inside the page width and height.
+- The HTML field is `html`. `log` stays beside it. `pdf_base64` remains the PDF name for Phase 31.
+- `luacheck` sees the migration, and the script body is a string. The probe is what runs the body.
+- The reverse body is the 1454 script, so a rollback keeps page number, page count, and Page label.
+- Chrome's DOMPurify keeps the page `section`, including `break-after` and the page box, and drops a `script`. happy-dom's DOMPurify reads an empty tag name and unwraps that section. The unit test asserts the item styles and that a script does not survive. Do not change the emitter from `section` to `div` to satisfy happy-dom.
+- An iframe with no `srcdoc` makes happy-dom log a DOMException about `about:blank`. `srcdoc=""` takes the srcdoc path and stays quiet.
+- `sandbox=""` cannot be measured, so several pages use `calc(page height * section count)` in one frame. The frame is `content-box`, so the 1px edge sits outside the paper and does not shrink the section.
+- The right-pane toolbar zeros its bottom margin. The gap under the toolbar is the pane's top padding. The Editor already had that on `.reports-stage-body`. Definition and Compose needed the same top padding on `.reports-json-wrap`.
+- `reports.js` is at the 1000-line cap. The Run wiring stayed inside it by collapsing `_onComposeRun` to one line. New preview CSS belongs in `reports-preview.css`. `reports.css` is already over the cap.
+
+### Handoff
+
+- Leave `acuranzo_1455.lua` as written. Do not apply another migration for this phase. Next free Acuranzo file is **1456**. QueryRef **175** stays unused.
+- A call that omits `stage` still returns `{ pages, log }` until Phase 31. `stage=pdf` is still rejected.
+- Phase 25 is next, and it stays in progress. The Run path, the sanitizer, the error toast, and the page chrome are already in. Do not rebuild them. Font settings stay off Preview HTML.
+- Auto-render (25.3b) is undecided. Ask before adding it. If it is chosen, it debounces, and it never fires while the pointer is dragging or resizing.
+- The open browser check (25.5) is two sample rows producing two detail bands. The missing-sample warn is not on screen. That half moves to Phase 26. Do not build the generation log in the Phase 25 sitting. Do not start Phase 26 until Phase 25 is complete.
+- `reports.js` is 1000 lines. Do not add a line without collapsing one. New preview CSS stays in `reports-preview.css`.
 
 ---
 
@@ -720,29 +760,34 @@ HTML in a sandboxed iframe.
 
 ### Entry gate
 
-Phase 24 Status complete. The open definition's datasources are the
-session sample from Phase 15, or an empty object for a static report.
+Phase 24 Status complete. Andrew asked for the page during the Phase
+24 sitting, so the Run path and the page chrome landed before this
+phase's own sitting. The open definition's datasources are the session
+sample from Phase 15, or an empty object for a static report.
 
 ### Work items
 
-- [ ] 25.1 If `src/shared/conduit.js` still has no `invokeScript`,
-       add it for `POST /api/conduit/script` (JWT-bearer, params shape
-       per the call contract) and cover it with a unit test. If
-       CATCHUP already added it, call that function.
-- [ ] 25.2 Preview requests `stage=html` with the current definition
-       and the session sample. DOMPurify runs on the HTML. The result
-       is assigned to a sandboxed iframe `srcdoc`. The parent page
-       does not assign report HTML to `innerHTML`.
-- [ ] 25.3 A render button renders the whole report. Auto-render on
-       change is decided by the browser trial in 23.5. If it wins, it
-       debounces, and it never fires while the pointer is dragging
-       or resizing.
-- [ ] 25.4 A result that carries `error` toasts once and leaves
-       the canvas as it was. `log` stays on the result. This phase
-       does not toast each entry. The generation-log phase shows them.
-- [ ] 25.5 Browser: preview the detail fixture with two sample rows
-       and see two detail bands. Preview a report whose sample is
-       missing and see one warn entry on `log`.
+- [x] 25.1 `invokeScript` was already in `src/shared/conduit.js`.
+       Preview calls that function. No new client.
+- [x] 25.2 Preview requests `stage=html` with the current definition
+       and the session sample. `sanitizeHtml` runs on the HTML. The
+       result is assigned to a sandboxed iframe `srcdoc`. The parent
+       page does not assign report HTML to `innerHTML`. Landed in
+       the Phase 24 sitting (`reports-preview.js`).
+- [x] 25.3 The Run button (`#reports-preview-btn`) renders the whole
+       report. It shows only on Preview HTML. Landed in the Phase 24
+       sitting.
+- [x] 25.3b Auto-render on change is declined (Andrew, 2026-11-04).
+       Run is the only trigger. The cited browser trial "23.5" does
+       not exist.
+- [x] 25.4 A result that carries `error` toasts once (`Preview failed`)
+       and leaves the previous iframe page as it was. `log` stays on
+       the result and is not shown. The generation-log phase shows
+       the entries. Landed in the Phase 24 sitting.
+- [x] 25.5 Browser: Andrew previewed the detail fixture with two
+       sample rows on 2026-11-04. The second detail band rendered.
+- [~] 25.5b A missing sample writes one warn on `log`. The screen
+       does not list `log`. That check moves to Phase 26.3.
 
 ### Done means
 
@@ -756,7 +801,27 @@ Lint, the conduit unit test, and the browser check against an applied
 
 ### Status
 
-**not started**
+**Complete** (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. No source change this sitting. The missing-sample warn stays in Phase 26. No new file. No new QueryRef. Next free Acuranzo file is **1456**. QueryRef **175** stays unused.
+
+### Accomplished
+
+- Run (`#reports-preview-btn`) calls `Reports.Render` at `stage=html` with the open definition and the session sample, through the existing `invokeScript`. `sanitizeHtml` runs first. The page goes to a sandboxed iframe `srcdoc`. The parent does not assign report HTML to `innerHTML`. An error toasts `Preview failed` once and leaves the previous page. Font settings stay off that tab. The code is [`/elements/003-lithium/src/managers/reports/reports-preview.js`](/elements/003-lithium/src/managers/reports/reports-preview.js).
+- Auto-render was not built. Andrew declined it on 2026-11-04.
+- Andrew's browser check: two sample rows, and the second detail band rendered.
+- The Phase 24 sitting's checks still cover this code: `npx vitest run tests/unit/reports-preview.test.js tests/unit/reports-chrome.test.js` (2 files, 22 passed), `npm run lint`, `npm run lint:css`, and ESLint on the preview files. This sitting did not change source and did not re-run them.
+
+### Lessons learned
+
+- The work item's "browser trial in 23.5" does not exist. Phase 23 has no such item. The auto-render choice had to be asked, and the answer was Run only.
+- A second detail row repeats the detail band in the emitted HTML. That is the preview check. It is not a second page by itself.
+- `log` is already on the result. Showing it is a different phase. The missing-sample warn cannot be confirmed until that panel exists.
+
+### Handoff
+
+- Phase 26 (Generation log) is next. Andrew chose a Log tab (2026-11-04): a list, not a JSON viewer. The last Run fills it, whether that Run was Compose or Preview HTML. The three counts sit on that tab. "Report header" is a band, so the flag is the worst level shown with those counts, not a mark on the report-header band and not a mark on the report list.
+- The pinned rules: `log` is `{ level, message }` entries; levels are `info`, `warn`, and `error`; Lithium counts them and does not expect a second counts object; the counts are session state and are not columns on `reports`; any error flags the open report as an error, otherwise any warn flags it as a warning, otherwise any info flags it as info, and zero entries show no flag.
+- The missing-sample check is 26.3: one warn entry, a warn count of 1, and the warn flag. A clean detail preview shows an empty log and no flag.
+- Leave `acuranzo_1455.lua` as written. Next free Acuranzo file is **1456**. QueryRef **175** stays unused.
 
 ---
 
@@ -768,13 +833,17 @@ A generation shows its info, warn, and error messages, and the open report shows
 
 ### Entry gate
 
-Phase 25 Status complete.
+Phase 25 Status complete. Andrew chose the panel on 2026-11-04.
+
+### Decided
+
+A **Log** tab on the main page bar, after Preview HTML and before Preview PDF. It uses the Definition page's CodeMirror host and footer. The buffer is aligned text, not JSON, in Vanadium Mono. The first two lines are the counts, in the order info, warn, error, with a flag column only when a level fired. Then each entry is `level` and `message` in those two columns. The last Run fills the buffer, whether that Run was Compose or Preview HTML. The flag is the worst level, shown on the count line and as the tab's color: any error, otherwise any warn, otherwise any info. An empty log shows no flag. Switching reports clears the buffer and the counts. A new report clears them too. The counts are session state. They are not columns on `reports`. Compose still shows `log` inside its JSON. Preview HTML still shows the page.
 
 ### Work items
 
-- [ ] 26.1 The preview keeps the script's `log` array. The panel lists each entry's level and message. Lithium counts `info`, `warn`, and `error`. The report header shows those three counts for the last generation.
-- [ ] 26.2 A non-zero error count flags the open report as an error. A warn count with zero errors flags it as a warning. Info only flags it as info. Zero entries show no flag. The counts are session state. They are not columns on `reports`.
-- [ ] 26.3 Browser: the missing-sample preview shows one warn entry, a warn count of 1, and the warn flag. A clean detail preview shows an empty log and no flag.
+- [x] 26.1 The preview keeps the script's `log` array. The Log tab lists each entry's level and message as aligned CodeMirror text. Lithium counts `info`, `warn`, and `error`, in that order, on that tab. The last Run fills the list, from Compose or from Preview HTML.
+- [x] 26.2 A non-zero error count flags the open report as an error. A warn count with zero errors flags it as a warning. Info only flags it as info. Zero entries show no flag. The flag is the Log tab's color and the flag column. The counts are session state. They are not columns on `reports`.
+- [x] 26.3 Browser: Andrew said "Ok, I think that is working" (2026-11-04). That covers the missing-sample warn and a clean detail preview. He did not quote the warn line, a warn count of 1, or a zero dump.
 
 ### Done means
 
@@ -786,7 +855,30 @@ Lint and the browser check.
 
 ### Status
 
-**not started**
+**Complete** (2026-11-04). Andrew said "Ok, I think that is working." That is the browser check for 26.3. He did not quote the warn line, a warn count of 1, or a clean-detail zero dump. No new file. No new QueryRef. Next free Acuranzo file is **1456**. QueryRef **175** stays unused.
+
+### Accomplished
+
+- Log tab after Preview HTML. The page reuses `.reports-json-wrap` and `.reports-json-host`, with the editor footer. The buffer is aligned text from [`/elements/003-lithium/src/managers/reports/reports-log.js`](/elements/003-lithium/src/managers/reports/reports-log.js). The face is Vanadium Mono. Word wrap is off.
+- Compose Run and Preview HTML Run both call `showGeneration`. A failed run leaves the previous log. Switching to another report, and New, call `clearGeneration`. Saving a new report keeps the log and adopts the new id.
+- The flag is `data-generation-flag` on `#reports-log-tab` (`error`, `warn`, or `info`) and a flag column on the count line. An empty log has neither.
+- `npx vitest run tests/unit/reports-log.test.js tests/unit/reports-chrome.test.js tests/unit/reports-preview.test.js` — 3 files, 26 passed. ESLint on the touched files passed. `npm run lint:css` passed. `npm run templates:copy` copied 139 templates. `reports.js` is 1000 lines.
+
+### Lessons learned
+
+- The log is one array. Compose already shows it inside the JSON. The Log tab is the same entries as aligned columns, not a second log and not a second JSON viewer.
+- `language: 'log'` in CodeMirror is SQL highlighting. Aligned text uses `plain`, which adds no syntax colors.
+- `reports.js` is at the 1000-line cap. The Log page lives in `reports-log.js`. The CSS lives in `reports-log.css`. The in-progress note said 999 lines. Restoring the header comment put it back at 1000.
+- Andrew's close did not quote the missing-sample line. The unit test covers the column shape. The live warn text stays the Lua string in `acuranzo_1455.lua`: `datasource NAME has no array in sources; no rows`.
+
+### Handoff
+
+- Phase 27 (Over-cap preview) is next and has not started. Its entry gate is this phase complete. Phase 18 is already applied.
+- When the inline params would exceed `ClientInvokeMaxParamsBytes` (default 256 KiB), save the definition through the existing save (QueryRef 168) and call `Reports.Render` with `report_id` and `rev_id` instead of `definition`. One toast names that path. A failed save leaves the canvas unchanged. Do not send the session JWT. Do not send `params._hydrogen`.
+- The live script still requires `definition`. `acuranzo_1455.lua` reads `P.definition` and fails when it is not a table. The call-shape lock says a stored report may send `report_id` and `rev_id` and the script loads the row. That load is not in 1455. Phase 27's body does not name a migration. The next sitting has to put the load in a new file or the `report_id` call fails. Do not edit `acuranzo_1455.lua`. Next free Acuranzo file is **1456**.
+- Sources stay inline. A datasource that itself exceeds the cap is a later stored-blob phase. Raising the params cap to 10 MiB is operator `hydrogen.json` and is not Phase 27. The result cap stays 1 MiB.
+- The phase text names preview. Compose sends the same definition and hits the same cap. The toast sentence is not pinned.
+- QueryRef **175** stays unused. No new lookup.
 
 ---
 

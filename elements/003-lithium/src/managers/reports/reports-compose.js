@@ -172,6 +172,7 @@ export const reportComposeMethods = {
         return;
       }
       this._composeIr = result.ir;
+      if (typeof this.showGeneration === 'function') this.showGeneration(result.ir && result.ir.log);
       if (this._page === 'compose') this._openCompose();
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : 'Compose failed.';

@@ -25,9 +25,8 @@
  * the list summary. The Editor page is this stage. The JSON
  * page edits the definition with history removed. The
  * Revisions page lists saved revisions of the open report.
- * Undo, redo,
- * and Clear sit on the Editor toolbar. They use the stored
- * diff. The item toolbar adds text, snaps to the grid, clones,
+ * Undo, redo, and Clear sit on the Editor toolbar. They use the stored diff.
+ * The item toolbar adds text, snaps to the grid, clones,
  * and deletes. Snap starts on. A drag moves an item and the
  * corner resizes it. Both commit on pointerup and stay
  * inside the band. destroy and cleanup release the same
@@ -61,6 +60,8 @@ import { REPORT_CATEGORIES, loadCategory, reportFieldMethods, saveCategory } fro
 import { reportLockMethods } from './reports-lock.js';
 import { reportPageMethods } from './reports-pages.js';
 import { reportComposeMethods } from './reports-compose.js';
+import { reportPreviewMethods } from './reports-preview.js';
+import { reportLogMethods } from './reports-log.js';
 import { reportFontMethods } from './reports-font.js';
 import { reportPanelMethods } from './reports-panel.js';
 import { reportPointerMethods } from './reports-pointer.js';
@@ -174,10 +175,14 @@ export default class ReportsManager {
       revisionsTab: this.container.querySelector('#reports-revisions-tab'),
       composeTab: this.container.querySelector('#reports-compose-tab'),
       htmlTab: this.container.querySelector('#reports-html-tab'),
+      logTab: this.container.querySelector('#reports-log-tab'),
       pdfTab: this.container.querySelector('#reports-pdf-tab'),
       composeBtn: this.container.querySelector('#reports-compose-btn'),
+      previewBtn: this.container.querySelector('#reports-preview-btn'),
+      previewFrame: this.container.querySelector('#reports-preview-frame'),
       composeHost: this.container.querySelector('#reports-compose-editor'),
       composeFooter: this.container.querySelector('#reports-compose-footer'),
+      logHost: this.container.querySelector('#reports-log-editor'), logFooter: this.container.querySelector('#reports-log-footer'),
       revisionSelect: this.container.querySelector('#reports-revision-select'),
       revisionCopy: this.container.querySelector('#reports-revision-copy'),
       revisionRevert: this.container.querySelector('#reports-revision-revert'),
@@ -226,7 +231,7 @@ export default class ReportsManager {
   _missingControl() {
     const required = [
       'collapseBtn', 'reportTab', 'editorTab', 'jsonTab', 'revisionsTab',
-      'composeTab', 'htmlTab', 'pdfTab', 'composeBtn', 'composeHost', 'composeFooter',
+      'composeTab', 'htmlTab', 'logTab', 'pdfTab', 'composeBtn', 'previewBtn', 'previewFrame', 'composeHost', 'composeFooter', 'logHost', 'logFooter',
       'revisionSelect', 'revisionCopy', 'revisionRevert', 'revisionStatus', 'revisionForm',
       'importBtn', 'exportBtn',
       'undoBtn', 'redoBtn', 'clearBtn', 'foldBtn', 'unfoldBtn', 'fontBtn', 'viewControls',
@@ -255,15 +260,11 @@ export default class ReportsManager {
       fitBtn, zoomOutBtn, zoom100Btn, zoomInBtn, fileInput, stage,
     } = this.elements;
     this._onImportClick = () => fileInput.click();
-    this._onFile = () => {
-      this._importSelected();
-    };
+    this._onFile = () => this._importSelected();
     this._onExport = () => this._exportReport();
     this._onUndo = () => this._undo();
     this._onRedo = () => this._redo();
-    this._onClear = () => {
-      this._clearHistory();
-    };
+    this._onClear = () => this._clearHistory();
     this._onDelete = () => this._deleteItem();
     this._onClone = () => this._cloneItem();
     this._onText = () => {
@@ -280,9 +281,8 @@ export default class ReportsManager {
     this._onComposeTab = () => this.showPage('compose');
     this._onHtmlTab = () => this.showPage('html');
     this._onPdfTab = () => this.showPage('pdf');
-    this._onComposeRun = () => {
-      this.runCompose();
-    };
+    this._bindLog();
+    this._onComposeRun = () => this.runCompose();
     this._onMetaChange = () => this._commitMetaFields();
     this._onMetaSubmit = (event) => event.preventDefault();
     this._onFold = () => (this._page === 'compose' ? this._compose : this._json)?.fold();
@@ -315,6 +315,7 @@ export default class ReportsManager {
     this.elements.htmlTab.addEventListener('click', this._onHtmlTab);
     this.elements.pdfTab.addEventListener('click', this._onPdfTab);
     this.elements.composeBtn.addEventListener('click', this._onComposeRun);
+    this._bindPreview();
     bindRevisionControls(this);
     metaName.addEventListener('change', this._onMetaChange);
     metaTitle.addEventListener('change', this._onMetaChange);
@@ -515,6 +516,7 @@ export default class ReportsManager {
     this._destroyReportFont();
     if (this._compose) this._compose.destroy();
     this._compose = null;
+    this._unbindLog();
     if (this.auditFooter) this.auditFooter.destroy();
     this.auditFooter = null;
     this.updateAuditFooter = null;
@@ -549,6 +551,7 @@ export default class ReportsManager {
     this.elements.htmlTab.removeEventListener('click', this._onHtmlTab);
     this.elements.pdfTab.removeEventListener('click', this._onPdfTab);
     this.elements.composeBtn.removeEventListener('click', this._onComposeRun);
+    this._unbindPreview();
     unbindRevisionControls(this);
     metaName.removeEventListener('change', this._onMetaChange);
     metaTitle.removeEventListener('change', this._onMetaChange);
@@ -914,9 +917,7 @@ export default class ReportsManager {
   }
 
   /** Replace the open definition and redraw the page. */
-  loadReport(doc) {
-    this._setDocument(doc);
-  }
+  loadReport(doc) { this._setDocument(doc); }
 
   _failImport(message) {
     log(Subsystems.MANAGER, Status.ERROR, `[Reports] Import failed: ${message}`);
@@ -927,6 +928,7 @@ export default class ReportsManager {
     if (this._closed) return;
     this._jsonHeld = false;
     this._openReportId = 0;
+    this.clearGeneration();
     this._openRevision = null;
     this._reportOpenToken = (this._reportOpenToken || 0) + 1;
     this._setDocument(blankReport());
@@ -990,6 +992,8 @@ Object.assign(
   reportFieldMethods,
   reportPageMethods,
   reportComposeMethods,
+  reportPreviewMethods,
+  reportLogMethods,
   reportFontMethods,
   reportRevisionMethods,
   reportPanelMethods,

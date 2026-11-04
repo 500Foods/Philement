@@ -3,7 +3,7 @@
 # Reporting Plan
 
 **Date:** 2026-10-10
-**Revised:** 2026-11-03
+**Revised:** 2026-11-04
 **Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–7
 complete. Phases 6 and 7 closed 2026-10-31. Andrew confirmed
 drag, Undo, Redo, export, import, and the dots on the alternate
@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Next: Phase 24 (HTML emit)** in 03-preview.md. The next Acuranzo file is **1455**. The next caller-facing QueryRef is **175**. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1456**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -88,10 +88,10 @@ Andrew reports the apply.
 | 22 | System datetime and system user (Timezone User/UTC/Explicit) | Lithium UI + Lua | Medium | Complete |
 | 22a | Seed luatz (host tzdata) | Helium library pack | Easy | Complete |
 | 22b | Luxon masks and format presets Lookup | Helium amendment + Lithium UI | Medium | Complete |
-| 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
-| 24 | HTML emit | Helium amendment | Easy | Not started |
-| 25 | Preview | Lithium UI | Medium | Not started |
-| 26 | Generation log | Lithium UI | Medium | Not started |
+| 23 | Page number and page count | Lithium UI + Lua | Medium | Complete |
+| 24 | HTML emit | Helium amendment | Easy | Complete |
+| 25 | Preview | Lithium UI | Medium | Complete |
+| 26 | Generation log | Lithium UI | Medium | Complete |
 | 27 | Over-cap preview | Lithium UI | Easy | Not started |
 | 28 | Query designer | Lithium UI | Medium | Complete |
 | 29 | Query execution | Helium amendment | Medium | Not started |
@@ -204,7 +204,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Next: Phase 24 (HTML emit)** in 03-preview.md. The next Acuranzo file is **1455**. The next caller-facing QueryRef is **175**. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1456**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -1368,19 +1368,25 @@ glyphs in v1.
 | stage | Result |
 | --- | --- |
 | `pdf` | Default. Base64 PDF bytes inside the JSON result when they fit. |
-| `html` | One section per page with `break-after: page`. Export and preview medium. |
+| `html` | `{ "html", "log" }`. One section per page with `break-after: page`. Export and preview medium. |
 | `svg` | One SVG document. Page breaks are marked. |
 | `csv` | Phase 49. One flat row per detail record. Data only. |
 | `compose` | Intermediate JSON via `H.set_result_json`. |
 | `check` | Phase 35. Compile the posted functions and return diagnostics. No rows are read. |
+
+`stage=html` returns `{ "html": "<section...>", "log": [] }`. Each page is one section at the definition page size, with `box-sizing: border-box` and padding set to the four margins (top, right, bottom, left). Bands stack in that content box at their stored heights. An item is absolutely positioned from its box. A stored length drops the space between the number and the unit, so `0 in` is `0in`. Text is escaped. `overflow: hidden` and `white-space: pre-line` clip to the box and keep newlines. Align and the font family, size, and style come from the item, then the definition font. `Normal`, `Bold`, `Italic`, and `Bold + Italic` map to weight 400 or 700 and style normal or italic. A call that omits `stage` runs `compose` until Phase 31. The detail skeleton is [`/elements/003-lithium/tests/fixtures/reporting/detail.html`](/elements/003-lithium/tests/fixtures/reporting/detail.html).
 
 There is no script stage `png`. Phase 67 posts the SVG result to
 `image_scale`.
 
 PDF is the default stage. HTML is an export and the preview medium.
 The preview is that HTML, rendered on purpose into a sandboxed iframe,
-with DOMPurify before `srcdoc` (Phase 25). The parent page never
-assigns it to `innerHTML`. Charts and barcodes are SVG in the HTML,
+with `sanitizeHtml` before `srcdoc`. The parent page never assigns it
+to `innerHTML`. Preview HTML's Run button does this. Phase 24 is
+complete (2026-11-04): Andrew confirmed the rendered page. The paper
+sits in the Editor stage and takes its size from the first section.
+Auto-render was declined in Phase 25 (2026-11-04). Run is the only
+trigger. The generation log stays Phase 26. Charts and barcodes are SVG in the HTML,
 preview, and SVG paths. In the PDF they are native vectors at
 Phase 71. Until then, Lithium rasterizes the item SVG through
 `image_scale` and passes the PNG bytes back in `params.rasters`,
@@ -1417,9 +1423,14 @@ A failure that returns `error` also appends one `error` entry and does
 not throw out of the worker.
 
 Lithium counts the three levels. It does not expect a second counts
-object. Phase 19 starts returning `log`. Phase 26 shows the entries
-and flags the open report with the three counts. The counts are the
-last generation's session state. They are not columns on `reports`.
+object. Phase 19 starts returning `log`. Phase 26 (complete
+2026-11-04) shows the entries
+on a Log tab and flags that tab with the three counts. The tab is
+aligned text in CodeMirror, Vanadium Mono, not a JSON viewer. The
+last Run fills it, from Compose or from Preview HTML. The flag is
+the worst level shown with the counts. The
+counts are the last generation's session state. They are not columns
+on `reports`. Switching reports clears them.
 
 `Reports.Render` is one invokable row. lua-pdfkit, lua-zint, and
 d3.lua are other rows, loaded with `require("group.script")`. Author
@@ -1736,13 +1747,15 @@ not a default.
   `properties.js`, `functions.js`, `chart-panel.js`, and
   `model/units.js`, `model/document.js`, `model/history.js`,
   `model/history-diff.js`.
-- **DOMPurify is in `package.json`** (v3.3.2) but unused as of the last
-  review. Preview HTML is sanitized with DOMPurify before assignment to
-  a sandboxed iframe `srcdoc` (Phase 25). Barcode SVG must survive that
-  sanitizer (Phase 54). This is the one place HTML from a script crosses
-  into the DOM. Even though the preview HTML is fully generated by
-  `Reports.Render` and there is no external HTML surface, the sanitizer
-  stays as defense-in-depth for the iframe.
+- **DOMPurify is in `package.json`** (v3.3.2). Preview HTML is sanitized
+  with `sanitizeHtml` before assignment to a sandboxed iframe `srcdoc`.
+  The Run button landed in the Phase 24 sitting. Phase 25 is complete
+  (2026-11-04): Run is the only trigger, and auto-render was declined.
+  Barcode SVG must survive that sanitizer (Phase 54). This is
+  the one place HTML from a script crosses into the DOM. Even though
+  the preview HTML is fully generated by `Reports.Render` and there is
+  no external HTML surface, the sanitizer stays as defense-in-depth
+  for the iframe.
 
 ### Manager chrome
 
@@ -3652,3 +3665,144 @@ caller-facing QueryRef 175.
   `ITEM_TYPES`, which is why they worked first. No migration needed.
 - **Next:** Phase 24 (HTML emit) in 03-preview.md. Next Acuranzo file
   **1455**; QueryRef **175** unused.
+
+### 2026-11-04 — Phase 24 packet handed over
+
+- Andrew pinned the two open strings: the result field is `html`
+  (`{ html, log }`), and each section is the full page with the band
+  stack inset by the four margins.
+- acuranzo_1455.lua copies the 1454 Render body and adds `stage=html`.
+  An omitted stage still runs compose. Reverse restores the 1454 body.
+  No new lookup. No new QueryRef.
+- Stored lengths drop the space (`0 in` becomes `0in`). The section
+  uses `box-sizing: border-box` so the margin padding sits inside the
+  page size. Text is escaped. Clip is `overflow: hidden` and
+  `white-space: pre-line`.
+- Fixture `detail.html` is the `html` value for the detail definition
+  and detail sources, including the final newline. A Lua 5.5.1 probe
+  of the new body matched `detail.intermediate.formatted.json` on
+  compose, then matched that skeleton. `pdf` is still rejected.
+  luacheck on the migration file reported 0 warnings.
+- Phase 23's index row had stayed "Not started" after the close-out.
+  It is Complete. Phase 24 stays in progress until Andrew reports the
+  apply and the fixture call.
+- **Next:** Andrew applies acuranzo_1455.lua. Next free Acuranzo file
+  **1456**. QueryRef **175** unused. Phase 25 reads `result.html`.
+
+### 2026-11-04 — Preview HTML Run, still in Phase 24
+
+- Andrew asked for the rendered page in this sitting, before the
+  1455 apply. Font settings stay off Preview HTML. A viewer font
+  would fight the inline item fonts.
+- Preview HTML's Run button calls `Reports.Render` at `stage=html`
+  through the existing `invokeScript`. `sanitizeHtml` runs first.
+  The page is assigned to a sandboxed iframe `srcdoc`. The parent
+  does not assign report HTML to `innerHTML`. An error toasts once
+  and leaves the previous page. `log` is kept and not shown.
+- There is no auto-render. Phase 25.3's "browser trial in 23.5"
+  does not exist, so that choice stays open. The generation log
+  stays Phase 26. Over-cap preview stays Phase 27.
+- The live page cannot render until acuranzo_1455.lua is applied,
+  because the running script still rejects `stage=html`.
+- Phase 24 stays in progress until the apply and the fixture call.
+  Phase 25 stays in progress: the Run path is in, auto-render and
+  the browser check are not. Do not mark either phase complete.
+- Preview HTML sits in the Editor stage: the same padding, and the
+  paper uses the sheet's corner and shadow plus a page edge.
+  Definition and Compose use that same inset under the toolbar.
+
+### 2026-11-04 — Phase 24 complete
+
+- Andrew said the rendered Preview HTML page "works pretty well," then
+  accepted the Editor-matching chrome ("Excellent work") and asked to
+  close the phase. That is the apply report for `acuranzo_1455.lua`:
+  the previous script rejects `stage=html`, and the page rendered.
+- The Lua 5.5.1 probe matched `detail.html`, including the final
+  newline. He did not send a separate byte dump of the live result.
+  No new lookup. No QueryRef. Next free Acuranzo file **1456**.
+  QueryRef **175** unused. Leave `acuranzo_1455.lua` as written.
+- The paper is `.reports-preview-frame` in `reports-preview.css`.
+  Width and height are `--reports-preview-width` and
+  `--reports-preview-height`, from the first section, else the
+  definition page. Several pages use `calc(page height * section
+  count)` in one frame, because `sandbox=""` cannot be measured.
+  The frame is `content-box`, so the 1px edge sits outside the paper.
+- Definition and Compose use the same inset as the Editor.
+  `.reports-json-wrap` padding is `var(--space-2) var(--space-3)`.
+  The right-pane toolbar already zeros its bottom margin, so that
+  top padding is the gap under the toolbar.
+- `reports.js` is 1000 lines. New preview CSS stays in
+  `reports-preview.css`. `reports.css` is already over that cap.
+- Phase 25 stays in progress. The Run path is in. Auto-render (25.3b)
+  is undecided. The two-row browser check (25.5) is open. The
+  missing-sample warn moves to Phase 26, because the screen does not
+  list `log` yet.
+- **Next:** Phase 25 (Preview) in 03-preview.md. Ask about auto-render
+  before adding it. Do not build the generation log. Do not start
+  Phase 26.
+
+### 2026-11-04 — Phase 25 complete
+
+- Andrew declined auto-render. Run stays the only trigger. He
+  previewed the detail fixture with two sample rows and the second
+  detail band rendered.
+- No source change this sitting. The Run path, the sanitizer, the
+  error toast, and the page chrome stay as Phase 24 left them.
+  `reports-preview.test.js` and `reports-chrome.test.js` passed in
+  that sitting (2 files, 22 tests).
+- The missing-sample warn stays Phase 26.3. The screen still does
+  not list `log`.
+- No new Acuranzo file. No new QueryRef. Next free file **1456**.
+  QueryRef **175** unused.
+- **Next:** Phase 26 (Generation log) in 03-preview.md. The levels,
+  the flag priority, and the session-state rule are pinned. The
+  phrase "report header" is a band in this UI, so the panel's place
+  is still open. Do not start Phase 26 until that place is chosen.
+- Andrew asked which log Phase 26 shows. Compose already shows `log`
+  inside the intermediate JSON. Preview HTML keeps the same kind of
+  array from its own call and does not show it. There is not a second
+  log type. He then chose a Log tab: a list of level and message,
+  with the three counts, filled by the last Run (Compose or Preview
+  HTML). The flag is the worst level on that tab. Phase 26 is ready
+  and has not been built.
+
+### 2026-11-04 — Phase 26 Log tab, in progress
+
+- Andrew asked for the same page chrome as Definition, and for
+  strictly formatted text to use CodeMirror, aligned in columns, in
+  Vanadium Mono.
+- The Log tab sits after Preview HTML. The buffer is aligned text:
+  info, warn, and error counts, a flag column when a level fired,
+  then one row per entry. Word wrap is off. `plain` adds no syntax
+  colors. Compose Run and Preview HTML Run fill it. A failed run
+  leaves the previous log. Another report, and New, clear it.
+- The flag is the tab color and the flag column. It is not a column
+  on `reports` and not a mark on the report list.
+- Tests: `reports-log`, `reports-chrome`, and `reports-preview`,
+  3 files, 26 passed. ESLint on the touched files passed. Stylelint
+  on `reports-log.css` passed. `reports.js` is 999 lines.
+- **Next:** Andrew's browser check (26.3). A missing sample shows one
+  warn and the warn flag. A clean detail preview shows zeros and no
+  flag. Do not mark Phase 26 complete until then. Do not start
+  Phase 27.
+
+### 2026-11-04 — Phase 26 complete
+
+- Andrew said "Ok, I think that is working." That is the browser
+  check for 26.3. He did not quote the warn line, a warn count of 1,
+  or a clean-detail zero dump.
+- The Log tab is aligned text in CodeMirror, Vanadium Mono. The last
+  Run fills it, from Compose or from Preview HTML. The flag is the
+  worst level on that tab. The counts are session state.
+- `reports.js` is 1000 lines. The in-progress note said 999.
+- No new Acuranzo file. No new QueryRef. Next free file **1456**.
+  QueryRef **175** unused. Leave `acuranzo_1455.lua` as written.
+- The call-shape lock says a stored report may send `report_id` and
+  `rev_id` and the script loads the row. `acuranzo_1455.lua` still
+  requires `P.definition`. Phase 27's body does not name a migration.
+- **Next:** Phase 27 (Over-cap preview) in 03-preview.md. Do not start
+  it in this conversation. A definition past `ClientInvokeMaxParamsBytes`
+  (default 256 KiB) saves first and previews by `report_id`. One toast
+  names that path. A failed save leaves the canvas unchanged. Do not
+  send the session JWT. Sources stay inline. Raising the params cap
+  is operator config and is not this phase.

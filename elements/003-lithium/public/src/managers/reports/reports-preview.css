@@ -1,0 +1,14 @@
+/* The paper sits in .reports-stage, the same desk as the Editor sheet.
+   Radius and shadow match .reports-sheet. The stroke is the page edge. */
+
+.reports-preview-frame {
+  box-sizing: content-box;
+  flex: 0 0 auto;
+  width: var(--reports-preview-width, 8.5in);
+  height: var(--reports-preview-height, 11in);
+  overflow: hidden;
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-md);
+}

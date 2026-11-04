@@ -412,4 +412,5 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1452](/elements/002-helium/acuranzo/migrations/acuranzo_1452.lua) | scripts | 1.0.0 | 2026-11-03 | 6 | ✗ | Seed luatz and resolve IANA zones in Reports.Render (Reporting Phase 22a) |
 | [1453](/elements/002-helium/acuranzo/migrations/acuranzo_1453.lua) | scripts | 1.0.0 | 2026-11-03 | 13 | ✗ | Reports.Render Luxon masks and Lookup 077 Report Datetime Format Presets (Reporting Phase 22b) |
 | [1454](/elements/002-helium/acuranzo/migrations/acuranzo_1454.lua) | scripts | 1.0.0 | 2026-11-03 | 6 | ✗ | Reports.Render page number, page count and page label (Reporting Phase 23) |
-| **379** | | | | **2178** | **379** | |
+| [1455](/elements/002-helium/acuranzo/migrations/acuranzo_1455.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render stage=html (Reporting Phase 24) |
+| **380** | | | | **2182** | **380** | |

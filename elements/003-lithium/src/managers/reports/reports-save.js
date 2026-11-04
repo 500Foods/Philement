@@ -127,6 +127,10 @@ export function reportSaveParams(doc, row, kept, userId) {
  */
 function rememberOpen(manager, data) {
   const reportId = reportKey(data && data.report_id);
+  if (manager._generationReportId != null && manager._generationReportId !== reportId
+    && typeof manager.clearGeneration === 'function') {
+    manager.clearGeneration();
+  }
   manager._openReportId = reportId;
   manager._openRevision = reportId ? {
     report_id: reportId,
@@ -272,6 +276,9 @@ export async function saveListedReport(manager, row) {
   }
 
   manager._openReportId = saved.report_id;
+  if (manager._generationReportId === 0 || manager._generationReportId === reportId) {
+    manager._generationReportId = saved.report_id;
+  }
   manager._openRevision = {
     report_id: saved.report_id,
     rev_id: saved.rev_id,

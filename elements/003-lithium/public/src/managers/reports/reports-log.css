@@ -1,0 +1,20 @@
+/* The Log tab uses the Definition host. The face is Vanadium Mono
+   so the count columns and the message column stay aligned. */
+
+.reports-log-host .cm-scroller,
+.reports-log-host .cm-content,
+.reports-log-host .cm-gutters {
+  font-family: "Vanadium Mono", var(--font-mono, monospace);
+}
+
+#reports-log-tab[data-generation-flag="error"] {
+  color: var(--color-error, #f28b82);
+}
+
+#reports-log-tab[data-generation-flag="warn"] {
+  color: var(--color-warning, #fdd663);
+}
+
+#reports-log-tab[data-generation-flag="info"] {
+  color: var(--color-info, #8ab4f8);
+}
