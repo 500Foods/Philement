@@ -355,7 +355,7 @@ Phase 20 Status complete. Masks do not change band height.
        every row of the group.
 - [x] 21.2 Add an overflow fixture beside the Phase 1 files. The
        header moves with its first detail row.
-- [ ] 21.3 Hand the amendment over. After apply, the overflow fixture
+- [x] 21.3 Hand the amendment over. After apply, the overflow fixture
        matches.
 
 ### Done means
@@ -369,9 +369,9 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**in progress** (2026-11-03). acuranzo_1450 drafted and the overflow
-fixture matches under the local Lua 5.5 harness; waiting on Andrew's
-apply and the fixture call (21.3).
+**Complete** (2026-11-03 PDT). Andrew applied acuranzo_1450 and
+confirmed paging in Compose: increasing band heights pushed content
+past the page limit and produced more than one page.
 
 ### Accomplished
 
@@ -395,10 +395,11 @@ apply and the fixture call (21.3).
 
 ### Handoff
 
+- Phase 21 closed. Next: Phase 22 (System datetime and system user).
 - Phase 23 adds page number/count on top of the `pages` list.
 - Next Acuranzo file **1451**; QueryRef 175 still unused.
 
-### Start here (fresh agent)
+### Start here (fresh agent) — historical, phase closed
 
 - **Machine:** angrin. Repo `/mnt/extra/Projects/Philement`.
 - **Scope:** 21.1–21.3 only. Fixed-height paging in
@@ -431,35 +432,63 @@ apply and the fixture call (21.3).
 
 ### Goal
 
-The palette can place a system datetime and a system user, and compose prints them.
+The palette can place a system datetime and a system user, each
+datetime carries a Timezone property, and compose prints them.
 
 ### Entry gate
 
 Phase 21 Status complete.
 
+### Locks (2026-11-03, Andrew)
+
+- Mask language everywhere is the **Luxon token subset** (see Value
+  format in REPORTING_PLAN.md). Phase 22 may print with the existing
+  Phase 20 formatter as an interim; the dialect switch for every
+  datetime item is Phase 22b. Fixtures written here use masks that
+  read the same in both dialects where possible, and 22b rewrites them.
+- Timezone property: `User` | `UTC` | `Explicit`. Explicit stores an
+  IANA name on the item (e.g. `America/Vancouver`).
+- Report-level default zone (IANA string) for scheduled / JWT-less
+  runs and for `User` when there is no claim.
+- User zone comes from the JWT `tz` claim via `params._hydrogen.tz`
+  (login posts `Intl…resolvedOptions().timeZone`). Mid-session
+  `tzoffset` drift is accepted; do not engineer around it.
+
 ### Work items
 
-- [ ] 22.1 The palette adds lookup 053 key 5 (System datetime) and key 6 (System user). A new datetime item stores the omitted-mask default. A new user item stores no mask.
-- [ ] 22.2 System user prints `params._hydrogen.username`. An empty username prints blank and adds a warn log entry.
-- [ ] 22.3 System datetime uses the one generation instant from
-       Value format. Two items on the same report share it. It adds
-       `params._hydrogen.tzoffset` minutes, where a negative offset
-       is west of UTC, and formats that civil time with the item
-       mask. The mask grammar does not change. `tz` is the IANA name
-       Hydrogen stored on the claim, and compose does not look it up.
-       A missing `tzoffset` formats the instant in UTC and adds an
-       info log entry. Field datetimes keep the Value format rules.
-- [ ] 22.4 Fixture: username `ada` prints `ada`. An empty username
-       prints blank and adds a warn entry. The call sends
-       `params.now` `1772719629` and does not read the live clock.
-       With `tzoffset` `-420` and mask `yyyy-mm-dd hh:nn` it prints
-       `2026-03-05 07:07`. The same instant with no `tzoffset` prints
-       `2026-03-05 14:07` and adds an info entry. Hand the amendment
-       over.
+- [x] 22.1 The palette adds lookup 053 key 5 (System datetime) and key
+       6 (System user); both are canvas-draggable. A new datetime item
+       stores the omitted-mask default and `timezone` `User`. A new
+       user item stores no mask.
+- [x] 22.2 System user prints `params._hydrogen.username`. An empty
+       username prints blank and adds a warn log entry.
+- [x] 22.3 Property panel: Timezone select `User` | `UTC` | `Explicit`;
+       Explicit shows an IANA text field. Report properties add a
+       default zone (IANA string, empty = none). Datetime items that
+       format an instant (system, unix-number field/calculated/
+       aggregate) get the same property; civil-string field values
+       keep no-shift.
+- [x] 22.4 Resolution in compose, one generation instant shared by
+       all items (`params.now` or `H.system.now()`):
+       `UTC` → UTC. `User` → `_hydrogen.tz` if present, else report
+       default, else UTC + info log. `Explicit` → the item zone.
+       Until 22a lands, an IANA zone formats with
+       `_hydrogen.tzoffset` when the zone equals `_hydrogen.tz`;
+       otherwise (Explicit / report default with no luatz) UTC + info
+       log naming the zone. After 22a, all IANA zones resolve through
+       luatz at the generation instant.
+- [x] 22.5 Fixture: username `ada` / empty + warn; `params.now`
+       `1772719629`; `User` with `tz` `America/Vancouver`, `tzoffset`
+       `-420` prints `2026-03-05 07:07`; `UTC` prints
+       `2026-03-05 14:07`; `User` with no claim and no default prints
+       `2026-03-05 14:07` + info. Ship as the next free Acuranzo file
+       (start from **1451**). Hand the amendment over.
 
 ### Done means
 
-The fixture prints the username and the timezone-shifted system datetime.
+The fixture prints the username and the zoned system datetime for
+User and UTC; Explicit is stored and either resolves (22a applied) or
+falls back with an info entry.
 
 ### Exit gate
 
@@ -467,7 +496,7 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**not started**
+**packet handed over** (2026-11-03): Acuranzo 1451 (22), 1452 (22a), 1453 (22b) written, not applied. Waiting on Andrew's apply report and fixture calls.
 
 ### Note (2026-11-03)
 
@@ -477,6 +506,123 @@ exact, no `^`). Smoke `shared/flatpickr-picker.js`, the property Date
 editor, and Profile date-formats. Upstream has had no releases since
 2022; `flatpickr-ce` claims drop-in and started shipping updates
 2026-10-27. Do not chase every CE bump for a week after the swap.
+
+---
+
+## Phase 22a — Seed luatz (Helium library pack)
+
+### Goal
+
+`require("luatz.init")` works inside `Reports.Render`, reading the
+host's tzdata, so Explicit and report-default IANA zones format
+correctly (DST included) with or without a JWT.
+
+### Entry gate
+
+Phase 22 Status complete (or Andrew waives to run in parallel). Must
+land before Explicit IANA is relied on and before 22b fixtures that
+use a named zone.
+
+### Work items
+
+- [x] 22a.1 Seed luatz modules as Helium script rows like lua-pdfkit /
+       lua-zint: `luatz.*`, group `luatz`, `invokable=0`, loaded by
+       `group.script`. Pure Lua, no C. Pin the upstream version.
+- [x] 22a.2 zoneinfo comes from the **host OS package** (`tzdata`,
+       `/usr/share/zoneinfo`) via `io.open`. Do **not** bundle
+       zoneinfo in the migration. If the sandbox blocks that path,
+       allow read-only `io.open` under the zoneinfo root rather than
+       ship data. DOKS images (Ubuntu/Fedora-shaped) carry tzdata.
+- [x] 22a.3 A compose helper resolves (IANA, instant) → offset; an
+       unknown zone or unreadable tzfile falls back to UTC + warn log.
+- [x] 22a.4 Fixture: `America/Vancouver` at `1772719629` prints
+       `2026-03-05 06:07` (PST, -480) and a summer instant prints at
+       -420; bad zone → UTC + warn. Ship as the next free Acuranzo
+       file. Hand over.
+
+### Update / refresh
+
+- **zoneinfo data** is not owned by the migration. It refreshes when
+  the host/container image updates its `tzdata` package; cadence
+  follows the base image rebuild (TBD Andrew: image rebuild policy,
+  e.g. monthly or on IANA release).
+- **luatz code** is versioned: the seed records the upstream version
+  /commit in script metadata (TBD: column or comment header, e.g.
+  `-- luatz <version> <commit>` plus a `luatz.version` module
+  returning the string). An update is a new Acuranzo migration that
+  replaces the `luatz.*` rows and bumps that version; never edit the
+  applied seed.
+- **Config hooks (env, read by Render in 1452):** `REPORTS_TZ_ZONEINFO_PATH` and `REPORTS_TZ_DEFAULT_ZONE`; were TBD as `reports.tz.zoneinfo_path` (default
+  `/usr/share/zoneinfo`), `reports.tz.default_zone` (fallback when
+  report has none), optional `reports.tz.tzdata_version` reported in
+  the generation log (read from `/usr/share/zoneinfo/tzdata.zi`
+  `# version` line when present). Where config lives (Helium config
+  table vs server JSON) is TBD.
+- No cron system in this phase; refresh is image rebuild + a later
+  migration when the luatz pin moves.
+
+### Done means
+
+Named zones format at the generation instant from host tzdata.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**packet handed over** (2026-11-03): Acuranzo 1451 (22), 1452 (22a), 1453 (22b) written, not applied. Waiting on Andrew's apply report and fixture calls.
+
+---
+
+## Phase 22b — Luxon masks and format presets Lookup
+
+### Goal
+
+Every report datetime mask uses the Luxon token subset (same language
+as Lithium / Profile), and authors pick masks from an editable Lookup
+of presets.
+
+### Entry gate
+
+Phase 22 complete; Phase 22a complete if any fixture uses a named zone.
+
+### Work items
+
+- [x] 22b.1 Replace the Phase 20 date dialect in the compose
+       formatter with the Luxon subset: `yyyy yy MMMM MMM MM M dd d
+       EEEE EEE HH H mm m ss s SSS`, `W`/`WW` ISO week (first week
+       containing a Thursday), literals in `'...'`. `n`/`nn` local
+       week is deferred (Sunday first-day assumed until a Profile
+       option). Locale macros (`D`/`t`/`f`…) and zone-name tokens are
+       out for v1. Omitted-mask defaults become `yyyy-MM-dd` and
+       `yyyy-MM-dd HH:mm`.
+- [x] 22b.2 Applies to all datetime items: field, calculated,
+       aggregate, parameter, system. Migrate stored masks on existing
+       definitions (old `mm`/`nn`/`hh` → `MM`/`mm`/`HH`) in the same
+       amendment or document a one-shot conversion.
+- [x] 22b.3 New Lookup 077 (Andrew picked) of format presets, rows
+       `{ caption, mask, kind }`. Seed:
+       `EEEE MMMM d yyyy HH:mm:ss`, `yyyy-MM-dd HH:mm:ss`,
+       `yyyy-MM-dd HH:mm:ss.SSS`, `yyyy-MMM-dd HH:mm`,
+       `yyyy-MMM-dd (EEE) HH:mm`, `yyyy-MMM-dd ('Wk' W)`.
+- [x] 22b.4 Property panel preset picker shows caption + live sample;
+       picking writes the mask string onto the item. Custom edit stays.
+- [x] 22b.5 Rewrite `masks` / datetime fixtures to Luxon; all existing
+       sets still match. Ship as the next free Acuranzo file(s).
+
+### Done means
+
+One mask language across Lithium and compose; presets editable in
+Lookups.
+
+### Exit gate
+
+Andrew's apply report and the fixture calls.
+
+### Status
+
+**packet handed over** (2026-11-03): Acuranzo 1451 (22), 1452 (22a), 1453 (22b) written, not applied. Waiting on Andrew's apply report and fixture calls.
 
 ---
 

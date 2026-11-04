@@ -60,6 +60,13 @@ export function datasourceNames(doc) {
     .filter((name) => typeof name === 'string' && name !== '');
 }
 
+/** System Date (5) and System User (6), lookup 053 (Phase 22). */
+export const SYSTEM_TYPES = Object.freeze([5, 6]);
+const SYSTEM_LABELS = Object.freeze({ 5: '[System Date]', 6: '[System User]' });
+export function systemItemLabel(item) {
+  return SYSTEM_LABELS[item && item.typeKey] || 'System';
+}
+
 /** System Parameter item: lookup 053 key 63 (Phase 28.3). */
 export const PARAM_TYPE = 63;
 

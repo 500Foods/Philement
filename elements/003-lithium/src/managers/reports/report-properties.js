@@ -13,6 +13,7 @@
  */
 
 import { GROUP_HEADER_TYPE, bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
+import { DateTime } from 'luxon';
 import { parseLength } from './model/units.js';
 import {
   addDatasource, datasourceColumns, datasourceKinds, datasourceList, datasourceNames,
@@ -417,6 +418,56 @@ function endRows() {
 const TEXT_ROW_ID = 'text';
 export const PARAM_ROW_ID = 'param';
 
+/** Phase 22: datetime items (System Date 5, Field datetime 24) take a timezone. */
+const ZONE_ITEM_TYPES = new Set([5, 24]);
+export const TZ_MODES = Object.freeze(['User', 'UTC', 'Explicit']);
+export const TZ_ROW_ID = 'timezone';
+export const ZONE_ROW_ID = 'zone';
+export const PRESET_ROW_ID = 'mask-preset';
+export const DEFAULT_ZONE_ROW_ID = 'defaultZone';
+
+/** Lookup 077 rows as { caption, mask }. */
+export function datetimePresets(rows) {
+  const out = [];
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const spec = parseCollection(row && row.collection);
+    if (spec && typeof spec.mask === 'string' && spec.mask !== '') out.push({ caption: String(row.value_txt || spec.mask), mask: spec.mask });
+  }
+  return out;
+}
+
+/** Picker entry: caption with a live sample at now. */
+export function presetLabel(preset, now = DateTime.now()) {
+  let sample;
+  try { sample = now.toFormat(preset.mask); } catch { sample = preset.mask; }
+  return `${preset.caption} — ${sample}`;
+}
+
+function zoneRows(item, presets) {
+  const typeKey = Number(item.typeKey);
+  const mode = TZ_MODES.includes(item.timezone) ? item.timezone : '';
+  const rows = [{
+    id: TZ_ROW_ID, key: null, label: 'Timezone', value: mode, omitted: !own(item, 'timezone'),
+    note: mode ? '' : (typeKey === 24 ? 'Not set: the value prints as stored.' : 'Not set: UTC.'),
+    editor: 'List', list: [...TZ_MODES], section: 7, group: 'Formatting', readOnly: false,
+  }];
+  if (mode === 'Explicit') {
+    rows.push({
+      id: ZONE_ROW_ID, key: null, label: 'Zone', value: item.zone ?? '', omitted: !own(item, 'zone'),
+      note: 'IANA name, e.g. America/Vancouver. Unknown zones print UTC with a warning.',
+      editor: 'Text', list: null, section: 7, group: 'Formatting', readOnly: false,
+    });
+  }
+  if (presets.length) {
+    rows.push({
+      id: PRESET_ROW_ID, key: null, label: 'Mask preset', value: '', omitted: true,
+      note: 'Pick one to copy its mask into Mask (lookup 077).',
+      editor: 'List', list: presets.map((p) => presetLabel(p)), section: 7, group: 'Formatting', readOnly: false,
+    });
+  }
+  return rows;
+}
+
 /** Number with no unit gets the report unit. */
 export function withUnit(value, doc) {
   const text = String(value).trim();
@@ -609,6 +660,14 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
         editor: 'Text', list: null, section: 7, group: 'Formatting', readOnly: false,
       });
     }
+    if (ZONE_ITEM_TYPES.has(typeKey)) rows.push(...zoneRows(item, datetimePresets(lookups && lookups.datetimePresets)));
+  }
+  if (scope === 'report') {
+    rows.push({
+      id: DEFAULT_ZONE_ROW_ID, key: null, label: 'Default zone', value: doc.defaultZone ?? '', omitted: !own(doc, 'defaultZone'),
+      note: 'IANA zone for User timezones when the caller has none; blank uses the server default, else UTC.',
+      editor: 'Text', list: null, section: null, group: 'Report', readOnly: false,
+    });
   }
   if (scope === 'report') rows.push(...datasourceRows(doc, lookups), ...rulerRows(doc));
   return rows;
@@ -636,6 +695,26 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
   if (rowId === MASK_ROW_ID) {
     if (!isItem) throw new Error('Mask needs a selected item.');
     return editItem(doc, sel, (item) => { item.mask = String(value ?? '').trim(); });
+  }
+  if (rowId === TZ_ROW_ID || rowId === ZONE_ROW_ID || rowId === PRESET_ROW_ID) {
+    if (!isItem) throw new Error('Timezone needs a selected item.');
+    const text = String(value ?? '').trim();
+    if (rowId === TZ_ROW_ID) {
+      if (text && !TZ_MODES.includes(text)) throw new Error(`Timezone must be one of ${TZ_MODES.join(', ')}.`);
+      return editItem(doc, sel, (item) => { if (text) item.timezone = text; else delete item.timezone; if (text !== 'Explicit') delete item.zone; });
+    }
+    if (rowId === ZONE_ROW_ID) return editItem(doc, sel, (item) => { if (text) item.zone = text; else delete item.zone; });
+    const presets = datetimePresets(ctx && ctx.datetimePresets);
+    const hit = presets.find((p) => presetLabel(p) === text || p.caption === text || text.startsWith(`${p.caption} — `));
+    if (!hit) throw new Error('Unknown mask preset.');
+    return editItem(doc, sel, (item) => { item.mask = hit.mask; });
+  }
+  if (rowId === DEFAULT_ZONE_ROW_ID) {
+    if (selectionScope(doc, sel) !== 'report') throw new Error('Default zone is set on the report.');
+    const next = JSON.parse(JSON.stringify(doc));
+    const text = String(value ?? '').trim();
+    if (text) next.defaultZone = text; else delete next.defaultZone;
+    return next;
   }
   const scope = selectionScope(doc, sel);
   if (scope === 'end') throw new Error('End of Report has no editable properties.');

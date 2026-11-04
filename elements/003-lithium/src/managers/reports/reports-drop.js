@@ -13,10 +13,20 @@ export const TEXT_DROP_KIND = 'reports-text';
 
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
-const FIELD_DROP_TYPES = new Set([20, 21, 24, 63]);
-const FIELD_GHOST = { 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 63: 'Parameter' };
-/** Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`. */
-const dropItem = (typeKey) => (typeKey === 63 ? { typeKey, param: '' } : { typeKey, field: '' });
+const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 63]);
+const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 63: 'Parameter' };
+/**
+ * Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`.
+ * System Date (5) and new datetime fields (24) start with timezone User and
+ * no mask (the default applies); System User (6) takes no mask.
+ */
+export const dropItem = (typeKey) => {
+  if (typeKey === 63) return { typeKey, param: '' };
+  if (typeKey === 5) return { typeKey, timezone: 'User' };
+  if (typeKey === 6) return { typeKey };
+  if (typeKey === 24) return { typeKey, field: '', timezone: 'User' };
+  return { typeKey, field: '' };
+};
 
 /**
  * Top-left of a default text box centered on the pointer.
@@ -44,7 +54,7 @@ export const reportDropMethods = {
     this._onTextDragEnd = () => this._endTextDrag();
     this._onTextDragOver = (event) => this._overTextDrag(event);
     this._onTextDrop = (event) => this._dropTextDrag(event);
-    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key], #reports-param-btn')];
+    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key], #reports-items-toolbar [data-reports-category="system"][data-type-key]')];
     this._fieldDragBtns.forEach((btn) => {
       btn.addEventListener('dragstart', this._onTextDragStart);
       btn.addEventListener('dragend', this._onTextDragEnd);

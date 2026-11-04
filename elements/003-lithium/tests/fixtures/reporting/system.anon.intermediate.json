@@ -1,0 +1,76 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "typeKey": 12,
+          "items": [
+            {
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "align": "Left",
+              "id": "user",
+              "typeKey": 6,
+              "box": {
+                "left": "0 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in"
+              },
+              "text": ""
+            },
+            {
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "align": "Left",
+              "id": "dt_user",
+              "typeKey": 5,
+              "box": {
+                "left": "1.5 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in"
+              },
+              "text": "2026-03-05 14:07"
+            },
+            {
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "align": "Left",
+              "id": "dt_utc",
+              "typeKey": 5,
+              "box": {
+                "left": "3 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in"
+              },
+              "text": "2026-03-05 14:07"
+            }
+          ],
+          "height": "0.4 in",
+          "id": "rh"
+        }
+      ]
+    }
+  ],
+  "log": [
+    {
+      "message": "item user in band rh is System user but the caller has no username; printed blank",
+      "level": "warn"
+    },
+    {
+      "message": "no user timezone or report default zone; printed UTC",
+      "level": "info"
+    }
+  ]
+}

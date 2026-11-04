@@ -1,0 +1,152 @@
+{
+  "format": 1,
+  "name": "Presets",
+  "title": "Presets",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "vals",
+      "kind": "json",
+      "shape": "list"
+    }
+  ],
+  "bands": [
+    {
+      "id": "rh",
+      "typeKey": 12,
+      "height": "1.5 in",
+      "items": [
+        {
+          "id": "sys_long",
+          "typeKey": 5,
+          "timezone": "UTC",
+          "mask": "EEEE MMMM d yyyy HH:mm:ss",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "sys_iso",
+          "typeKey": 5,
+          "timezone": "UTC",
+          "mask": "yyyy-MM-dd HH:mm:ss",
+          "box": {
+            "left": "0 in",
+            "top": "0.2 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "sys_iso_ms",
+          "typeKey": 5,
+          "timezone": "UTC",
+          "mask": "yyyy-MM-dd HH:mm:ss.SSS",
+          "box": {
+            "left": "0 in",
+            "top": "0.4 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "sys_mmm",
+          "typeKey": 5,
+          "timezone": "UTC",
+          "mask": "yyyy-MMM-dd HH:mm",
+          "box": {
+            "left": "0 in",
+            "top": "0.6000000000000001 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "sys_mmm_eee",
+          "typeKey": 5,
+          "timezone": "UTC",
+          "mask": "yyyy-MMM-dd (EEE) HH:mm",
+          "box": {
+            "left": "0 in",
+            "top": "0.8 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "sys_mmm_week",
+          "typeKey": 5,
+          "timezone": "UTC",
+          "mask": "yyyy-MMM-dd ('Wk' W)",
+          "box": {
+            "left": "0 in",
+            "top": "1 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "datasource": "vals",
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "wk",
+          "typeKey": 24,
+          "field": "d",
+          "mask": "yyyy-MM-dd EEE 'W'WW",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "ms",
+          "typeKey": 24,
+          "field": "u",
+          "mask": "HH:mm:ss.SSS",
+          "box": {
+            "left": "0 in",
+            "top": "0.2 in",
+            "width": "3 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    }
+  ],
+  "functions": []
+}

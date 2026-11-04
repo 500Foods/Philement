@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Acuranzo 1444–1449 are applied. **Next: Phase 21 (Paging)** in 03-preview.md. The next Acuranzo file is **1450**. The next caller-facing QueryRef is **175**. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b packets are handed over (1451–1453 written, not applied). **Next: Andrew applies 1451–1453 and runs the fixture calls.** The next Acuranzo file is **1454**. The next caller-facing QueryRef is **175**. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -84,8 +84,10 @@ Andrew reports the apply.
 | 19 | Compose skeleton | Helium seed, human apply | Medium | Complete |
 | 19b | Datasources editor and embedded JSON | Lithium UI + Helium lookup | Medium | Complete |
 | 20 | Value format | Helium amendment | Medium | Complete |
-| 21 | Paging | Helium amendment | Easy | In progress |
-| 22 | System datetime and system user | Lithium UI + Lua | Medium | Not started |
+| 21 | Paging | Helium amendment | Easy | Complete |
+| 22 | System datetime and system user (Timezone User/UTC/Explicit) | Lithium UI + Lua | Medium | Packet handed over |
+| 22a | Seed luatz (host tzdata) | Helium library pack | Easy | Packet handed over |
+| 22b | Luxon masks and format presets Lookup | Helium amendment + Lithium UI | Medium | Packet handed over |
 | 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
 | 24 | HTML emit | Helium amendment | Easy | Not started |
 | 25 | Preview | Lithium UI | Medium | Not started |
@@ -202,7 +204,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Acuranzo 1444–1449 are applied. **Next: Phase 21 (Paging)** in 03-preview.md. The next Acuranzo file is **1450**. The next caller-facing QueryRef is **175**. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b packets are handed over (1451–1453 written, not applied). **Next: Andrew applies 1451–1453 and runs the fixture calls.** The next Acuranzo file is **1454**. The next caller-facing QueryRef is **175**. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -932,12 +934,30 @@ omits it, the instant is `H.system.now()`. A normal preview omits
 `params.now`. The Phase 22 fixture sends `1772719629`, the same
 instant as the mask row above. `params.now` is a call parameter. It
 is not a report parameter, it is not stored on the definition, and
-it is not a field of `params._hydrogen`. The item adds
-`params._hydrogen.tzoffset` minutes, where a negative offset is west
-of UTC, and formats that civil time with the item mask. The shift is
-the claim value. Compose does not look up the IANA name in `tz`. A
-missing `tzoffset` formats the instant in UTC and adds an info log
-entry. Field datetimes keep the rules above.
+it is not a field of `params._hydrogen`.
+
+**Timezone (lock 2026-11-03, Phase 22).** System datetime, and any
+datetime item that formats an instant, carries `timezone`: `User` |
+`UTC` | `Explicit`. `Explicit` stores an IANA name on the item. The
+report stores a default IANA zone (may be empty). `User` uses
+`params._hydrogen.tz` (JWT `tz` claim), else the report default, else
+UTC plus an info log entry. `UTC` ignores both. Mid-session drift of
+mint-time `tzoffset` is accepted. Scheduled / JWT-less runs rely on
+Explicit or the report default. IANA zones resolve through luatz
+(Phase 22a) reading host tzdata; before 22a, a zone equal to
+`_hydrogen.tz` uses `_hydrogen.tzoffset` and any other IANA zone
+falls back to UTC + info. A civil-string field value is never shifted.
+
+**Mask language (lock 2026-11-03, Phase 22b).** Luxon tokens are the
+mask language everywhere (Profile, designer, compose). The Phase 20
+date dialect above (`mm` month, `nn` minutes, `hh` hour) is retired in
+22b. v1 subset: `yyyy yy MMMM MMM MM M dd d EEEE EEE HH H mm m ss s
+SSS`; `W`/`WW` ISO week (first week containing a Thursday); `n`/`nn`
+local week deferred, first day of week Sunday until a Profile option;
+literals in `'...'`. Locale macros (`D`, `t`, `f`, …) and zone-name
+tokens are out until needed. Omitted masks become `yyyy-MM-dd` /
+`yyyy-MM-dd HH:mm`. Presets live in editable Lookup 077; the
+picker writes the mask string onto the item. Number masks unchanged.
 
 ### Page rules
 
@@ -1420,6 +1440,13 @@ written to run inside a host that has no native modules and no `io`.
 | lua-pdfkit | `/home/asimard/DA/triton4/triton-toolkit-5b12870/tasks/lua-pdfkit/solution/lua-pdfkit/` (pure Lua; its own repo planned) | `PDFDocument.new`, then `doc:finish()`, then `doc:output()` for the bytes. Port of PDFKit 0.19.1. JPEG and PNG from raw bytes or a `data:` URI. |
 | lua-zint | `/home/asimard/DA/triton3/triton-toolkit-e8fb24a/tasks/lua-zint/solution/` (pure Lua; its own repo planned) | `zint.barcode(opts)` returns an SVG string. Symbologies in the port: QR, Code 39, Code 128, UPC-A, GS1-128. |
 | d3.lua | Poseidon job artifact `/home/asimard/DA/poseidon1/jobs/lua-run10/` (pure Lua; its own repo planned). Validated byte-identical to D3.js on the reference pair `d3_chart.js` / `lua_chart.lua` | `d3.create_root`, `d3.scaleBand`, `d3.scaleLinear`, `d3.axisLeft` / `d3.axisRight` / `d3.axisBottom`, `d3.stack`, `d3.curveBasis`, `d3.line`, `d3.range`. Entry point pinned at the Phase 56 probe. |
+
+luatz (Phase 22a) is a fourth pack: pure Lua, group `luatz`, seeded
+as `luatz.*` rows. It reads zoneinfo from host tzdata
+(`/usr/share/zoneinfo`) with read-only `io.open`; no zoneinfo is
+bundled. Data refreshes with the host image's `tzdata` package; code
+refreshes by a later migration that bumps the pinned version (see
+22a Update / refresh).
 
 **Status:** None of the three libraries is in this repository. They are
 pure-Lua ports Andrew owns, each moving to its own repository: the zint
@@ -3544,3 +3571,49 @@ caller-facing QueryRef 175.
   2 with its first row). All seven sets match under the local Lua 5.5
   harness. Phase 21 stays In progress until Andrew applies 1450 and
   the overflow call matches. Next Acuranzo file 1451; QueryRef 175 unused.
+
+### 2026-11-03 — Phase 21 complete
+
+- Andrew applied acuranzo_1450 and confirmed paging in the Compose tab:
+  taller bands pushed content past the page limit and `pages` held more
+  than one page. 21.1–21.3 ticked; Phase 21 Status Complete.
+- **Next:** Phase 22 (System datetime and system user), 03-preview.md;
+  swap flatpickr to `flatpickr-ce@4.9.0` when it opens. Next Acuranzo
+  file **1451**; next caller-facing QueryRef **175** (unused).
+
+### 2026-11-03 — Phase 22 rewrite; 22a / 22b added (docs only)
+
+- Andrew locked: Luxon token subset as the only mask language; ISO
+  week (first week with a Thursday); Sunday first day until Profile;
+  Timezone `User` | `UTC` | `Explicit` plus report default zone; user
+  zone from JWT `tz`; presets in an editable Lookup seeded with six
+  masks; luatz seeded as a library pack reading host tzdata (no
+  bundled zoneinfo), with an Update / refresh section (version pin,
+  TBD config keys, tzdata via OS package).
+- Order: 22 → 22a → 22b. Value format section amended. No code.
+  Next Acuranzo file **1451**; QueryRef **175** unused; preset Lookup
+  id TBD.
+
+### 2026-11-03/04 — Phases 22, 22a, 22b packet
+
+- 1451 (22): Render prints System Date (053 key 5) at one generation
+  instant (`params.now`, else `H.system.now`) with Timezone
+  User/UTC/Explicit and IANA `zone`; System User (key 6) prints
+  `_hydrogen.username`, blank + one warn when empty. A User claim uses
+  `_hydrogen.tzoffset`; tk 24 shifts only when `timezone` is set.
+- 1452 (22a): luatz v0.4-4-ga7c0310 (MIT) seeded as group `luatz`
+  (9 modules, local `tzcache.set_base_path` patch). Env hooks
+  `REPORTS_TZ_ZONEINFO_PATH` (default /usr/share/zoneinfo) and
+  `REPORTS_TZ_DEFAULT_ZONE`. Bad or unreadable zones print UTC + warn.
+  Blocker: the sandbox leaves `io` nil unless `Sandbox.AllowIo`; until
+  Andrew allows it (or a read-only zoneinfo reader), named zones print
+  UTC with a warn.
+- 1453 (22b): Luxon token subset in compose; Lookup 077 Report Datetime
+  Format Presets (6 rows). Stored definitions are not rewritten; old
+  masks convert once by hand (mmm→MMM, mm→MM, hh→HH, nn→mm, quote
+  other letters). Fixtures masks/system/zones/presets match 1453.
+- Lithium: System Date / System User palette buttons (click + drag),
+  Timezone/Zone/Mask preset rows, report Default zone, lookup 077 load;
+  `flatpickr` pinned to `npm:flatpickr-ce@4.9.0`.
+- Next: Andrew applies 1451–1453 and makes the fixture calls. Next
+  Acuranzo file **1454**; QueryRef **175** unused.

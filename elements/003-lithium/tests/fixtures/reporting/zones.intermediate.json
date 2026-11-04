@@ -1,0 +1,113 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "size": "10 pt",
+                "family": "Vanadium Sans"
+              },
+              "id": "ex_van",
+              "text": "2026-03-05 06:07",
+              "align": "Left",
+              "typeKey": 5,
+              "box": {
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "left": "0 in"
+              }
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "size": "10 pt",
+                "family": "Vanadium Sans"
+              },
+              "id": "ex_bad",
+              "text": "2026-03-05 14:07",
+              "align": "Left",
+              "typeKey": 5,
+              "box": {
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "left": "1.5 in"
+              }
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "size": "10 pt",
+                "family": "Vanadium Sans"
+              },
+              "id": "dt_default",
+              "text": "2026-03-05 06:07",
+              "align": "Left",
+              "typeKey": 5,
+              "box": {
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "left": "3 in"
+              }
+            }
+          ],
+          "id": "rh",
+          "typeKey": 12,
+          "height": "0.4 in"
+        },
+        {
+          "items": [
+            {
+              "font": {
+                "style": "Normal",
+                "size": "10 pt",
+                "family": "Vanadium Sans"
+              },
+              "id": "u_summer",
+              "text": "2026-07-02 06:46",
+              "align": "Left",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "left": "0 in"
+              }
+            },
+            {
+              "font": {
+                "style": "Normal",
+                "size": "10 pt",
+                "family": "Vanadium Sans"
+              },
+              "id": "u_utc",
+              "text": "2026-07-02 13:46",
+              "align": "Left",
+              "typeKey": 24,
+              "box": {
+                "height": "0.2 in",
+                "top": "0 in",
+                "width": "1.5 in",
+                "left": "1.5 in"
+              }
+            }
+          ],
+          "id": "detail",
+          "typeKey": 15,
+          "height": "0.25 in"
+        }
+      ]
+    }
+  ],
+  "log": [
+    {
+      "level": "warn",
+      "message": "zone Nope/Zone is unknown or unreadable under /usr/share/zoneinfo; printed UTC"
+    }
+  ]
+}

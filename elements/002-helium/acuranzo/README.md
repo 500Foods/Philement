@@ -407,4 +407,8 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1447](/elements/002-helium/acuranzo/migrations/acuranzo_1447.lua) | queries | 1.0.0 | 2026-11-03 | 4 | ✗ | QueryRef #173 - List Reporting Queries (Reporting Phase 28) |
 | [1448](/elements/002-helium/acuranzo/migrations/acuranzo_1448.lua) | queries | 1.0.1 | 2026-11-03 | 4 | ✗ | QueryRef #174 - Reporting Demo (Reporting Phase 28) |
 | [1449](/elements/002-helium/acuranzo/migrations/acuranzo_1449.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reports.Render compose prints Parameter items (Reporting Phase 28.3) |
-| **374** | | | | **2145** | **374** | |
+| [1450](/elements/002-helium/acuranzo/migrations/acuranzo_1450.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reports.Render compose pages on fixed band heights (Reporting Phase 21) |
+| [1451](/elements/002-helium/acuranzo/migrations/acuranzo_1451.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reports.Render System datetime and System user (Reporting Phase 22) |
+| [1452](/elements/002-helium/acuranzo/migrations/acuranzo_1452.lua) | scripts | 1.0.0 | 2026-11-03 | 6 | ✗ | Seed luatz and resolve IANA zones in Reports.Render (Reporting Phase 22a) |
+| [1453](/elements/002-helium/acuranzo/migrations/acuranzo_1453.lua) | scripts | 1.0.0 | 2026-11-03 | 13 | ✗ | Reports.Render Luxon masks and Lookup 077 Report Datetime Format Presets (Reporting Phase 22b) |
+| **378** | | | | **2172** | **378** | |

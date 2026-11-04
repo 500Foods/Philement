@@ -1,0 +1,121 @@
+{
+  "format": 1,
+  "name": "Zones",
+  "title": "Zones",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "vals",
+      "kind": "json",
+      "shape": "list"
+    }
+  ],
+  "bands": [
+    {
+      "id": "rh",
+      "typeKey": 12,
+      "height": "0.4 in",
+      "items": [
+        {
+          "id": "ex_van",
+          "typeKey": 5,
+          "timezone": "Explicit",
+          "zone": "America/Vancouver",
+          "mask": "yyyy-MM-dd HH:mm",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "ex_bad",
+          "typeKey": 5,
+          "timezone": "Explicit",
+          "zone": "Nope/Zone",
+          "mask": "yyyy-MM-dd HH:mm",
+          "box": {
+            "left": "1.5 in",
+            "top": "0 in",
+            "width": "1.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "dt_default",
+          "typeKey": 5,
+          "timezone": "User",
+          "mask": "yyyy-MM-dd HH:mm",
+          "box": {
+            "left": "3 in",
+            "top": "0 in",
+            "width": "1.5 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "datasource": "vals",
+      "height": "0.25 in",
+      "items": [
+        {
+          "id": "u_summer",
+          "typeKey": 24,
+          "field": "u",
+          "timezone": "Explicit",
+          "zone": "America/Vancouver",
+          "mask": "yyyy-MM-dd HH:mm",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "u_utc",
+          "typeKey": 24,
+          "field": "u",
+          "mask": "yyyy-MM-dd HH:mm",
+          "box": {
+            "left": "1.5 in",
+            "top": "0 in",
+            "width": "1.5 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    }
+  ],
+  "functions": [],
+  "defaultZone": "America/Vancouver"
+}

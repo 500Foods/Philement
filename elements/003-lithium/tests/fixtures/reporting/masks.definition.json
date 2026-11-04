@@ -123,7 +123,7 @@
           "id": "d_iso",
           "typeKey": 24,
           "field": "d",
-          "mask": "yyyy-mm-dd",
+          "mask": "yyyy-MM-dd",
           "box": {
             "left": "3 in",
             "top": "0 in",
@@ -135,7 +135,7 @@
           "id": "d_long",
           "typeKey": 24,
           "field": "d",
-          "mask": "d mmm yyyy",
+          "mask": "d MMM yyyy",
           "box": {
             "left": "3.5 in",
             "top": "0 in",
@@ -147,7 +147,7 @@
           "id": "d_time",
           "typeKey": 24,
           "field": "d",
-          "mask": "dd/mm/yy hh:nn:ss",
+          "mask": "dd/MM/yy HH:mm:ss",
           "box": {
             "left": "4 in",
             "top": "0 in",
@@ -170,7 +170,7 @@
           "id": "t_mask",
           "typeKey": 24,
           "field": "t",
-          "mask": "dd/mm/yy hh:nn",
+          "mask": "dd/MM/yy HH:mm",
           "box": {
             "left": "5 in",
             "top": "0 in",
@@ -193,7 +193,7 @@
           "id": "u_mask",
           "typeKey": 24,
           "field": "u",
-          "mask": "yyyy-mm-dd hh:nn:ss",
+          "mask": "yyyy-MM-dd HH:mm:ss",
           "box": {
             "left": "6 in",
             "top": "0 in",

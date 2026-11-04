@@ -288,6 +288,7 @@ export const reportPanelMethods = {
         pageSizes: (this._lookups && this._lookups.pageSizes) || [],
         dsKinds: (this._lookups && this._lookups.dsKinds) || [],
         reportingQueries: (this._lookups && this._lookups.reportingQueries) || [],
+        datetimePresets: (this._lookups && this._lookups.datetimePresets) || [],
       });
       this._commitDocument(next);
     } catch (error) {

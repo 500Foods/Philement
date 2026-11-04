@@ -6,10 +6,11 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { dropItem } from './reports-drop.js';
 import { toast } from '../../shared/toast.js';
 import { addBandInOrder, addItem, removeBand } from './model/document.js';
 import {
-  FIELD_TYPES, PARAM_TYPE, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
+  FIELD_TYPES, PARAM_TYPE, SYSTEM_TYPES, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
 } from './reports-sample.js';
 import { loadReportingQueries, runQueryDatasources } from './reports-query.js';
 
@@ -60,6 +61,7 @@ export const reportFieldMethods = {
       refreshBtn: root.querySelector('#reports-query-refresh-btn'),
       systemBtn: root.querySelector('#reports-system-btn'),
       paramBtn: root.querySelector('#reports-param-btn'),
+      sysBtns: [...root.querySelectorAll('#reports-sysdate-btn, #reports-sysuser-btn')],
     };
   },
 
@@ -88,6 +90,8 @@ export const reportFieldMethods = {
     this._onParamAdd = () => this._addParameter();
     els.systemBtn?.addEventListener('click', this._onSystemCategory);
     els.paramBtn?.addEventListener('click', this._onParamAdd);
+    this._onSystemAdd = (event) => this._addSystem(Number(event.currentTarget.dataset.typeKey));
+    els.sysBtns.forEach((btn) => btn.addEventListener('click', this._onSystemAdd));
   },
 
   _unbindFields() {
@@ -104,6 +108,7 @@ export const reportFieldMethods = {
     els.refreshBtn?.removeEventListener('click', this._onQueryRefresh);
     els.systemBtn?.removeEventListener('click', this._onSystemCategory);
     els.paramBtn?.removeEventListener('click', this._onParamAdd);
+    els.sysBtns.forEach((btn) => btn.removeEventListener('click', this._onSystemAdd));
     this._fieldEls = null;
   },
 
@@ -130,6 +135,7 @@ export const reportFieldMethods = {
     els.itemBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
     els.bandBtns.forEach((btn) => { btn.disabled = !editing || !this.doc; });
     if (els.paramBtn) els.paramBtn.disabled = !editing || !this._selectedBandId;
+    els.sysBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
   },
 
   _addField(typeKey) {
@@ -137,7 +143,7 @@ export const reportFieldMethods = {
     if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
     let next;
     try {
-      next = addItem(this.doc, this._selectedBandId, { typeKey, field: '' });
+      next = addItem(this.doc, this._selectedBandId, dropItem(typeKey));
     } catch (error) {
       this._failEdit(error, 'Field could not be added.');
       return;
@@ -164,6 +170,24 @@ export const reportFieldMethods = {
     if (added) this._selectedItemId = added.id;
     this._commitDocument(next);
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Added parameter ${added ? added.id : ''} on ${this._selectedBandId}`);
+  },
+
+  /** System palette: System Date (5) or System User (6), as a drop would create. */
+  _addSystem(typeKey) {
+    if (!SYSTEM_TYPES.includes(typeKey)) return;
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
+    let next;
+    try {
+      next = addItem(this.doc, this._selectedBandId, dropItem(typeKey));
+    } catch (error) {
+      this._failEdit(error, 'System item could not be added.');
+      return;
+    }
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added system ${typeKey === 5 ? 'date' : 'user'} ${added ? added.id : ''} on ${this._selectedBandId}`);
   },
 
   /** Bands palette: add one band (14 adds a header and footer pair). */

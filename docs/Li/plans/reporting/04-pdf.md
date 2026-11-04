@@ -75,8 +75,8 @@ Lint and the browser check.
 **Complete** — 28.1, 28.2, 28.2b, 28.3 and 28.4 done. 1447/1448
 applied; Acuranzo **1449** (Render Parameter items) accepted after
 Andrew's browser check (2026-11-03). Ran ahead of Phase 21 on
-Andrew's gate waiver. Next: **Phase 21** (03-preview.md), Acuranzo file
-**1450**; Phase 29 waits its turn.
+Andrew's gate waiver. Phase 21 is Complete; next is **Phase 22**
+(03-preview.md), Acuranzo file **1451**; Phase 29 waits its turn.
 
 ### Accomplished
 

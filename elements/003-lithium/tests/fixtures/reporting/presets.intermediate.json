@@ -1,0 +1,241 @@
+{
+  "pages": [
+    {
+      "bands": [
+        {
+          "height": "1.5 in",
+          "id": "rh",
+          "items": [
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "Thursday March 5 2026 14:07:09",
+              "id": "sys_long",
+              "typeKey": 5,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.2 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2026-03-05 14:07:09",
+              "id": "sys_iso",
+              "typeKey": 5,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.4 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2026-03-05 14:07:09.000",
+              "id": "sys_iso_ms",
+              "typeKey": 5,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.6000000000000001 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2026-Mar-05 14:07",
+              "id": "sys_mmm",
+              "typeKey": 5,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.8 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2026-Mar-05 (Thu) 14:07",
+              "id": "sys_mmm_eee",
+              "typeKey": 5,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "1 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2026-Mar-05 (Wk 10)",
+              "id": "sys_mmm_week",
+              "typeKey": 5,
+              "align": "Left"
+            }
+          ],
+          "typeKey": 12
+        },
+        {
+          "height": "0.25 in",
+          "id": "detail",
+          "items": [
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2021-01-03 Sun W53",
+              "id": "wk",
+              "typeKey": 24,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.2 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "00:00:00.250",
+              "id": "ms",
+              "typeKey": 24,
+              "align": "Left"
+            }
+          ],
+          "typeKey": 15
+        },
+        {
+          "height": "0.25 in",
+          "id": "detail",
+          "items": [
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2020-12-31 Thu W53",
+              "id": "wk",
+              "typeKey": 24,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.2 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "00:00:01.500",
+              "id": "ms",
+              "typeKey": 24,
+              "align": "Left"
+            }
+          ],
+          "typeKey": 15
+        },
+        {
+          "height": "0.25 in",
+          "id": "detail",
+          "items": [
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "2026-01-01 Thu W01",
+              "id": "wk",
+              "typeKey": 24,
+              "align": "Left"
+            },
+            {
+              "box": {
+                "width": "3 in",
+                "height": "0.2 in",
+                "top": "0.2 in",
+                "left": "0 in"
+              },
+              "font": {
+                "family": "Vanadium Sans",
+                "style": "Normal",
+                "size": "10 pt"
+              },
+              "text": "00:00:59.999",
+              "id": "ms",
+              "typeKey": 24,
+              "align": "Left"
+            }
+          ],
+          "typeKey": 15
+        }
+      ]
+    }
+  ],
+  "log": []
+}

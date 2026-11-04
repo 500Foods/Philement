@@ -12,6 +12,8 @@ export const PANEL_LOOKUPS = {
   objectTypes: 53, attributes: 54, pageSizes: 57, paletteGroups: 74, sections: 75,
   /** 076 datasource kinds (Phase 19b). Empty until 1446 applies; the panel falls back. */
   dsKinds: 76,
+  /** 077 datetime mask presets (Phase 22b). Empty until 1453 applies; the picker hides. */
+  datetimePresets: 77,
 };
 
 /**
