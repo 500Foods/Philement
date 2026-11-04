@@ -1360,19 +1360,19 @@ Phase 44a Status complete.
 
 ### Work items
 
-- [ ] 44b.1 `fillStyle` is `none`, `solid`, `grid`, `dots`,
+- [x] 44b.1 `fillStyle` is `none`, `solid`, `grid`, `dots`,
        `hatched`, or `noise`. Grid and dots use the report grid
        spacing. Hatch is one diagonal, down to the right. Noise
        is a dot field seeded from the item id, the same on every
        run. An SVG turbulence filter is not used. A line ignores
        fill. The style and the paint are separate, so a grid can
        use a gradient.
-- [ ] 44b.2 `fillPaint.kind` is `solid`, `linear`, or `radial`.
+- [x] 44b.2 `fillPaint.kind` is `solid`, `linear`, or `radial`.
        Stops are `{ "at", "color" }`, at least two, with `at`
        from 0 to 1. Linear `angle` `0` runs left to right, and
        the angle grows clockwise. Radial runs from the center of
        the box to the farthest corner. Colors are hex.
-- [ ] 44b.3 Preview HTML draws the pattern and the gradient from
+- [x] 44b.3 Preview HTML draws the pattern and the gradient from
        the same commands as Phase 44a. PDF still does not draw
        the shape.
 - [ ] 44b.4 Fixture: a hatched rectangle with a two-stop linear
@@ -1390,7 +1390,87 @@ The script packet apply, the fixture call, and the browser preview.
 
 ### Status
 
-**not started**
+**in progress**
+
+### Accomplished
+
+- Phase 44a is complete. This sitting is Phase 44b. Phase 45
+  has not started.
+- The designer and `Reports.Render` draw the same SVG.
+  [`/elements/003-lithium/src/managers/reports/reports-shape-fill.js`](/elements/003-lithium/src/managers/reports/reports-shape-fill.js)
+  owns the fill. A line draws no fill. An unknown style draws
+  no fill. An empty style is solid. A grid can use a gradient.
+- Paint, Angle, and Stops are client rows in the Fill section.
+  They are `fill-paint`, `fill-angle`, and `fill-stops`. No new
+  lookup 054 key. Fill Color stays key 47 and shows only while
+  the stored paint is solid. A color edit on a gradient changes
+  the first stop and keeps the kind.
+- [`/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua)
+  copies the 1466 body into `sql_old`. `sql_new` is that body
+  with the fill. Lookup 054 key 46 lists `none`, `solid`,
+  `grid`, `dots`, `hatched`, and `noise`. Reverse restores the
+  1466 body and the `none`, `solid` list. 1465 and 1466 were
+  not edited. The file is not applied.
+- The fixture is
+  [`/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json).
+  `hatch` is a rectangle, linear angle 0, `#1d4e89` at 0 and
+  `#f0c808` at 1. `speckle` is a noise ellipse, solid
+  `#2266aa`. Both boxes are 1 in by 0.6 in. A second call for
+  `speckle` matches the first. PDF still does not draw the
+  shape.
+
+### Lessons learned
+
+- Grid and dots use the report grid spacing. A missing or
+  broken grid falls back to `0.125 in` (12 CSS pixels). The
+  design grid's visibility does not change the fill. The
+  pattern stroke is 0.5 CSS pixels. It is not `grid.weight`.
+  Dot radius is 1 CSS pixel, or a quarter of the spacing when
+  that is smaller.
+- Hatch is one family, down to the right. The perpendicular
+  gap is the grid spacing, so the intercept steps by
+  `spacing * sqrt(2)`. The family passes through the origin.
+- Noise is one dot per cell. The cell count is the width and
+  the height each divided by the spacing and rounded, at least
+  one. The dot sits between 0.2 and 0.8 of its cell. The
+  radius is 0.12 times the spacing, at least 0.75 CSS pixels,
+  and at most 30 percent of the cell. The seed is FNV-1a of
+  the item id, then the Numerical Recipes LCG. An empty id
+  hashes as an empty string. `speckle` is 150473780, `hatch`
+  is 1592057985, and an empty id is 2166136261. The 32-bit
+  multiply is split, because `16777619 * hash` exceeds 2^53.
+- A switch from solid to linear or radial keeps the current
+  color on both stops and stores angle 0. The closed Fill
+  Style cell shows None, Solid, Grid, Dots, Hatched, and
+  Noise. `parseCollection` drops a JSON array, so the panel
+  forces that list even when the lookup row is stale.
+- Lua 5.5.1 and the designer printed the same SVG for the
+  hatched gradient, the noise ellipse, a solid rectangle, a
+  radial paint, a hatch rotated 15 degrees, and a line.
+
+### Handoff
+
+- Apply
+  [`/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua).
+  Leave `acuranzo_1455.lua` through `acuranzo_1466.lua` as
+  written. Do not write `acuranzo_1468.lua` until a later
+  change to `Reports.Render`. QueryRef **175** stays unused.
+  Next free lookup id **079**. Next free lookup 054 key **52**.
+- Regenerate the Hydrogen payload and restart Hydrogen. Import
+  [`/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json)
+  and run Preview HTML on `https://lithium.500courses.com`.
+  The preview should show the hatched rectangle with the
+  linear gradient and the noise ellipse. Run it again. The
+  noise field should match. He has not been asked to quote
+  the colours.
+- The phase stays in progress until that preview. Do not start
+  Phase 45. Phases 33–37, 45–48, PDFs, barcodes, and charts
+  stay on the temporary skip.
+- On this close, `npm test` was 95 files, 1506 passed, 12
+  skipped. `npm run lint` exited 0. `npm run lint:css` exited
+  0. `luacheck` on `acuranzo_1467.lua` reported 0 warnings.
+  `luac -p` parsed the file. The designer was not opened in a
+  browser. The live preview was not opened.
 
 ---
 

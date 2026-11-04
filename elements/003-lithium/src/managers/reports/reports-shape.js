@@ -8,13 +8,18 @@
 
 import './reports-shape.css';
 import { toCssPx } from './model/units.js';
+import {
+  FILL_STYLES, fillPlan, fillStyleChoices, mountShape, patchShapeFill, shapeDomId, shapeFillRowList,
+  shapeMarkup, shapeSpacingPx, storedPaintKind,
+} from './reports-shape-fill.js';
+
+export { fillStyleChoices, shapeSpacingPx };
 
 export const SHAPE_TYPE = 25;
 const KAPPA = 0.5522847498;
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 const SIDES = new Set(['top', 'right', 'bottom', 'left']);
 const STROKE_STYLES = new Set(['solid', 'dashed', 'dotted', 'none']);
-const FILL_STYLES = new Set(['none', 'solid']);
 const GEOMETRY = new Set(['line', 'rectangle', 'roundrect', 'ellipse']);
 const CORNER_NAMES = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'];
 const CORNER_KEYS = { 48: 'topLeft', 49: 'topRight', 50: 'bottomRight', 51: 'bottomLeft' };
@@ -53,10 +58,12 @@ export const SEEDED_PATHS = Object.freeze({
 
 /** Tags Preview HTML adds. Other sanitizeHtml callers stay on the default. */
 export const SHAPE_PURIFY = Object.freeze({
-  ADD_TAGS: ['svg', 'path', 'g'],
+  ADD_TAGS: ['svg', 'path', 'g', 'defs', 'clipPath', 'linearGradient', 'radialGradient', 'stop', 'circle'],
   ADD_ATTR: [
     'viewBox', 'viewbox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray',
     'stroke-linecap', 'stroke-linejoin', 'transform', 'preserveAspectRatio', 'preserveaspectratio', 'xmlns',
+    'id', 'offset', 'stop-color', 'gradientUnits', 'gradientunits', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r',
+    'clip-path', 'width', 'height', 'overflow',
   ],
 });
 
@@ -79,7 +86,7 @@ export const SHAPE_ATTR_META = Object.freeze({
   43: { Group: 'Stroke', section: 10, Label: 'Stroke Width', Editor: 'Number' },
   44: { Group: 'Stroke', section: 10, Label: 'Stroke Style', Editor: 'List', List: ['solid', 'dashed', 'dotted', 'none'] },
   45: { Group: 'Stroke', section: 10, Label: 'Stroke Color', Editor: 'Color' },
-  46: { Group: 'Fill', section: 11, Label: 'Fill Style', Editor: 'List', List: ['none', 'solid'] },
+  46: { Group: 'Fill', section: 11, Label: 'Fill Style', Editor: 'List', List: ['none', 'solid', 'grid', 'dots', 'hatched', 'noise'] },
   47: { Group: 'Fill', section: 11, Label: 'Fill Color', Editor: 'Color' },
   48: { Group: 'Corners', section: 12, Label: 'Corner Top Left', Editor: 'Number' },
   49: { Group: 'Corners', section: 12, Label: 'Corner Top Right', Editor: 'Number' },
@@ -219,6 +226,7 @@ export function shapeAttributeKeys(item, keys) {
   const kind = item && item.kind;
   return next.filter((key) => {
     if (key === 42) return kind === 'line';
+    if (key === 47) return storedPaintKind(item) === 'solid';
     if (key >= 48 && key <= 51) return kind === 'roundrect';
     return true;
   });
@@ -321,7 +329,7 @@ export const shapeItemFields = {
     },
     set: (doc, sel, value) => {
       const style = String(value ?? '');
-      if (!FILL_STYLES.has(style)) throw new Error('Fill style must be none or solid.');
+      if (!FILL_STYLES.has(style)) throw new Error('Fill style must be none, solid, grid, dots, hatched, or noise.');
       return editShape(doc, sel, (item) => { item.fillStyle = style; });
     },
   },
@@ -334,10 +342,40 @@ export const shapeItemFields = {
     },
     set: (doc, sel, value) => {
       const color = requireHex(value, 'Fill color');
-      return editShape(doc, sel, (item) => { item.fillPaint = { kind: 'solid', color }; });
+      return editShape(doc, sel, (item) => {
+        const kind = storedPaintKind(item);
+        const paint = item.fillPaint && typeof item.fillPaint === 'object' ? item.fillPaint : {};
+        if (kind === 'linear' || kind === 'radial') {
+          const stops = Array.isArray(paint.stops) && paint.stops.length
+            ? paint.stops.map((stop, index) => (index === 0 ? { ...stop, color } : { ...stop }))
+            : [{ at: 0, color }, { at: 1, color }];
+          const next = { kind, stops };
+          if (kind === 'linear') {
+            const angle = Number(paint.angle);
+            next.angle = Number.isFinite(angle) ? angle : 0;
+          }
+          item.fillPaint = next;
+          return;
+        }
+        item.fillPaint = { kind: 'solid', color };
+      });
     },
   },
 };
+
+/** Paint rows for a shape. Empty for every other selection. */
+export function shapeFillRows(doc, sel) {
+  const item = selectedItem(doc, sel);
+  if (!item || Number(item.typeKey) !== SHAPE_TYPE) return [];
+  return shapeFillRowList(item);
+}
+
+/** Write Paint, Angle, or Stops. The color row stays key 47. */
+export function applyShapeFill(doc, sel, rowId, value) {
+  const item = selectedItem(doc, sel);
+  if (!item || Number(item.typeKey) !== SHAPE_TYPE) throw new Error('Fill needs a selected shape.');
+  return editShape(doc, sel, (next) => patchShapeFill(next, rowId, value));
+}
 
 for (const [key, name] of Object.entries(CORNER_KEYS)) {
   shapeItemFields[key] = {
@@ -475,10 +513,12 @@ function cornerRadii(item) {
 
 /**
  * Drawing for one shape, in CSS pixels. `warn` means skip the path.
+ * `spacingPx` is the report grid spacing. Omitted spacing uses 0.125 in.
  * @param {object} item
+ * @param {number} [spacingPx]
  * @returns {object}
  */
-export function shapeDrawing(item) {
+export function shapeDrawing(item, spacingPx) {
   const box = item && item.box && typeof item.box === 'object' ? item.box : null;
   if (!box) return { warn: 'Shape box is empty.' };
   let w;
@@ -514,37 +554,35 @@ export function shapeDrawing(item) {
     dash = `${fmt(sw)} ${fmt(sw * 2)}`;
     linecap = 'round';
   }
-  const paint = item.fillPaint && typeof item.fillPaint === 'object' ? item.fillPaint.color : '';
-  let fillStyle = item.fillStyle;
-  if (kind === 'line') fillStyle = 'none';
-  else if (!FILL_STYLES.has(fillStyle)) fillStyle = fillStyle == null || fillStyle === '' ? 'solid' : 'none';
   const deg = Number(item.rotation);
   const turn = Number.isFinite(deg) ? deg : 0;
+  const spacing = typeof spacingPx === 'number' && spacingPx > 0 ? spacingPx : shapeSpacingPx(null);
+  const plan = fillPlan(item, kind, w, h, spacing);
+  const paintId = shapeDomId('reports-fill-', item && item.id);
+  const paintRef = plan.gradient ? `url(#${paintId})` : plan.color;
   return {
     w, h, d: commandD(commands),
-    fill: fillStyle === 'solid' ? hexColor(paint, '#d3d3d3') : 'none',
+    fill: plan.style === 'solid' ? paintRef : 'none',
+    paintRef,
+    paintId,
+    clipId: shapeDomId('reports-clip-', item && item.id),
+    gradient: plan.gradient,
+    marks: plan.marks,
     stroke, sw, dash, linecap,
     transform: turn === 0 ? '' : `rotate(${fmt(turn)} ${fmt(w / 2)} ${fmt(h / 2)})`,
   };
 }
 
 /** SVG markup for tests and for the same commands Preview HTML draws. */
-export function shapeSvg(item) {
-  const draw = shapeDrawing(item);
+export function shapeSvg(item, doc) {
+  const draw = shapeDrawing(item, shapeSpacingPx(doc));
   if (draw.warn) return { html: '', warn: draw.warn };
-  const path = [`d="${draw.d}"`, `fill="${draw.fill}"`, `stroke="${draw.stroke}"`];
-  if (draw.stroke !== 'none') {
-    path.push(`stroke-width="${fmt(draw.sw)}"`, 'stroke-linejoin="miter"', `stroke-linecap="${draw.linecap}"`);
-    if (draw.dash) path.push(`stroke-dasharray="${draw.dash}"`);
-  }
-  if (draw.transform) path.push(`transform="${draw.transform}"`);
-  const html = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmt(draw.w)} ${fmt(draw.h)}" preserveAspectRatio="none"><path ${path.join(' ')}/></svg>`;
-  return { html, warn: '' };
+  return { html: shapeMarkup(draw), warn: '' };
 }
 
 /** Paint one shape into its box. A bad command shows a note and does not log. */
-export function paintShape(el, item) {
-  const draw = shapeDrawing(item);
+export function paintShape(el, item, doc) {
+  const draw = shapeDrawing(item, shapeSpacingPx(doc));
   if (draw.warn) {
     const note = document.createElement('p');
     note.className = 'reports-shape-note';
@@ -552,39 +590,37 @@ export function paintShape(el, item) {
     el.append(note);
     return;
   }
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', `0 0 ${fmt(draw.w)} ${fmt(draw.h)}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', draw.d);
-  path.setAttribute('fill', draw.fill);
-  path.setAttribute('stroke', draw.stroke);
-  if (draw.stroke !== 'none') {
-    path.setAttribute('stroke-width', fmt(draw.sw));
-    path.setAttribute('stroke-linejoin', 'miter');
-    path.setAttribute('stroke-linecap', draw.linecap);
-    if (draw.dash) path.setAttribute('stroke-dasharray', draw.dash);
-  }
-  if (draw.transform) path.setAttribute('transform', draw.transform);
-  svg.append(path);
-  el.append(svg);
+  mountShape(el, draw);
 }
 
-const PREVIEW_SHAPE_TAGS = new Set(['svg', 'path', 'g']);
+const PREVIEW_SHAPE_TAGS = new Set([
+  'svg', 'path', 'g', 'defs', 'clippath', 'lineargradient', 'radialgradient', 'stop', 'circle',
+]);
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 const PATH_D = /^[MLCZ0-9.\s,-]+$/i;
+const SAFE_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const PAINT_REF = /^(?:none|#[0-9A-Fa-f]{6}|url\(#[A-Za-z][A-Za-z0-9_-]*\))$/;
+const UNIT_NUM = /^-?\d+(?:\.\d+)?$/;
 
 function previewShapeAttrOk(name, value) {
   const attr = String(name).toLowerCase();
   const text = String(value);
-  if (attr.startsWith('on') || text.length > 4000) return false;
+  if (attr.startsWith('on')) return false;
+  if (text.length > (attr === 'd' ? 200000 : 4000)) return false;
   if (/[<>]/.test(text) || /javascript\s*:/i.test(text)) return false;
   if (attr === 'xmlns') return text === 'http://www.w3.org/2000/svg';
   if (attr === 'width' || attr === 'height') return text === '100%';
   if (attr === 'overflow') return text === 'visible';
   if (attr === 'viewbox') return /^-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?){3}$/.test(text.trim());
   if (attr === 'preserveaspectratio') return text === 'none';
-  if (attr === 'fill' || attr === 'stroke') return text === 'none' || HEX_COLOR.test(text);
+  if (attr === 'id') return SAFE_ID.test(text);
+  if (attr === 'fill' || attr === 'stroke') return PAINT_REF.test(text);
+  if (attr === 'clip-path') return /^url\(#[A-Za-z][A-Za-z0-9_-]*\)$/.test(text);
+  if (attr === 'gradientunits') return text === 'userSpaceOnUse';
+  if (attr === 'offset' || attr === 'x1' || attr === 'y1' || attr === 'x2' || attr === 'y2' || attr === 'cx' || attr === 'cy' || attr === 'r') {
+    return UNIT_NUM.test(text);
+  }
+  if (attr === 'stop-color') return HEX_COLOR.test(text);
   if (attr === 'stroke-width') return /^\d+(?:\.\d+)?$/.test(text);
   if (attr === 'stroke-dasharray') return /^\d+(?:\.\d+)?(?:\s+\d+(?:\.\d+)?)+$/.test(text);
   if (attr === 'stroke-linecap') return text === 'butt' || text === 'round' || text === 'square';

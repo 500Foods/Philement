@@ -29,7 +29,9 @@ import {
 import {
   findReportingQuery, queryLabel, setDatasourceParam, setDatasourceParams, setDatasourceQuery,
 } from './reports-query.js';
-import { shapeAttrMeta, shapeAttributeKeys, shapeItemFields, shapeKindOptions } from './reports-shape.js';
+import {
+  applyShapeFill, fillStyleChoices, shapeAttrMeta, shapeAttributeKeys, shapeFillRows, shapeItemFields, shapeKindOptions,
+} from './reports-shape.js';
 
 export const REPORT_TYPE_KEY = 9;
 const TEXT_KEYS = new Set([29]);
@@ -739,6 +741,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
         value: entry.code, label: entry.label,
       }));
     }
+    if (key === 46) list = fillStyleChoices();
     rows.push({
       id: String(key),
       key,
@@ -774,6 +777,8 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     });
   }
   if (scope === 'report') rows.push(...datasourceRows(doc, lookups), ...rulerRows(doc));
+  const fillAt = rows.findIndex((row) => row.key === 46);
+  if (fillAt >= 0) rows.splice(fillAt + 1, 0, ...shapeFillRows(doc, sel));
   return finishPanelRows(rows, doc, sel);
 }
 
@@ -839,6 +844,10 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
     const text = String(value ?? '').trim();
     if (text) next.defaultZone = text; else delete next.defaultZone;
     return next;
+  }
+  if (rowId === 'fill-paint' || rowId === 'fill-angle' || rowId === 'fill-stops') {
+    if (!isItem) throw new Error('Fill needs a selected shape.');
+    return applyShapeFill(doc, sel, rowId, value);
   }
   if (rowId === NOTES_ROW_ID) {
     const scopeNow = selectionScope(doc, sel);

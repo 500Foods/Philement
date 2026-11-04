@@ -84,8 +84,9 @@ describe('shape geometry', () => {
   });
 
   it('draws no fill for an unknown fill style and keeps a bad color on the default', () => {
-    const grid = shapeDrawing(shapeItem('rectangle', { fillStyle: 'grid' }));
+    const grid = shapeDrawing(shapeItem('rectangle', { fillStyle: 'plaid' }));
     expect(grid.fill).toBe('none');
+    expect(grid.marks).toBeNull();
     const color = shapeDrawing(shapeItem('rectangle', { strokeColor: 'black' }));
     expect(color.stroke).toBe('#000000');
     expect(color.warn).toBeUndefined();

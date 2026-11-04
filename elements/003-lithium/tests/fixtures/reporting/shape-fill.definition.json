@@ -1,0 +1,63 @@
+{
+  "format": 1,
+  "name": "Shape fill",
+  "title": "Shape fill",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": { "left": "0.25 in", "right": "0.25 in", "top": "0.25 in", "bottom": "0.25 in" }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+  "datasources": [],
+  "bands": [
+    {
+      "id": "d1",
+      "typeKey": 15,
+      "height": "2 in",
+      "items": [
+        {
+          "id": "hatch",
+          "typeKey": 25,
+          "kind": "rectangle",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "hatched",
+          "fillPaint": {
+            "kind": "linear",
+            "angle": 0,
+            "stops": [
+              { "at": 0, "color": "#1d4e89" },
+              { "at": 1, "color": "#f0c808" }
+            ]
+          },
+          "rotation": 0,
+          "box": { "left": "0 in", "top": "0 in", "width": "1 in", "height": "0.6 in" }
+        },
+        {
+          "id": "speckle",
+          "typeKey": 25,
+          "kind": "ellipse",
+          "strokeWidth": "1 pt",
+          "strokeStyle": "solid",
+          "strokeColor": "#000000",
+          "fillStyle": "noise",
+          "fillPaint": { "kind": "solid", "color": "#2266aa" },
+          "rotation": 0,
+          "box": { "left": "1.2 in", "top": "0 in", "width": "1 in", "height": "0.6 in" }
+        }
+      ]
+    }
+  ]
+}

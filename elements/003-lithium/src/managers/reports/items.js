@@ -215,7 +215,7 @@ export function paintBandItems(body, band, doc) {
         body.append(itemNote(message));
         continue;
       }
-      paintShape(shape, item);
+      paintShape(shape, item, doc);
       const shapeCorner = document.createElement('div');
       shapeCorner.className = 'reports-item-corner';
       shapeCorner.title = 'Resize item';
