@@ -1,0 +1,40 @@
+{
+  "orders": [
+    {
+      "region": "East",
+      "amount": 10,
+      "name": "Ann",
+      "note": null
+    },
+    {
+      "region": "East",
+      "amount": 20,
+      "name": "Ann",
+      "note": "x"
+    },
+    {
+      "region": "East",
+      "amount": "10",
+      "name": "Bo",
+      "note": null
+    },
+    {
+      "region": "West",
+      "amount": 5,
+      "name": "Cy",
+      "note": "y"
+    },
+    {
+      "region": "East",
+      "amount": 7,
+      "name": "Ann",
+      "note": null
+    },
+    {
+      "region": "South",
+      "amount": null,
+      "name": "Dee",
+      "note": null
+    }
+  ]
+}

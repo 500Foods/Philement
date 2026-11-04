@@ -1,0 +1,380 @@
+{
+  "format": 1,
+  "name": "Totals by region",
+  "title": "Totals by region",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [
+    {
+      "name": "orders",
+      "kind": "json",
+      "shape": "list",
+      "rows": [
+        { "region": "East", "amount": 10, "name": "Ann", "note": null },
+        { "region": "East", "amount": 20, "name": "Ann", "note": "x" },
+        { "region": "East", "amount": "10", "name": "Bo", "note": null },
+        { "region": "West", "amount": 5, "name": "Cy", "note": "y" },
+        { "region": "East", "amount": 7, "name": "Ann", "note": null },
+        { "region": "South", "amount": null, "name": "Dee", "note": null }
+      ]
+    }
+  ],
+  "bands": [
+    {
+      "id": "rh",
+      "typeKey": 12,
+      "height": "0.3 in",
+      "items": [
+        {
+          "id": "rh-count",
+          "typeKey": 35,
+          "op": "count",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rh-filled",
+          "typeKey": 35,
+          "op": "filled",
+          "field": "note",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "1.3 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rh-unique",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "name",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "2.6 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rh-uamt",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "3.9 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rh-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "5.2 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.2 in",
+      "items": []
+    },
+    {
+      "id": "gh",
+      "typeKey": 14,
+      "field": "region",
+      "height": "0.45 in",
+      "items": [
+        {
+          "id": "region",
+          "typeKey": 20,
+          "field": "region",
+          "box": {
+            "left": "0 in",
+            "top": "0.22 in",
+            "width": "1.5 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gh-count",
+          "typeKey": 35,
+          "op": "count",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gh-filled",
+          "typeKey": 35,
+          "op": "filled",
+          "field": "note",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "1.3 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gh-unique",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "name",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "2.6 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gh-uamt",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "3.9 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gh-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "5.2 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "datasource": "orders",
+      "height": "0.22 in",
+      "items": [
+        {
+          "id": "name",
+          "typeKey": 20,
+          "field": "name",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gf",
+      "typeKey": 16,
+      "height": "0.3 in",
+      "items": [
+        {
+          "id": "gf-count",
+          "typeKey": 35,
+          "op": "count",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gf-filled",
+          "typeKey": 35,
+          "op": "filled",
+          "field": "note",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "1.3 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gf-unique",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "name",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "2.6 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gf-uamt",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "3.9 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "gf-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "5.2 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.2 in",
+      "items": []
+    },
+    {
+      "id": "rf",
+      "typeKey": 18,
+      "height": "0.3 in",
+      "items": [
+        {
+          "id": "rf-count",
+          "typeKey": 35,
+          "op": "count",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rf-filled",
+          "typeKey": 35,
+          "op": "filled",
+          "field": "note",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "1.3 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rf-unique",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "name",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "2.6 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rf-uamt",
+          "typeKey": 35,
+          "op": "unique",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "3.9 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        },
+        {
+          "id": "rf-sum",
+          "typeKey": 35,
+          "op": "sum",
+          "field": "amount",
+          "mask": "#,##0.00",
+          "box": {
+            "left": "5.2 in",
+            "top": "0 in",
+            "width": "1.2 in",
+            "height": "0.2 in"
+          }
+        }
+      ]
+    }
+  ],
+  "functions": []
+}

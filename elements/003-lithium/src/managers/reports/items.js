@@ -10,6 +10,7 @@
 
 import { bandHeight } from './model/document.js';
 import { contentBox, toCssPx } from './model/units.js';
+import { AGGREGATE_NUMBER_TYPE, aggregateItemLabel } from './reports-aggregate.js';
 import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, systemItemLabel } from './reports-sample.js';
 
 /** Smallest resize, in CSS pixels. */
@@ -193,7 +194,9 @@ function itemNote(text) {
 export function paintBandItems(body, band, doc) {
   const items = Array.isArray(band && band.items) ? band.items : [];
   for (const item of items) {
-    if (!item || typeof item !== 'object' || (item.typeKey !== 0 && item.typeKey !== PARAM_TYPE && !SYSTEM_TYPES.includes(item.typeKey) && !isFieldType(item.typeKey))) continue;
+    if (!item || typeof item !== 'object') continue;
+    const aggregate = item.typeKey === AGGREGATE_NUMBER_TYPE;
+    if (item.typeKey !== 0 && item.typeKey !== PARAM_TYPE && !SYSTEM_TYPES.includes(item.typeKey) && !isFieldType(item.typeKey) && !aggregate) continue;
     if (typeof item.id !== 'string' || item.id === '') {
       body.append(itemNote('Item needs an id.'));
       continue;
@@ -204,6 +207,12 @@ export function paintBandItems(body, band, doc) {
     const field = isFieldType(item.typeKey);
     const param = item.typeKey === PARAM_TYPE;
     const system = SYSTEM_TYPES.includes(item.typeKey);
+    if (aggregate) {
+      el.classList.add('reports-item-field', 'reports-item-aggregate');
+      const bound = (typeof item.field === 'string' && item.field.trim() !== '')
+        || (typeof item.function === 'string' && item.function.trim() !== '');
+      el.dataset.unbound = String(!bound);
+    }
     if (system) el.classList.add('reports-item-field', 'reports-item-system');
     if (field) {
       el.classList.add('reports-item-field');
@@ -234,7 +243,7 @@ export function paintBandItems(body, band, doc) {
     }
     const label = document.createElement('span');
     label.className = 'reports-item-text';
-    label.textContent = system ? systemItemLabel(item) : param ? paramItemLabel(item) : field ? fieldItemLabel(item) : staticItemText(item);
+    label.textContent = aggregate ? aggregateItemLabel(item) : system ? systemItemLabel(item) : param ? paramItemLabel(item) : field ? fieldItemLabel(item) : staticItemText(item);
     const corner = document.createElement('div');
     corner.className = 'reports-item-corner';
     corner.title = 'Resize item';

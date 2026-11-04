@@ -8,14 +8,15 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { addItem, moveItem } from './model/document.js';
 import { toCssPx } from './model/units.js';
 import { readViewScale } from './scale.js';
+import { AGGREGATE_NUMBER_TYPE } from './reports-aggregate.js';
 import { PAGE_LABEL_DEFAULT, PAGE_LABEL_TYPE } from './reports-sample.js';
 
 export const TEXT_DROP_KIND = 'reports-text';
 
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
-const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 61, 62, 63, 64]);
-const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 61: 'Page number', 62: 'Page count', 63: 'Parameter', 64: 'Page label' };
+const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 35, 61, 62, 63, 64]);
+const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 35: 'Aggregate', 61: 'Page number', 62: 'Page count', 63: 'Parameter', 64: 'Page label' };
 /**
  * Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`.
  * System Date (5) and new datetime fields (24) start with timezone User and
@@ -29,6 +30,7 @@ export const dropItem = (typeKey) => {
   if (typeKey === 6 || typeKey === 61 || typeKey === 62) return { typeKey };
   if (typeKey === PAGE_LABEL_TYPE) return { typeKey, template: PAGE_LABEL_DEFAULT };
   if (typeKey === 24) return { typeKey, field: '', timezone: 'User' };
+  if (typeKey === AGGREGATE_NUMBER_TYPE) return { typeKey, op: 'count', field: '' };
   return { typeKey, field: '' };
 };
 
@@ -58,7 +60,7 @@ export const reportDropMethods = {
     this._onTextDragEnd = () => this._endTextDrag();
     this._onTextDragOver = (event) => this._overTextDrag(event);
     this._onTextDrop = (event) => this._dropTextDrag(event);
-    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key], #reports-items-toolbar [data-reports-category="system"][data-type-key]')];
+    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key], #reports-items-toolbar [data-reports-category="aggregate"][data-type-key], #reports-items-toolbar [data-reports-category="system"][data-type-key]')];
     this._fieldDragBtns.forEach((btn) => {
       btn.addEventListener('dragstart', this._onTextDragStart);
       btn.addEventListener('dragend', this._onTextDragEnd);

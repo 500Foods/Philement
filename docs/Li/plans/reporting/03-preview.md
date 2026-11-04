@@ -931,10 +931,9 @@ an inline call. The saved file is not rewritten.
        session JWT as a script param. Landed in
        [`/elements/003-lithium/src/managers/reports/reports-preview.js`](/elements/003-lithium/src/managers/reports/reports-preview.js)
        and [`/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua).
-- [ ] 27.2 Browser: an over-cap definition previews after that toast,
-       and the canvas is unchanged when the save fails. Waits until
-       Andrew applies `acuranzo_1456.lua` and checks
-       https://lithium.500courses.com.
+- [x] 27.2 Browser: Andrew applied `acuranzo_1456.lua` and asked to
+       mark the phase complete (2026-11-04). He did not quote the
+       toast or a failed-save canvas.
 
 ### Done means
 
@@ -946,7 +945,7 @@ Lint and the browser check.
 
 ### Status
 
-**In progress** (2026-11-04). 27.1 is in. The browser check is 27.2. It waits until Andrew applies `acuranzo_1456.lua` and previews an over-cap definition. This phase stays in progress until he reports that check. Next free Acuranzo file is **1457**. QueryRef **175** stays unused.
+**Complete** (2026-11-04). Andrew applied `acuranzo_1456.lua` and asked to close the phase. He did not quote the toast or a failed-save canvas. Next free Acuranzo file is **1457**. QueryRef **175** stays unused.
 
 ### Accomplished
 
@@ -962,10 +961,13 @@ Lint and the browser check.
 - `reports.report` arrives as text. The script parses it. There is no JSON decoder in the sandbox.
 - The saved definition keeps datasource rows and does not fill a band that omits `datasource`. The inline call fills that band in `composeDefinition` and drops the rows. The load path fills the band inside the script so the stored preview matches the designer preview. The saved file stays the export.
 - Sources stay on the call. A later phase can store those rows when they alone exceed the cap.
+- Andrew's close reported the apply and asked to mark the phase complete. He did not quote the toast or a failed-save canvas.
 
 ### Handoff
 
-- Apply [`/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua) before the 500 Courses check. Until that script is the live `Reports.Render`, a `report_id` call fails with `definition must be a JSON object`. Leave `acuranzo_1455.lua` as written. Reverse 1456 restores the 1455 body.
-- The check is Preview HTML on a definition whose inline params exceed 256 KiB minus 4 KiB. The toast title is `Saved to preview`. The description is `This report is larger than the 256 KiB script limit, so it was saved and previewed from the stored revision.` The page then renders from the new revision. A failed save leaves the canvas as it was and does not show that toast. A report that was already clean still gains a revision. The list row has to be selected. Compose of an over-cap definition still fails with `Compose failed`.
-- Next free Acuranzo file is **1457**. QueryRef **175** stays unused. No new lookup. Phase 28 is already complete. Phase 29 has not started. The next phase starts in a new conversation, after this browser check is reported.
+- Andrew applied [`/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua). Leave `acuranzo_1455.lua` and `acuranzo_1456.lua` as written. Reverse 1456 restores the 1455 body.
+- Preview HTML on an over-cap definition saves through QueryRef 168 and calls `Reports.Render` with `report_id` and `rev_id`. The toast title is `Saved to preview`. Sources stay inline. Compose of an over-cap definition still fails with `Compose failed`.
+- Phase 28 is already complete (2026-11-03). Phase 29 (Query execution) has not started. Its body is in [`/docs/Li/plans/reporting/04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md). The next sitting re-checks `H.altquery_sync(database, sql, binds)` and the two shapes below before it writes a file. Next free Acuranzo file is **1457**. QueryRef **175** stays unused. No new lookup.
+- The phase text and the datasource lock load `query_type_a28 = 1`. QueryRef 174 is type 3 (SQL - Reporting). A type-1 lookup does not find it.
+- The lock stores a bind as `{ "parameter": "<name>" }` or `{ "literal": "<value>" }`, and `params.parameters` overrides the defaults. The designer stores plain values on the datasource `params` (`ROW_LIMIT` 2). The client does not send `params.parameters`. The query metadata default for `ROW_LIMIT` is 5.
 

@@ -149,8 +149,9 @@ definition (Phase 19b). Compose passes it as `sources[name]`. `kind`
 `query` (Phase 28) stores `queryRef`, `queryName`, `params` (name to
 value, defaults from the query), `fields` (metadata), and `rows`. A
 designer Run calls `authQuery` and replaces `rows`; Compose sends
-them as `sources[name]`. A query with no rows is left out until
-Phase 29. Reporting queries are lookup 028 key 3 and Active; their
+them as `sources[name]`. A call that omits that array runs the
+QueryRef on the session database (Phase 29, `acuranzo_1457.lua`
+applied 2026-11-04, `query_type_a28` 3). Reporting queries are lookup 028 key 3 and Active; their
 `collection.reporting` holds `fields` and `parameters` (`name`,
 `type`, `default`). QueryRef 173 lists them. The kind is a lookup key: JSON, Query, CSV
 (CSV is not read yet). The datasource keeps `kindKey` (lookup 076

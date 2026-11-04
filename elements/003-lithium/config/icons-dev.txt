@@ -146,6 +146,7 @@
 <fa fa-ruler-combined></fa>
 <fa fa-search></fa>
 <fa fa-shield-halved></fa>
+<fa fa-sigma></fa>
 <fa fa-sign-in-alt></fa>
 <fa fa-sign-out-alt></fa>
 <fa fa-signs-post></fa>

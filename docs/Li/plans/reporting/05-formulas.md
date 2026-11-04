@@ -12,7 +12,7 @@ per conversation. Write Status, Accomplished, Lessons learned, and
 Handoff on the phase in this file, set the same Status in the parent's
 phase table, and append the Working Log in the parent.
 
-**Entry:** Phase 32 in [`/docs/Li/plans/reporting/04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md) is complete.
+**Entry:** Phases 33–37 have not started. Phase 38 is in progress (2026-11-04). Andrew named it and left Phases 33–37 as they are.
 **Next file:** [`/docs/Li/plans/reporting/06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) after Phase 49.
 
 ## Phase 33 — Text formula
@@ -218,16 +218,18 @@ and sum.
 
 ### Entry gate
 
-Phase 37 Status complete.
+Phase 37 Status complete. Andrew named Phase 38 on 2026-11-04 and
+left Phases 33–37 as they are. A field total does not use the
+formula compiler.
 
 ### Work items
 
-- [ ] 38.1 An aggregate item stores `op` and either `field` or
+- [x] 38.1 An aggregate item stores `op` and either `field` or
        `function`. This phase's ops are `count`, `filled`, `unique`,
        and `sum`. Numeric results use lookup 053 key 35. A text
        result uses key 34. The picker offers a function only when
        its `returns` allows the op. The fixture uses a field.
-- [ ] 38.2 Compose reduces the raw values for the current group and
+- [x] 38.2 Compose reduces the raw values for the current group and
        for the whole detail source, and places them on
        `ctx.aggregates`. `count` counts every row. `filled`,
        `unique`, and `sum` skip nulls. An empty `count`, `filled`,
@@ -235,11 +237,11 @@ Phase 37 Status complete.
        non-numeric value in `sum` warns and is skipped. The header
        and the footer of one scope show the same total. The item
        mask formats the reduction.
-- [ ] 38.3 The designer places the item on a group header, a group
+- [x] 38.3 The designer places the item on a group header, a group
        footer, a report header, or a report footer.
 - [ ] 38.4 Fixture: two groups. Hand the amendment over. The preview
        shows each op this phase names, and the header matches the
-       footer.
+       footer. The Lua probe passed. The preview is Andrew's check.
 
 ### Done means
 
@@ -253,7 +255,103 @@ preview.
 
 ### Status
 
-**not started**
+**in progress**
+
+### Accomplished
+
+- Andrew named Phase 38 on 2026-11-04. Phases 33–37 stay as they
+  are. The written entry gate was Phase 37. A field total does not
+  need that compiler.
+- The Aggregate category places lookup 053 key 35 on a report
+  header (12), group header (14), group footer (16), or report
+  footer (18). Detail and page bands are refused. A new item stores
+  `op` `count` and `field` `""`. Op is a client row. Setting a
+  field clears `function`. Setting a function clears `field`.
+  `sum` is offered for a number function. `count`, `filled`, and
+  `unique` are offered for text, number, and datetime. A missing
+  `returns` is text. Boolean and `rows` are omitted. No new lookup.
+- [`/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua)
+  copies the 1457 `Reports.Render` body. Reverse restores that
+  body. Leave `acuranzo_1455.lua`, `acuranzo_1456.lua`, and
+  `acuranzo_1457.lua` as written. The raw total is
+  `ctx.aggregates[op][field]`. The map stays out of the emitted
+  JSON. The item mask formats it as a number. A detail row and a
+  page band have no aggregates.
+- `count` counts every row. `filled`, `unique`, and `sum` skip
+  nulls. An empty `count`, `filled`, or `unique` is 0. An empty
+  `sum` prints blank. A sum value that is not a Lua number warns
+  once per item and is skipped. A string `"10"` stays out of the
+  sum. Unique keeps a number and the same text distinct. The
+  header and the footer of one scope share one reduction.
+  Consecutive group spans stay separate when the same key returns
+  later. A function name warns once and prints blank.
+- The fixture is
+  [`/elements/003-lithium/tests/fixtures/reporting/totals.definition.json`](/elements/003-lithium/tests/fixtures/reporting/totals.definition.json)
+  with
+  [`/elements/003-lithium/tests/fixtures/reporting/totals.sources.json`](/elements/003-lithium/tests/fixtures/reporting/totals.sources.json).
+  The definition also stores those rows, so an import sends them
+  in `sources`. Mask `#,##0.00`. East, West, East again, and
+  South. East is count `3.00`, filled `1.00`, unique name `2.00`,
+  unique amount `3.00`, sum `30.00`. West is `1.00`, `1.00`,
+  `1.00`, `1.00`, `5.00`. The second East is `1.00`, `0.00`,
+  `1.00`, `1.00`, `7.00`. South is `1.00`, `0.00`, `1.00`,
+  `0.00`, and a blank sum. The report is `6.00`, `2.00`, `4.00`,
+  `5.00`, `42.00`. Each header matches its footer. The log is
+  four warns, one each for the group header, group footer, report
+  header, and report footer sum:
+  `sum skipped a value that is not a number`.
+- `luacheck` on `acuranzo_1458.lua` reported 0 warnings. Lua 5.5.1
+  loaded the new body. The probe matched those totals, the HTML
+  text, an empty source (count `0.00`, sum blank, no warn), a
+  page-band blank, an unbound field blank, a function blank, and
+  a detail blank. The grouped fixture still matches
+  `grouped.intermediate.json`.
+- `npm test` was 93 files, 1472 passed, 12 skipped. The skipped
+  file is the live auth check; the server check aborted. `npm run
+  lint` and `npm run lint:css` exited 0. `npm run templates:copy`
+  copied `reports.html`.
+
+### Lessons learned
+
+- Compose breaks a group when consecutive keys differ, and it does
+  not sort. The totals follow those consecutive spans. A later
+  East is its own group.
+- `ctx.aggregates` is keyed `aggregates[op][field]`. A later
+  formula can read `ctx.aggregates.sum.amount`. A function name
+  will use that same slot when the compiler exists. The emitted
+  item stays `id`, `typeKey`, `text`, `align`, `font`, and `box`.
+- Sum accepts a finite Lua number. It does not coerce a numeric
+  string. Nulls are skipped with no warn. One bad value warns
+  once on each sum item that saw it.
+- An empty sum is nil, so the mask prints blank. An empty count,
+  filled, or unique is the number 0, and the mask prints `0.00`.
+- Key 35 already has the field attribute. Op and Function are
+  client rows. The function list is empty until the report has a
+  function whose `returns` allows the op.
+
+### Handoff
+
+- Apply only
+  [`/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua).
+  Regenerate the Hydrogen payload and restart. Leave
+  `acuranzo_1455.lua`, `acuranzo_1456.lua`, and
+  `acuranzo_1457.lua` as written. Reverse of 1458 restores the
+  1457 body.
+- Import
+  [`/elements/003-lithium/tests/fixtures/reporting/totals.definition.json`](/elements/003-lithium/tests/fixtures/reporting/totals.definition.json)
+  and Run Preview HTML. The six rows travel with that file. The
+  group header matches the group footer, and the report header
+  matches the report footer. East sum is `30.00`. The report sum
+  is `42.00`. South sum is blank. The log has four warns that sum
+  skipped a value that is not a number. That value is the string
+  `10` on the third East row.
+- A function aggregate prints blank and warns
+  `function totals are not available yet` until Phase 33. A
+  page band stays blank until Phase 39.
+- The phase stays in progress until Andrew reports the apply and
+  the preview. Work item 38.4 stays open for that preview. Next
+  free Acuranzo file is **1459**. QueryRef **175** stays unused.
+  No new lookup. No new QueryRef. Phase 39 has not started.
 
 ---
 

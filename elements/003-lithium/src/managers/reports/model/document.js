@@ -6,6 +6,7 @@
  * createBlank uses ph1, d1, and pf1.
  */
 
+import { AGGREGATE_NUMBER_TYPE, aggregateBandAllows } from '../reports-aggregate.js';
 import {
   CSS_PX_PER_INCH,
   contentBox,
@@ -602,6 +603,9 @@ export function addItem(doc, bandId, spec) {
   const next = clone(doc);
   const band = findBand(next, bandId);
   const typeKey = requireItemType(spec.typeKey);
+  if (typeKey === AGGREGATE_NUMBER_TYPE && !aggregateBandAllows(band.typeKey)) {
+    throw new Error('An aggregate item goes on a group header, a group footer, a report header, or a report footer.');
+  }
   const id = spec.id === undefined ? nextId(itemIds(next), 'i') : spec.id;
   assertId(id, 'Item');
   if (itemIds(next).has(id)) throw new Error(`Item id "${id}" is already used.`);
@@ -613,6 +617,10 @@ export function addItem(doc, bandId, spec) {
   if (!Object.hasOwn(item, 'align')) item.align = 'Left';
   item.box = item.box === undefined ? centeredBox(next, band) : storedBox(item.box, unit);
   if (typeKey === 0 && !Object.hasOwn(item, 'text')) item.text = 'Text';
+  if (typeKey === AGGREGATE_NUMBER_TYPE) {
+    if (!Object.hasOwn(item, 'op')) item.op = 'count';
+    if (!Object.hasOwn(item, 'field') && !Object.hasOwn(item, 'function')) item.field = '';
+  }
   if (MASK_TYPES.has(typeKey) && !Object.hasOwn(item, 'mask')) item.mask = '';
   if (!Array.isArray(band.items)) band.items = [];
   const index = spec.index === undefined

@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is in progress (2026-11-04). Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. acuranzo_1456.lua is written and not applied. The browser check waits on that apply. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is in progress (2026-11-04). Andrew named it and left Phases 33–37 as they are. `acuranzo_1458.lua` is written and not applied. Leave `acuranzo_1455.lua`, `acuranzo_1456.lua`, and `acuranzo_1457.lua` as written. The next free Acuranzo file is **1459**. QueryRef **175** stays unused. No new lookup. Phase 39 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -92,9 +92,9 @@ Andrew reports the apply.
 | 24 | HTML emit | Helium amendment | Easy | Complete |
 | 25 | Preview | Lithium UI | Medium | Complete |
 | 26 | Generation log | Lithium UI | Medium | Complete |
-| 27 | Over-cap preview | Lithium UI | Easy | In progress |
+| 27 | Over-cap preview | Lithium UI | Easy | Complete |
 | 28 | Query designer | Lithium UI | Medium | Complete |
-| 29 | Query execution | Helium amendment | Medium | Not started |
+| 29 | Query execution | Helium amendment | Medium | Complete |
 | 30 | Seed lua-pdfkit | Helium library pack | Easy | Not started |
 | 31 | PDF text | Helium amendment | Medium | Not started |
 | 32 | Result cap | Helium amendment | Easy | Not started |
@@ -103,7 +103,7 @@ Andrew reports the apply.
 | 35 | Formula check | Lithium UI + Lua | Easy | Not started |
 | 36 | Number and datetime formula | Helium amendment | Medium | Not started |
 | 37 | Formula runtime errors | Helium amendment | Easy | Not started |
-| 38 | Count, unique, and sum | Helium + designer | Medium | Not started |
+| 38 | Count, unique, and sum | Helium + designer | Medium | In progress |
 | 39 | Page totals | Helium + designer | Medium | Not started |
 | 40 | Average and weighted | Helium amendment | Medium | Not started |
 | 41 | Median | Helium amendment | Medium | Not started |
@@ -204,7 +204,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is in progress (2026-11-04). Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. acuranzo_1456.lua is written and not applied. The browser check waits on that apply. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is in progress (2026-11-04). Andrew named it and left Phases 33–37 as they are. `acuranzo_1458.lua` is written and not applied. Leave `acuranzo_1455.lua`, `acuranzo_1456.lua`, and `acuranzo_1457.lua` as written. The next free Acuranzo file is **1459**. QueryRef **175** stays unused. No new lookup. Phase 39 has not started. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -998,8 +998,8 @@ Compose is not a single pass. Group and report totals are known
 before the headers that display them are formatted.
 
 1. Resolve rows. An array in `sources` wins. A query datasource with
-   no array waits for Phase 29, and until that phase it warns and
-   contributes no rows.
+   no array runs that QueryRef (Phase 29). An empty or unconfigured
+   session database warns and contributes no rows.
 2. Evaluate each detail-row function. Store the raw value. Format
    each detail item from that raw value and the item mask. A detail
    `ctx` has no aggregates, so a total is a header or footer item.
@@ -1046,19 +1046,19 @@ Sample rows still design the canvas. A real run uses the QueryRef.
 
 `parameters` live on the definition. Each one has `name`, `type`
 (`text`, `number`, `date`, or `boolean`), and `default`. A bind is
-`{ "parameter": "<name>" }` or `{ "literal": "<value>" }`. The
+a scalar (Phase 28 stores the value the designer ran), `{ "parameter": "<name>" }`,
+or `{ "literal": "<value>" }`. The
 `reports.parameters` column stays `{}`. The run strip's current
 values are session state, passed as `params.parameters`, and they
-override the defaults. Saved presets wait with the parameter form.
+override a same-named bind. Saved presets wait with the parameter form.
 
 An array in `sources` wins, which is how fixtures and the canvas
 sample run. When that array is absent, Phase 29 runs the
-QueryRef. It loads the installed row the way
-[`argent_2059.lua`](/elements/002-helium/argent/migrations/argent_2059.lua)
-does: `SELECT code FROM queries WHERE query_ref = :QREF AND
-query_type_a28 = 1`, then `H.altquery_sync(params._hydrogen.database, code, binds)`
-with the resolved binds. `query_type_a28 = 1` is the installed
-query. The database name is the session claim. When that name is
+QueryRef. It loads `SELECT code, collection FROM queries WHERE query_ref = :QREF AND query_type_a28 = 3`,
+then `H.altquery_sync(params._hydrogen.database, code, binds)`
+with the resolved binds. `query_type_a28 = 3` is SQL - Reporting.
+Type 1 does not find QueryRef 174. Andrew chose type 3 on
+2026-11-04. The database name is the session claim. When that name is
 empty or is not a configured connection, compose adds a warn entry
 and returns no rows for that datasource. The worker login is the
 one configured for that connection. The script does not send the
@@ -2022,9 +2022,8 @@ break, or a custom chart writes that use's type and chunk.
 ### v1 render behavior
 
 Given a definition and a source array, compose. An array in
-`sources` wins. A query datasource with no array waits for
-Phase 29 to fill it, and until that phase it warns and
-contributes no rows:
+`sources` wins. A query datasource with no array runs that
+QueryRef on the session database (Phase 29, `query_type_a28` 3):
 
 - emits a static report when `sources` is empty and the detail band
   has no datasource
@@ -3835,3 +3834,110 @@ caller-facing QueryRef 175.
   check (27.2) on https://lithium.500courses.com. The phase stays
   in progress until he reports it. Next free file **1457**.
   QueryRef **175** unused. Phase 29 waits for a new conversation.
+
+### 2026-11-04 — Phase 27 complete
+
+- Andrew applied `acuranzo_1456.lua` and asked to mark Phase 27
+  complete. He did not quote the toast or a failed-save canvas.
+- Phase 28 was already complete on 2026-11-03. This sitting did not
+  reopen it.
+- Phase 29 was previewed and not started. A `report_id` render with
+  no `sources` is the check. The written load uses
+  `query_type_a28 = 1`. QueryRef 174 is type 3. The lock's binds are
+  `{ "parameter" }` or `{ "literal" }`. The designer stores plain
+  values on `params`. Next free file **1457**. QueryRef **175**
+  unused. Do not edit 1455 or 1456.
+- **Next:** Phase 29 in 04-pdf.md, in a new conversation. Do not
+  start it here.
+
+### 2026-11-04 — Phase 29 in progress
+
+- Andrew chose type 3 only (SQL - Reporting). Type 1 does not find
+  QueryRef 174. He chose stored `datasource.params` scalars, with
+  `{parameter}` and `{literal}` still accepted, and
+  `params.parameters` overriding a same-named bind.
+- `acuranzo_1457.lua` copies the 1456 body. Reverse restores that
+  body. Leave `acuranzo_1455.lua` and `acuranzo_1456.lua` as written.
+  No new QueryRef. No new lookup. Next free file **1458**.
+  QueryRef **175** unused.
+- An array in `sources` wins, including an empty array. A query
+  datasource with no array loads `query_type_a28 = 3` and runs that
+  SQL with `H.altquery_sync` on the session database. Types come
+  from `collection.reporting.parameters`.
+- `luacheck` on 1457 reported 0 warnings. Lua 5.5.1 probe: QueryRef
+  174 with `ROW_LIMIT` 2 returned Alpha and Bravo. A supplied array
+  was not queried. Overrides and the lock's bind forms held. Empty
+  database, a missing connection, a missing query, a query error, a
+  missing `queryRef`, and an unset parameter each warned and
+  returned no rows.
+- Compose and Preview HTML still send `sources`. The check is a
+  `report_id` call with no `sources` and no `definition`.
+- **Next:** Andrew applies `acuranzo_1457.lua`, regenerates the
+  payload, and restarts Hydrogen. Then `Reports.Render` with
+  `report_id`, `rev_id`, `stage` `compose`, and no `sources`. The
+  log line is `datasource <name> ran query 174; 2 rows`. Do not
+  start Phase 30 in that report unless the same message names it.
+
+### 2026-11-04 — Phase 29 complete
+
+- Andrew applied `acuranzo_1457.lua` and asked to close Phase 29.
+  He did not quote the two-row log line or the Alpha and Bravo
+  bands.
+- A query datasource with no array in `sources` loads
+  `query_type_a28 = 3` and runs that SQL with `H.altquery_sync` on
+  the session database. An array in `sources` still wins. Leave
+  `acuranzo_1455.lua`, `acuranzo_1456.lua`, and `acuranzo_1457.lua`
+  as written. Reverse of 1457 restores the 1456 body. Next free
+  file **1458**. QueryRef **175** unused. No new lookup.
+- Phase 30 was previewed and not started. One migration seeds
+  every `lua-pdfkit.*` row, group `lua-pdfkit`, `invokable = 0`,
+  `mcp_access = 0`. The lock path is on disk: 115 Lua modules and
+  14 AFM files. `font/standard.lua` still `io.open`s
+  `Helvetica.afm`, so work item 30.2 bundles that text before the
+  packet. `require("lua-pdfkit")` has no dot. The probe is
+  `require("lua-pdfkit.init")`, then `doc:text`, `doc:finish()`,
+  and `doc:output()`, with `io` left off and `AllowDBModuleLoad`
+  on. The probe returns a PDF byte length. No report output in
+  this phase. Phases 31 and 52 wait for the apply.
+- **Next:** Phase 30 in 04-pdf.md, in a new conversation. Do not
+  start it here.
+
+### 2026-11-04 — Phase 38 in progress
+
+- Andrew named Phase 38 and left Phases 33–37 as they are. The
+  written entry gate was Phase 37. A field total does not use the
+  formula compiler. Phases 30–37 and 39 stay unstarted.
+- `acuranzo_1458.lua` copies the 1457 `Reports.Render` body.
+  Reverse restores that body. Leave `acuranzo_1455.lua`,
+  `acuranzo_1456.lua`, and `acuranzo_1457.lua` as written. No new
+  QueryRef. No new lookup. Next free file **1459**. QueryRef
+  **175** unused.
+- An aggregate number (lookup 053 key 35) stores `op` and either
+  `field` or `function`. This phase reduces `count`, `filled`,
+  `unique`, and `sum` of a field. The designer places it on a
+  report header, group header, group footer, or report footer.
+  The raw total is `ctx.aggregates[op][field]`. The item mask
+  formats it. The map stays out of the emitted JSON. A function
+  name warns and prints blank until Phase 33.
+- `count` counts every row. `filled`, `unique`, and `sum` skip
+  nulls. An empty count, filled, or unique is 0. An empty sum
+  prints blank. A non-number in sum warns once per item and is
+  skipped. A string `"10"` is not added. Unique keeps a number
+  and that same text distinct. Consecutive spans stay separate
+  when a group key returns later. The header and the footer of
+  one scope share the total.
+- The fixture is `totals.definition.json` and
+  `totals.sources.json`. Mask `#,##0.00`. East sum `30.00`,
+  second East sum `7.00`, West sum `5.00`, South sum blank,
+  report sum `42.00`. Four warns name the sum items. The grouped
+  fixture still matches `grouped.intermediate.json`.
+- `luacheck` on 1458 reported 0 warnings. Lua 5.5.1 probe passed.
+  `npm test` was 93 files, 1472 passed, 12 skipped. The skipped
+  file is the live auth check; the server check aborted. `npm run
+  lint` and `npm run lint:css` exited 0.
+- **Next:** Andrew applies `acuranzo_1458.lua`, regenerates the
+  payload, and restarts Hydrogen. Then import the totals
+  definition and Run Preview HTML. The header matches the footer.
+  Do not mark Phase 38 complete until he reports that preview.
+  Do not start Phase 39 in that report unless the same message
+  names it.

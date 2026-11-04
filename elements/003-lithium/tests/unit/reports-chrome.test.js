@@ -233,7 +233,14 @@ describe('Report Manager chrome', () => {
     expect(container.querySelector('#reports-new-btn')).toBeNull();
     expect(container.querySelector('#reports-page-size')).toBeNull();
     expect(container.querySelector('.reports-properties')).toBeNull();
-    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(4);
+    const categoryIds = [...categories.querySelectorAll('.reports-category-btn')].map((button) => button.id);
+    expect(categoryIds).toEqual([
+      'reports-static-btn',
+      'reports-field-btn',
+      'reports-aggregate-btn',
+      'reports-bands-btn',
+      'reports-system-btn',
+    ]);
     expect(container.querySelector('#reports-text-btn')).not.toBeNull();
 
     manager.elements.jsonTab.click();

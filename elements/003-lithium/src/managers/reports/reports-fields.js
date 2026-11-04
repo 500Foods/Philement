@@ -6,6 +6,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { aggregateBandAllows } from './reports-aggregate.js';
 import { dropItem } from './reports-drop.js';
 import { toast } from '../../shared/toast.js';
 import { addBandInOrder, addItem, removeBand } from './model/document.js';
@@ -42,15 +43,17 @@ export function saveCategory(name, settings) {
   if (service && REPORT_CATEGORIES.includes(name)) service.set(CATEGORY_PROFILE_PATH, name);
 }
 
-export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'bands', 'system']);
+export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'aggregate', 'bands', 'system']);
 
-const TYPE_NAMES = Object.freeze({ 5: 'date', 6: 'user', 20: 'text field', 21: 'number field', 24: 'datetime field', 61: 'page number', 62: 'page count', 64: 'page label' });
+const TYPE_NAMES = Object.freeze({ 5: 'date', 6: 'user', 20: 'text field', 21: 'number field', 24: 'datetime field', 35: 'aggregate', 61: 'page number', 62: 'page count', 64: 'page label' });
 
 export const reportFieldMethods = {
   _fieldElements() {
     const root = this.container;
     return {
       fieldBtn: root.querySelector('#reports-field-btn'),
+      aggregateBtn: root.querySelector('#reports-aggregate-btn'),
+      aggItemBtn: root.querySelector('#reports-aggregate-number-btn'),
       itemBtns: [...root.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key]')],
       bandsBtn: root.querySelector('#reports-bands-btn'),
       bandBtns: [...root.querySelectorAll('#reports-items-toolbar [data-reports-category="bands"][data-band-type]')],
@@ -69,6 +72,8 @@ export const reportFieldMethods = {
     const els = this._fieldElements();
     this._fieldEls = els;
     this._onFieldCategory = () => this.selectCategory('field');
+    this._onAggregateCategory = () => this.selectCategory('aggregate');
+    this._onAggregateItem = () => this._addAggregate();
     this._onFieldItem = (event) => this._addField(Number(event.currentTarget.dataset.typeKey));
     this._onBandsCategory = () => this.selectCategory('bands');
     this._onBandAdd = (event) => this._addBandType(Number(event.currentTarget.dataset.bandType));
@@ -76,6 +81,8 @@ export const reportFieldMethods = {
     this._onSampleFile = () => this._importSampleFile();
     this._onSamplePaste = () => this._pasteSample();
     els.fieldBtn?.addEventListener('click', this._onFieldCategory);
+    els.aggregateBtn?.addEventListener('click', this._onAggregateCategory);
+    els.aggItemBtn?.addEventListener('click', this._onAggregateItem);
     els.itemBtns.forEach((btn) => btn.addEventListener('click', this._onFieldItem));
     els.bandsBtn?.addEventListener('click', this._onBandsCategory);
     els.bandBtns.forEach((btn) => btn.addEventListener('click', this._onBandAdd));
@@ -98,6 +105,8 @@ export const reportFieldMethods = {
     const els = this._fieldEls;
     if (!els) return;
     els.fieldBtn?.removeEventListener('click', this._onFieldCategory);
+    els.aggregateBtn?.removeEventListener('click', this._onAggregateCategory);
+    els.aggItemBtn?.removeEventListener('click', this._onAggregateItem);
     els.itemBtns.forEach((btn) => btn.removeEventListener('click', this._onFieldItem));
     els.bandsBtn?.removeEventListener('click', this._onBandsCategory);
     els.bandBtns.forEach((btn) => btn.removeEventListener('click', this._onBandAdd));
@@ -133,9 +142,34 @@ export const reportFieldMethods = {
     const els = this._fieldEls;
     if (!els) return;
     els.itemBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
+    if (els.aggItemBtn) els.aggItemBtn.disabled = !editing || !this._aggregateBandSelected();
     els.bandBtns.forEach((btn) => { btn.disabled = !editing || !this.doc; });
     if (els.paramBtn) els.paramBtn.disabled = !editing || !this._selectedBandId;
     els.sysBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
+  },
+
+  /** True when the selected band can show a group or report total. */
+  _aggregateBandSelected() {
+    if (!this.doc || !this._selectedBandId) return false;
+    const band = (this.doc.bands || []).find((entry) => entry.id === this._selectedBandId);
+    return Boolean(band && aggregateBandAllows(band.typeKey));
+  },
+
+  /** Aggregate number (35) on a group or report header or footer. */
+  _addAggregate() {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
+    let next;
+    try {
+      next = addItem(this.doc, this._selectedBandId, dropItem(35));
+    } catch (error) {
+      this._failEdit(error, 'Aggregate could not be added.');
+      return;
+    }
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added aggregate ${added ? added.id : ''} on ${this._selectedBandId}`);
   },
 
   _addField(typeKey) {

@@ -12,6 +12,10 @@
  * Values the file omits show the Defaults table value.
  */
 
+import {
+  AGGREGATE_FUNCTION_ROW_ID, AGGREGATE_NUMBER_TYPE, AGGREGATE_OP_ROW_ID, AGGREGATE_OPS,
+  aggregateFunctionChoices, setAggregateField, setAggregateFunction, setAggregateOp,
+} from './reports-aggregate.js';
 import { GROUP_HEADER_TYPE, bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
 import { DateTime } from 'luxon';
 import { parseLength } from './model/units.js';
@@ -626,6 +630,26 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       section: 4, group: 'Object', readOnly: false,
     });
   }
+  if (isItem && Number(findSelected(doc, sel).item.typeKey) === AGGREGATE_NUMBER_TYPE) {
+    const { item } = findSelected(doc, sel);
+    const op = AGGREGATE_OPS.includes(item.op) ? item.op : 'count';
+    const names = aggregateFunctionChoices(doc.functions, op);
+    const current = typeof item.function === 'string' ? item.function : '';
+    const list = current !== '' && !names.includes(current) ? [current, ...names] : names;
+    rows.push({
+      id: AGGREGATE_OP_ROW_ID, key: null, label: 'Op', value: op, omitted: !own(item, 'op'),
+      note: 'count, filled, and unique count rows. sum adds numbers and skips anything else.',
+      editor: 'List', list: [...AGGREGATE_OPS], section: 4, group: 'Object', readOnly: false,
+    });
+    rows.push({
+      id: AGGREGATE_FUNCTION_ROW_ID, key: null, label: 'Function', value: current, omitted: current === '',
+      note: names.length
+        ? 'A function whose returns allows this op. Choosing one clears Field. The total of a function waits for the formula compiler.'
+        : 'No function in this report allows this op. Bind a field.',
+      editor: list.length ? 'List' : 'Text', list: list.length ? list : null,
+      section: 4, group: 'Object', readOnly: false,
+    });
+  }
   if (isItem && Number(findSelected(doc, sel).item.typeKey) === PAGE_LABEL_TYPE) {
     const { item } = findSelected(doc, sel);
     const empty = !own(item, 'template') || item.template === '';
@@ -707,6 +731,17 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
     if (!isItem) throw new Error('Template needs a selected item.');
     const text = String(value ?? '');
     return editItem(doc, sel, (item) => { if (text.trim()) item.template = text; else delete item.template; });
+  }
+  if (rowId === AGGREGATE_OP_ROW_ID) {
+    if (!isItem) throw new Error('Op needs a selected aggregate.');
+    return editItem(doc, sel, (item) => setAggregateOp(item, String(value ?? '').trim(), doc.functions));
+  }
+  if (rowId === AGGREGATE_FUNCTION_ROW_ID) {
+    if (!isItem) throw new Error('Function needs a selected aggregate.');
+    return editItem(doc, sel, (item) => setAggregateFunction(item, value, doc.functions));
+  }
+  if (rowId === '7' && isItem && Number(findSelected(doc, sel).item.typeKey) === AGGREGATE_NUMBER_TYPE) {
+    return editItem(doc, sel, (item) => setAggregateField(item, value));
   }
   if (rowId === MASK_ROW_ID) {
     if (!isItem) throw new Error('Mask needs a selected item.');

@@ -12,7 +12,7 @@ per conversation. Write Status, Accomplished, Lessons learned, and
 Handoff on the phase in this file, set the same Status in the parent's
 phase table, and append the Working Log in the parent.
 
-**Entry:** Phase 27 in [`/docs/Li/plans/reporting/03-preview.md`](/docs/Li/plans/reporting/03-preview.md) is complete. Phases 28 and 29 follow their own entry gates.
+**Entry:** Phase 27 in [`/docs/Li/plans/reporting/03-preview.md`](/docs/Li/plans/reporting/03-preview.md) is complete. Phases 28 and 29 are complete. Phase 30 follows its own entry gate.
 **Next file:** [`/docs/Li/plans/reporting/05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md) after Phase 32.
 
 ## Phase 28 — Query designer
@@ -130,18 +130,25 @@ SQL, and named binds.
 
 ### Work items
 
-- [ ] 29.1 When `sources` omits a query datasource, `Reports.Render`
+- [x] 29.1 When `sources` omits a query datasource, `Reports.Render`
        loads `queries.code` with `query_ref` and
-       `query_type_a28 = 1`, then runs
+       `query_type_a28 = 3` (SQL - Reporting; Andrew chose this on
+       2026-11-04 because type 1 does not find QueryRef 174), then runs
        `H.altquery_sync(params._hydrogen.database, code, binds)`
-       with the resolved binds. `params.parameters` overrides
-       defaults. When `sources` includes the array, the script does
-       not query. When the database name is empty or is not a
-       configured connection, the script adds a warn entry and
-       returns no rows. The worker login is the one on that
-       connection. Row-level permissions stay in Later.
-- [ ] 29.2 Hand the amendment over. A `report_id` render with no
-       `sources` returns the same rows the designer run returned.
+       with the resolved binds. Binds are `datasource.params`: a
+       scalar is the value, `{ "parameter": "<name>" }` uses
+       `params.parameters` then the definition default, and
+       `{ "literal": "<value>" }` uses that value.
+       `params.parameters` overrides a same-named bind. Types come
+       from `collection.reporting.parameters`. When `sources`
+       includes the array, the script does not query. When the
+       database name is empty or is not a configured connection,
+       the script adds a warn entry and returns no rows. The worker
+       login is the one on that connection. Row-level permissions
+       stay in Later.
+- [x] 29.2 Hand the amendment over. Andrew applied
+       `acuranzo_1457.lua` and asked to close the phase
+       (2026-11-04). He did not quote the two-row log line.
 
 ### Done means
 
@@ -154,7 +161,94 @@ Andrew's apply report and that call.
 
 ### Status
 
-**not started**
+**Complete** (2026-11-04). Andrew applied
+[`/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua)
+and asked to close the phase. He did not quote the two-row log
+line. No new QueryRef. No new lookup. The next free Acuranzo file
+is **1458**. QueryRef **175** stays unused.
+
+### Accomplished
+
+- `acuranzo_1457.lua` copies the 1456 body. Reverse restores that
+  body. Leave `acuranzo_1455.lua` and `acuranzo_1456.lua` as written.
+- A query datasource whose name is absent from `sources`, or whose
+  value there is not a table, loads
+  `SELECT code, collection FROM ${SCHEMA}queries WHERE query_ref = :QREF AND query_type_a28 = 3`
+  and runs that `code` with `H.altquery_sync` on
+  `params._hydrogen.database`. An array in `sources`, including an
+  empty one, is used and the script does not query. A `json`
+  datasource with no array still warns
+  `datasource <name> has no array in sources; no rows`.
+- Binds come from `datasource.params`. A scalar is sent as stored.
+  `{parameter}` reads `params.parameters`, then
+  `definition.parameters[].default`. `{literal}` sends that value.
+  `params.parameters` overrides a same-named bind. Types follow
+  `collection.reporting.parameters` (object or a one-element array).
+  `integer` / `int` are integers, `float` / `number` are numbers,
+  `boolean` / `bool` are booleans, and string-like types are text.
+- An empty session database warns
+  `datasource <name> has no session database; no rows`.
+  A connection `H.altquery_sync` reports as not found warns
+  `datasource <name> database <db> is not configured; no rows`.
+  A missing row warns
+  `datasource <name> query <ref> is not installed; no rows`.
+  A query error warns
+  `datasource <name> query <ref> failed: <err>; no rows`.
+  A missing `queryRef` warns
+  `datasource <name> has no queryRef; no rows`.
+  An unset bind warns
+  `datasource <name> parameter <name> is not set; no rows`.
+  A run that returns rows adds
+  `datasource <name> ran query <ref>; <n> rows` at info.
+  Stored `datasource.rows` are not a row source.
+- `luacheck` on `acuranzo_1457.lua` reported 0 warnings. Lua 5.5.1
+  loaded the new body. The probe ran QueryRef 174 with `ROW_LIMIT` 2
+  and got Alpha and Bravo, left a supplied array alone, honored
+  `params.parameters` and the lock's bind forms, and warned on an
+  empty database, a missing connection, a missing query, a query
+  error, a missing `queryRef`, and an unset parameter. No JavaScript
+  changed, so `npm test` was not required.
+
+### Lessons learned
+
+- The phase text said `query_type_a28 = 1`. QueryRef 174 is type 3.
+  A type-1 lookup cannot return the two demo rows. Andrew chose
+  type 3 only.
+- Phase 28 stores plain values on `datasource.params`. The lock's
+  `{parameter}` and `{literal}` forms still resolve. The client does
+  not send `params.parameters` today, so a saved `ROW_LIMIT` of 2
+  stays 2.
+- Compose and Preview HTML still fetch an un-run query in the
+  browser and send the rows in `sources`. That path does not run
+  the new server query. The check is a call that omits `sources`.
+- A parameter item still prints `datasource.params`. A
+  `params.parameters` override changes the query bind and does not
+  change that printed item.
+- PostgreSQL sends binds as text. An integral `SCALE` stays a Lua
+  number. `CAST(:SCALE AS double precision)` accepts that text.
+- Andrew's close reported the apply and asked to mark the phase
+  complete. He did not quote the two-row log line or the Alpha and
+  Bravo bands.
+
+### Handoff
+
+- Andrew applied [`/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua).
+  Leave `acuranzo_1455.lua`, `acuranzo_1456.lua`, and
+  `acuranzo_1457.lua` as written. Reverse of 1457 restores the
+  1456 body.
+- A query datasource with no array in `sources` loads
+  `query_type_a28 = 3` and runs that SQL with `H.altquery_sync`
+  on the session database. An array in `sources`, including an
+  empty one, still wins. Preview HTML and Compose still send
+  `sources`, so they do not exercise this path.
+- The call he did not quote is `Reports.Render` with `report_id`,
+  `rev_id`, `stage` `compose`, and no `sources` and no
+  `definition`. The saved query is QueryRef 174 with `ROW_LIMIT`
+  2. The log line is `datasource <name> ran query 174; 2 rows`.
+  Do not send `params._hydrogen`.
+- Phase 30 (Seed lua-pdfkit) has not started. Its body is below.
+  Next free Acuranzo file is **1458**. QueryRef **175** stays
+  unused. No new lookup.
 
 ---
 

@@ -414,4 +414,6 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1454](/elements/002-helium/acuranzo/migrations/acuranzo_1454.lua) | scripts | 1.0.0 | 2026-11-03 | 6 | ✗ | Reports.Render page number, page count and page label (Reporting Phase 23) |
 | [1455](/elements/002-helium/acuranzo/migrations/acuranzo_1455.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render stage=html (Reporting Phase 24) |
 | [1456](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render loads a stored report by id (Reporting Phase 27) |
-| **381** | | | | **2186** | **381** | |
+| [1457](/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render runs a query datasource (Reporting Phase 29) |
+| [1458](/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render reduces count, filled, unique, and sum (Reporting Phase 38) |
+| **383** | | | | **2194** | **383** | |
