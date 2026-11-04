@@ -413,4 +413,5 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1453](/elements/002-helium/acuranzo/migrations/acuranzo_1453.lua) | scripts | 1.0.0 | 2026-11-03 | 13 | ✗ | Reports.Render Luxon masks and Lookup 077 Report Datetime Format Presets (Reporting Phase 22b) |
 | [1454](/elements/002-helium/acuranzo/migrations/acuranzo_1454.lua) | scripts | 1.0.0 | 2026-11-03 | 6 | ✗ | Reports.Render page number, page count and page label (Reporting Phase 23) |
 | [1455](/elements/002-helium/acuranzo/migrations/acuranzo_1455.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render stage=html (Reporting Phase 24) |
-| **380** | | | | **2182** | **380** | |
+| [1456](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render loads a stored report by id (Reporting Phase 27) |
+| **381** | | | | **2186** | **381** | |

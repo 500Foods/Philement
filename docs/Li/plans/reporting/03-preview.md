@@ -893,14 +893,48 @@ saving first and rendering by `report_id`.
 
 Phase 26 Status complete. Phase 18 is already applied.
 
+### Decided
+
+Andrew chose the toast and the scope on 2026-11-04. The title is
+`Saved to preview`. The description is `This report is larger than the
+256 KiB script limit, so it was saved and previewed from the stored
+revision.` Preview HTML is the only Run button that takes this path.
+Compose of an over-cap definition still fails with `Compose failed`.
+
+Every over-cap Preview Run saves, including a report that is already
+saved and not dirty. QueryRef 168 appends a revision. That revision
+is the one Render loads. A failed save does not call Render. The
+canvas stays as it was. The existing save error toast is the only
+toast. Sources stay inline. If the sources alone still exceed the
+cap, the save still happens and the preview then fails with
+`Preview failed`.
+
+The client measures the compact UTF-8 JSON of the inline params
+against 256 KiB minus a 4 KiB reserve, so the server-merged
+`_hydrogen` claims still fit. It does not read `hydrogen.json`. An
+operator-raised cap still takes this path at 256 KiB.
+
+`acuranzo_1456.lua` is a new file. It does not edit
+`acuranzo_1455.lua`. When the call sends `report_id` and `rev_id`
+and no definition, the script loads QueryRef 167 through
+`H.altquery_sync` on the session database and parses the report
+text. An inline definition still wins. A loaded definition whose
+detail or group band omits `datasource` takes the first declared
+datasource name, the same fill `composeDefinition` applies before
+an inline call. The saved file is not rewritten.
+
 ### Work items
 
-- [ ] 27.1 When the inline params would exceed
+- [x] 27.1 When the inline params would exceed
        `ClientInvokeMaxParamsBytes`, save the definition and preview
        by `report_id`. One toast names that path. Do not send the
-       session JWT as a script param.
+       session JWT as a script param. Landed in
+       [`/elements/003-lithium/src/managers/reports/reports-preview.js`](/elements/003-lithium/src/managers/reports/reports-preview.js)
+       and [`/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua).
 - [ ] 27.2 Browser: an over-cap definition previews after that toast,
-       and the canvas is unchanged when the save fails.
+       and the canvas is unchanged when the save fails. Waits until
+       Andrew applies `acuranzo_1456.lua` and checks
+       https://lithium.500courses.com.
 
 ### Done means
 
@@ -912,5 +946,26 @@ Lint and the browser check.
 
 ### Status
 
-**not started**
+**In progress** (2026-11-04). 27.1 is in. The browser check is 27.2. It waits until Andrew applies `acuranzo_1456.lua` and previews an over-cap definition. This phase stays in progress until he reports that check. Next free Acuranzo file is **1457**. QueryRef **175** stays unused.
+
+### Accomplished
+
+- Preview HTML measures the inline params. Over 256 KiB minus 4 KiB, it saves through `saveListedReport` (QueryRef 168) and calls `Reports.Render` with `stage=html`, `report_id`, `rev_id`, and `sources`. The call has no `definition`, no `params._hydrogen`, and no session JWT. The code is [`/elements/003-lithium/src/managers/reports/reports-preview.js`](/elements/003-lithium/src/managers/reports/reports-preview.js).
+- The toast is `Saved to preview`, shown after the save succeeds and before the script call. A failed save toasts the save error and does not call Render. With no list row, the toast is `Save is not available`. Edit mode stays on. The edit snapshot is retaken so the footer matches the saved row.
+- [`/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua) copies the 1455 body. Reverse restores that body. The new body loads QueryRef 167 and parses `reports.report`. An inline definition table still wins, so a preview that fits is unchanged.
+- `npm test` was 92 files, 1464 passed, 12 skipped. The 12 skipped are `tests/integration/auth.integration.test.js`: the check of https://lithium.500courses.com aborted, so those cases did not run. `npm run lint` and `npm run lint:css` exited 0. ESLint on `reports-preview.js` and `reports-preview.test.js` exited 0. `reports-preview.test.js` has 9 tests. `luacheck` on `acuranzo_1456.lua` reported 0 warnings. Lua 5.5.1 ran the new body: inline `stage=html` matched `detail.html`, the `report_id` load matched that same page, a bad report text failed with `definition is not valid JSON`, an empty session database failed before the query, an inline definition won when ids were also present, and a detail band that omits `datasource` was filled only on the load path.
+
+### Lessons learned
+
+- QueryRef 168 appends a revision on every call. An over-cap preview saves even when the row is clean, because that new `rev_id` is what Render loads.
+- `LithiumTable.handleSave` refuses a clean row and toasts `Changes Saved`. The preview path calls `saveListedReport` and leaves edit mode on.
+- `reports.report` arrives as text. The script parses it. There is no JSON decoder in the sandbox.
+- The saved definition keeps datasource rows and does not fill a band that omits `datasource`. The inline call fills that band in `composeDefinition` and drops the rows. The load path fills the band inside the script so the stored preview matches the designer preview. The saved file stays the export.
+- Sources stay on the call. A later phase can store those rows when they alone exceed the cap.
+
+### Handoff
+
+- Apply [`/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1456.lua) before the 500 Courses check. Until that script is the live `Reports.Render`, a `report_id` call fails with `definition must be a JSON object`. Leave `acuranzo_1455.lua` as written. Reverse 1456 restores the 1455 body.
+- The check is Preview HTML on a definition whose inline params exceed 256 KiB minus 4 KiB. The toast title is `Saved to preview`. The description is `This report is larger than the 256 KiB script limit, so it was saved and previewed from the stored revision.` The page then renders from the new revision. A failed save leaves the canvas as it was and does not show that toast. A report that was already clean still gains a revision. The list row has to be selected. Compose of an over-cap definition still fails with `Compose failed`.
+- Next free Acuranzo file is **1457**. QueryRef **175** stays unused. No new lookup. Phase 28 is already complete. Phase 29 has not started. The next phase starts in a new conversation, after this browser check is reported.
 
