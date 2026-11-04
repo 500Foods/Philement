@@ -3,7 +3,7 @@
 # Reporting Plan
 
 **Date:** 2026-10-10
-**Revised:** 2026-11-01
+**Revised:** 2026-11-03
 **Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–7
 complete. Phases 6 and 7 closed 2026-10-31. Andrew confirmed
 drag, Undo, Redo, export, import, and the dots on the alternate
@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." The next not-started phase is 19. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Acuranzo 1444–1449 are applied. **Next: Phase 21 (Paging)** in 03-preview.md. The next Acuranzo file is **1450**. The next caller-facing QueryRef is **175**. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -84,7 +84,7 @@ Andrew reports the apply.
 | 19 | Compose skeleton | Helium seed, human apply | Medium | Complete |
 | 19b | Datasources editor and embedded JSON | Lithium UI + Helium lookup | Medium | Complete |
 | 20 | Value format | Helium amendment | Medium | Complete |
-| 21 | Paging | Helium amendment | Easy | Not started |
+| 21 | Paging | Helium amendment | Easy | In progress |
 | 22 | System datetime and system user | Lithium UI + Lua | Medium | Not started |
 | 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
 | 24 | HTML emit | Helium amendment | Easy | Not started |
@@ -174,7 +174,7 @@ milestone file that holds the current phase.
 | File | Phases | Stop when |
 | --- | --- | --- |
 | This file | 0 | The locks are approved. |
-| [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md) | 1–10, and 10-UI | Place static text and export the definition file. Phase 10-UI is the manager chrome and is in progress. |
+| [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md) | 1–10, and 10-UI | Place static text and export the definition file. Phase 10-UI is the manager chrome (complete). |
 | [`02-save.md`](/docs/Li/plans/reporting/02-save.md) | 11–18 | Save a revision and open it again. |
 | [`03-preview.md`](/docs/Li/plans/reporting/03-preview.md) | 19–27 | Preview the HTML export and read the generation log. |
 | [`04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md) | 28–32 | Run a QueryRef and download a text PDF. |
@@ -202,7 +202,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." The next not-started phase is 19. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Acuranzo 1444–1449 are applied. **Next: Phase 21 (Paging)** in 03-preview.md. The next Acuranzo file is **1450**. The next caller-facing QueryRef is **175**. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -3503,3 +3503,44 @@ caller-facing QueryRef 175.
   not click-only.** Parameter is click-only today; drag is a deferred
   follow-up tracked under Phase 28 in reporting/04-pdf.md, not a
   Phase 28 reopen.
+
+### 2026-11-03 — Parameter drag
+
+- System → Parameter is now draggable onto a band (reuses the Field
+  drop path, kind `reports-field:63`, item `{typeKey: 63, param: ''}`).
+  Edit mode required; click still adds to the selected band. Unit test
+  in reports-items. Tests 1447 pass. No migration.
+
+### 2026-11-03 — Phase 21 start (handoff for a new Coder bot)
+
+- **State:** Phases 0–20 (incl. 10-UI, 13b, 14b, 19b) and 28 are
+  Complete. 28 ran before 21–27 on Andrew's waiver. Parameter drag
+  done. Tests 1447 pass. Acuranzo 1444–1449 applied; next file
+  **1450**; next caller-facing QueryRef **175**.
+- **Next:** Phase 21 Paging — body and a "Start here" block in
+  [`reporting/03-preview.md`](/docs/Li/plans/reporting/03-preview.md).
+  Then 22 → 23 (needs paging) → 24 → 25 → 26 → 27, then 29.
+- **Settled, do not re-derive:** datasources (Report owns them, first
+  drives iteration, `json`/`query` rows in the definition). Read
+  19b/28 Status and Handoff only if needed.
+- **Constraints:** machine angrin, repo `/mnt/extra/Projects/Philement`;
+  Andrew applies migrations; new amendment file, never edit applied
+  ones; no commit unless asked; do not reopen 14/14b; flatpickr parked
+  on Phase 22; new palette items must be canvas-draggable.
+- **Paths:** `Reports.Render` in
+  `elements/002-helium/acuranzo/migrations/acuranzo_1444/1445/1449.lua`;
+  fixtures `elements/003-lithium/tests/fixtures/reporting/`; designer
+  `elements/003-lithium/src/managers/reports/` (Compose tab
+  `reports-compose.js`); contract `/docs/Li/LITHIUM-RPT.md`.
+
+### 2026-11-03 — Phase 21 drafted (acuranzo_1450)
+
+- Wrote acuranzo_1450 (does not edit 1449): `Reports.Render` compose
+  pages on stored band heights against `page.height` less top/bottom
+  margins. Page header/footer repeat; a group header moves with its
+  first detail row; too big for an empty page warns and places anyway;
+  group headers do not repeat. Reverse restores the 1449 body.
+- Added the `overflow.*` fixture set (3 in page, header moves to page
+  2 with its first row). All seven sets match under the local Lua 5.5
+  harness. Phase 21 stays In progress until Andrew applies 1450 and
+  the overflow call matches. Next Acuranzo file 1451; QueryRef 175 unused.

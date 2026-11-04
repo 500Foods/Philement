@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReportsManager from '../../src/managers/reports/reports.js';
-import { TEXT_DROP_KIND, textDropOrigin } from '../../src/managers/reports/reports-drop.js';
+import { FIELD_DROP_PREFIX, TEXT_DROP_KIND, textDropOrigin } from '../../src/managers/reports/reports-drop.js';
 import { dragItemBox, staticItemText } from '../../src/managers/reports/items.js';
 import { pageSpan } from '../../src/managers/reports/rulers.js';
 
@@ -400,6 +400,37 @@ describe('Report Manager static text', () => {
     manager.elements.textBtn.dispatchEvent(new CustomEvent('dragend', { bubbles: true }));
     manager.elements.textBtn.click();
     expect(manager.doc.bands.find((band) => band.id === 'd1').items).toHaveLength(1);
+    expect(document.querySelector('.reports-drag-ghost')).toBeNull();
+  });
+
+  it('drags the System Parameter button onto a band as an unbound Parameter item', async () => {
+    await open();
+    const btn = manager.container.querySelector('#reports-param-btn');
+    expect(btn.getAttribute('draggable')).toBe('true');
+    const body = bandEl('d1').querySelector('.reports-band-body');
+    body.getBoundingClientRect = () => ({
+      left: 100, top: 200, width: 768, height: 24, right: 868, bottom: 224,
+    });
+    const transfer = {
+      setData: vi.fn(),
+      getData: (kind) => (kind === 'text/plain' ? `${FIELD_DROP_PREFIX}63` : ''),
+      setDragImage: vi.fn(),
+      effectAllowed: '',
+      dropEffect: '',
+    };
+    const start = new CustomEvent('dragstart', { bubbles: true, cancelable: true });
+    Object.defineProperty(start, 'dataTransfer', { value: transfer });
+    btn.dispatchEvent(start);
+    expect(transfer.setData).toHaveBeenCalledWith('text/plain', `${FIELD_DROP_PREFIX}63`);
+    expect(document.querySelector('.reports-drag-ghost').textContent).toBe('Parameter');
+    const drop = new CustomEvent('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(drop, 'dataTransfer', { value: transfer });
+    Object.defineProperty(drop, 'clientX', { value: 244 });
+    Object.defineProperty(drop, 'clientY', { value: 200 });
+    body.dispatchEvent(drop);
+    expect(detailItem()).toMatchObject({ typeKey: 63, param: '' });
+    expect(detailItem().field).toBeUndefined();
+    btn.dispatchEvent(new CustomEvent('dragend', { bubbles: true }));
     expect(document.querySelector('.reports-drag-ghost')).toBeNull();
   });
 

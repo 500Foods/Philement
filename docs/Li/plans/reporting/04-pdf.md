@@ -74,15 +74,44 @@ Lint and the browser check.
 
 **Complete** — 28.1, 28.2, 28.2b, 28.3 and 28.4 done. 1447/1448
 applied; Acuranzo **1449** (Render Parameter items) accepted after
-Andrew's browser check (2026-11-03). Next: Phase 29, Acuranzo file
-**1450**.
+Andrew's browser check (2026-11-03). Ran ahead of Phase 21 on
+Andrew's gate waiver. Next: **Phase 21** (03-preview.md), Acuranzo file
+**1450**; Phase 29 waits its turn.
+
+### Accomplished
+
+- `kind` `query` datasource: `queryRef`, `queryName`, `params`,
+  `fields`, `rows` stored in the definition; Run replaces rows.
+- QueryRef 173 (List Reporting Queries, acuranzo_1447) and 174
+  (Reporting Demo, synthetic rows, acuranzo_1448). Queries toolbar
+  refresh; Run via conduit `authQuery`; failure toasts, keeps rows.
+- Panel: one typed row per parameter (`ROW_LIMIT int`), read-only
+  Fields list.
+- System palette → Parameter item (053 key 63), rendered by
+  acuranzo_1449; draggable onto a band (follow-up below).
+
+### Lessons learned
+
+- Getting real data in early (waiving the 27 gate) unblocked
+  designer testing for everything after; worth the out-of-order phase.
+- Query metadata belongs in the query's `collection.reporting`, not
+  the report.
+- Palette items must be draggable from day one (Andrew's rule).
+
+### Handoff
+
+- Datasource design is settled; later phases should not re-derive it.
+- Phase 29 (server-side query execution) still open; next caller-facing
+  QueryRef 175.
 
 ### Follow-up (not a Phase 28 reopen)
 
-- [ ] Palette drag: all future report-editor palette items (e.g.
+- [x] Palette drag: all future report-editor palette items (e.g.
       System → Parameter and anything similar) must support drag onto
-      the canvas, not click-only. Parameter is click-only today; adding
-      drag is a deferred follow-up.
+      the canvas, not click-only. Parameter done 2026-11-03: the button
+      is draggable and drops `{typeKey: 63, param: ''}` on the band under
+      the pointer through the Field drop path (`reports-field:63`). The
+      rule stays for future palette items.
 
 ---
 

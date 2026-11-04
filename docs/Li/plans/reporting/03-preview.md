@@ -223,13 +223,35 @@ Compose printed `1,250.50` / `89.99` / `4,300.00` from an embedded
 confirm 1446 applied. He noted the Datasources UI "will need work but
 ok for now" — polish follows later.
 
+### Accomplished
+
+- Report panel: **Datasources** section (Count) plus one
+  "Datasource N" section each (ids 9100+, max 20) with Name, Kind,
+  Rows. Kind stores `kindKey` (lookup 076) plus `kind` code.
+- `json` rows live in the definition (saved, revisioned, exported).
+  Load Sample writes into the band's datasource; session `_sample` gone.
+- Field dropdown lists the band datasource's columns. `composeSources`
+  sends each datasource its own rows; Compose strips `rows` from the
+  definition it sends.
+- acuranzo_1446 (lookup 076 Report Datasource Kinds) applied.
+- LITHIUM-RPT.md amended (rows in the definition).
+
+### Lessons learned
+
+- Decide datasource ownership up front (Report owns them, first one
+  drives iteration); it removed a whole class of session-state bugs.
+- Keep fields/params metadata out of the kind phase; Phase 28 needed
+  it shaped by the real query, not guessed early.
+- Every Compose call ships rows through conduit (256 KiB param cap);
+  big datasets belong on the Phase 29 server-side path.
+
 ### Handoff
 
 - Datasources panel needs UI work later (band DS picker, layout).
 - Grouping assumes a sort on the group key; enforcing it is deferred.
-- Query and CSV kinds wait on Phase 28 and a later importer.
+- Query kind shipped in Phase 28. CSV waits on a later importer.
 - Lua load, filter, and custom fields are not yet designed.
-- Next Acuranzo file 1447.
+- Superseded: next Acuranzo file is now **1450** (see Phase 21).
 
 ---
 
@@ -287,7 +309,29 @@ Andrew's apply report and the two fixture calls.
 **Complete** (2026-11-03). acuranzo_1445 handed over; all six
 fixtures match the local Lua 5.5 harness. Andrew's Compose run
 2026-11-03 showed masked totals `1,250.50` / `89.99` / `4,300.00`
-under `#,##0.00` and `"log": []`. Next Acuranzo file 1447.
+under `#,##0.00` and `"log": []`.
+
+### Accomplished
+
+- acuranzo_1445 amends `Reports.Render` compose (1444 untouched):
+  field items go through the Value format table; null prints blank;
+  bad mask/value warns once per item per band and prints raw.
+- Fixtures: `detail.intermediate.formatted.json` and the `masks.*`
+  set. Static, grouped, bands, warnings unchanged.
+
+### Lessons learned
+
+- Hydrogen maps JSON null to nil: absent and null columns are
+  indistinguishable in Lua. Design warnings around that.
+- Amend in a new migration file; never edit an applied one. The
+  local Lua 5.5 harness against the fixtures again caught every bug
+  before hand-over.
+
+### Handoff
+
+- Masks do not change band height, so Phase 21 paging can ignore them.
+- Superseded: next Acuranzo file is now **1450** (1446–1449 used by
+  19b and 28).
 
 ---
 
@@ -303,13 +347,13 @@ Phase 20 Status complete. Masks do not change band height.
 
 ### Work items
 
-- [ ] 21.1 Page breaks use the stored band heights against the content
+- [x] 21.1 Page breaks use the stored band heights against the content
        box. If the group header plus one detail row do not fit in the
        remaining box, both move to the next page. If they do not fit
        on an empty page either, compose warns and places them anyway.
        The header is not repeated on a later page. Its summary is
        every row of the group.
-- [ ] 21.2 Add an overflow fixture beside the Phase 1 files. The
+- [x] 21.2 Add an overflow fixture beside the Phase 1 files. The
        header moves with its first detail row.
 - [ ] 21.3 Hand the amendment over. After apply, the overflow fixture
        matches.
@@ -325,7 +369,61 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**not started**
+**in progress** (2026-11-03). acuranzo_1450 drafted and the overflow
+fixture matches under the local Lua 5.5 harness; waiting on Andrew's
+apply and the fixture call (21.3).
+
+### Accomplished
+
+- acuranzo_1450 (does not edit 1449): `Reports.Render` compose splits
+  bands into pages. Content box = `page.height` less top and bottom
+  margins (lengths in in/mm/cm/pt/px). Each page opens with the page
+  headers (report header first on page 1) and reserves the page
+  footers. A band that does not fit breaks the page. Group headers
+  at a break need room for themselves plus the row's detail bands, or
+  all move together. Too big for an empty page: warn and place.
+  Group headers do not repeat. Report footer must fit on the last
+  page and still prints after the page footer, as before.
+- Fixture set `overflow.*` (3 in page): North header and three rows
+  plus footer fill page 1; the South header would fit alone but moves
+  to page 2 with its first row. All seven sets match.
+
+### Lessons learned
+
+- The definition already stores page height and margins (copied from
+  lookup 057 by the designer), so compose reads no lookup.
+
+### Handoff
+
+- Phase 23 adds page number/count on top of the `pages` list.
+- Next Acuranzo file **1451**; QueryRef 175 still unused.
+
+### Start here (fresh agent)
+
+- **Machine:** angrin. Repo `/mnt/extra/Projects/Philement`.
+- **Scope:** 21.1–21.3 only. Fixed-height paging in
+  `Reports.Render` `stage=compose`: break pages on stored band heights
+  against the page content box (page size lookup 057, margins); keep a
+  group header with its first detail row; warn and place anyway when
+  they do not fit an empty page; no repeated group headers. Page
+  number / page count is Phase 23, not here.
+- **Code:** `Reports.Render` lives in Acuranzo migrations
+  `elements/002-helium/acuranzo/migrations/` (seed 1444, amendments
+  1445 masks, 1449 Parameter item). Write a **new** amendment
+  **acuranzo_1450.lua**; do not edit applied files.
+- **Fixtures:** `elements/003-lithium/tests/fixtures/reporting/`
+  (`*.definition/sources/intermediate.json`). Add an `overflow.*` set;
+  all existing sets must still match. Check with a local Lua 5.5
+  harness before hand-over.
+- **Designer check:** Compose tab (`reports-compose.js`) on Reporting
+  Demo (QueryRef 174, `ROW_LIMIT` param) gives an easy many-row source.
+- **Datasources:** settled; read Phase 19b and Phase 28 (04-pdf.md)
+  Status/Handoff only if needed. Do not redesign.
+- **Constraints:** Andrew applies migrations (no SchemaTool apply by
+  the agent); no commit unless asked; do not reopen Phase 14/14b;
+  flatpickr stays parked on Phase 22; new palette items must be
+  canvas-draggable (rule from Phase 28).
+- **Next caller-facing QueryRef:** 175.
 
 ---
 
