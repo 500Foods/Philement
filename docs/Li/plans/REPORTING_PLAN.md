@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b packets are handed over (1451–1453 written, not applied). **Next: Andrew applies 1451–1453 and runs the fixture calls.** The next Acuranzo file is **1454**. The next caller-facing QueryRef is **175**. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. **Next: Phase 23 (Page number and page count)** in 03-preview.md. The next Acuranzo file is **1454**. The next caller-facing QueryRef is **175**. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -85,9 +85,9 @@ Andrew reports the apply.
 | 19b | Datasources editor and embedded JSON | Lithium UI + Helium lookup | Medium | Complete |
 | 20 | Value format | Helium amendment | Medium | Complete |
 | 21 | Paging | Helium amendment | Easy | Complete |
-| 22 | System datetime and system user (Timezone User/UTC/Explicit) | Lithium UI + Lua | Medium | Packet handed over |
-| 22a | Seed luatz (host tzdata) | Helium library pack | Easy | Packet handed over |
-| 22b | Luxon masks and format presets Lookup | Helium amendment + Lithium UI | Medium | Packet handed over |
+| 22 | System datetime and system user (Timezone User/UTC/Explicit) | Lithium UI + Lua | Medium | Complete |
+| 22a | Seed luatz (host tzdata) | Helium library pack | Easy | Complete |
+| 22b | Luxon masks and format presets Lookup | Helium amendment + Lithium UI | Medium | Complete |
 | 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
 | 24 | HTML emit | Helium amendment | Easy | Not started |
 | 25 | Preview | Lithium UI | Medium | Not started |
@@ -204,7 +204,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b packets are handed over (1451–1453 written, not applied). **Next: Andrew applies 1451–1453 and runs the fixture calls.** The next Acuranzo file is **1454**. The next caller-facing QueryRef is **175**. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. **Next: Phase 23 (Page number and page count)** in 03-preview.md. The next Acuranzo file is **1454**. The next caller-facing QueryRef is **175**. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -2024,7 +2024,8 @@ contributes no rows:
   by `params._hydrogen.tzoffset` minutes, then the item mask
   (Phase 22)
 - prints page number and page count as integers through the number
-  mask (Phase 23)
+  mask (Phase 23), and a Page label (053 key 64) from its
+  `template` with `{n}` and `{c}` (default `Page {n} of {c}`)
 - prints a parameter item from `params.parameters` or the definition
   default
 - breaks pages on fixed heights, keeping a group header with its
@@ -3615,5 +3616,25 @@ caller-facing QueryRef 175.
 - Lithium: System Date / System User palette buttons (click + drag),
   Timezone/Zone/Mask preset rows, report Default zone, lookup 077 load;
   `flatpickr` pinned to `npm:flatpickr-ce@4.9.0`.
-- Next: Andrew applies 1451–1453 and makes the fixture calls. Next
-  Acuranzo file **1454**; QueryRef **175** unused.
+- Applied 2026-11-03; see complete entry below.
+
+### 2026-11-03 — Phases 22, 22a, 22b complete
+
+- Andrew applied acuranzo_1451–1453 and confirmed in the designer: User
+  time, UTC time, mask presets (Lookup 077), and System User username.
+  "Seems to work well." "I think we can wrap up all of Phase 22."
+- Status Complete for 22, 22a, and 22b. Named IANA zones still need
+  Sandbox.AllowIo (or a read-only zoneinfo allow) for host tzdata;
+  User+JWT uses tzoffset as locked.
+- **Next:** Phase 23 (Page number and page count) in 03-preview.md.
+  Next Acuranzo file **1454**; QueryRef **175** unused.
+
+### 2026-11-03 — Phase 23 packet handed over
+
+- acuranzo_1454: lookup 053 key 64 Page label; Render fills 61 page
+  number, 62 page count (number mask) and 64 template `{n}`/`{c}` after
+  paging. Reverse restores 1453 Render and deletes key 64.
+- Andrew: Page label is one freeform Template string, no presets.
+- Lithium: Page Number / Page Count / Page Label palette buttons (click +
+  drag), Template row. Fixture `pagenum.*`.
+- Next Acuranzo file **1455**; QueryRef **175** unused.

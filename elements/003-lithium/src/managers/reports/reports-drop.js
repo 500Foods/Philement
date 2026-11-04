@@ -8,22 +8,26 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { addItem, moveItem } from './model/document.js';
 import { toCssPx } from './model/units.js';
 import { readViewScale } from './scale.js';
+import { PAGE_LABEL_DEFAULT, PAGE_LABEL_TYPE } from './reports-sample.js';
 
 export const TEXT_DROP_KIND = 'reports-text';
 
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
-const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 63]);
-const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 63: 'Parameter' };
+const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 61, 62, 63, 64]);
+const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 61: 'Page number', 62: 'Page count', 63: 'Parameter', 64: 'Page label' };
 /**
  * Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`.
  * System Date (5) and new datetime fields (24) start with timezone User and
- * no mask (the default applies); System User (6) takes no mask.
+ * no mask (the default applies); System User (6) takes no mask. Page Number
+ * (61) and Page Count (62) start with no mask (plain integer); Page Label (64)
+ * starts with template "Page {n} of {c}".
  */
 export const dropItem = (typeKey) => {
   if (typeKey === 63) return { typeKey, param: '' };
   if (typeKey === 5) return { typeKey, timezone: 'User' };
-  if (typeKey === 6) return { typeKey };
+  if (typeKey === 6 || typeKey === 61 || typeKey === 62) return { typeKey };
+  if (typeKey === PAGE_LABEL_TYPE) return { typeKey, template: PAGE_LABEL_DEFAULT };
   if (typeKey === 24) return { typeKey, field: '', timezone: 'User' };
   return { typeKey, field: '' };
 };

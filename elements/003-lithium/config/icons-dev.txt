@@ -78,6 +78,7 @@
 <fa fa-file-excel></fa>
 <fa fa-file-export></fa>
 <fa fa-file-import></fa>
+<fa fa-file-invoice></fa>
 <fa fa-file-lines></fa>
 <fa fa-file-pdf></fa>
 <fa fa-filter></fa>

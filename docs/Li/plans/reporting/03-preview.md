@@ -496,7 +496,7 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**packet handed over** (2026-11-03): Acuranzo 1451 (22), 1452 (22a), 1453 (22b) written, not applied. Waiting on Andrew's apply report and fixture calls.
+**Complete** (2026-11-03). Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User username in the designer. Phase 22 closed with 22a and 22b.
 
 ### Note (2026-11-03)
 
@@ -571,7 +571,7 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**packet handed over** (2026-11-03): Acuranzo 1451 (22), 1452 (22a), 1453 (22b) written, not applied. Waiting on Andrew's apply report and fixture calls.
+**Complete** (2026-11-03). Andrew applied acuranzo_1452 with 1451/1453; User and UTC confirmed in the designer. Named-zone luatz path still needs Sandbox.AllowIo (or a read-only zoneinfo allow) for Explicit/defaultZone against host tzdata.
 
 ---
 
@@ -622,7 +622,7 @@ Andrew's apply report and the fixture calls.
 
 ### Status
 
-**packet handed over** (2026-11-03): Acuranzo 1451 (22), 1452 (22a), 1453 (22b) written, not applied. Waiting on Andrew's apply report and fixture calls.
+**Complete** (2026-11-03). Andrew applied acuranzo_1453 and confirmed mask presets in the property panel. Luxon dialect and Lookup 077 are live.
 
 ---
 
@@ -630,7 +630,7 @@ Andrew's apply report and the fixture calls.
 
 ### Goal
 
-Page number and page count print on the page that owns them.
+Page number, page count and a Page label print on the page that owns them.
 
 ### Entry gate
 
@@ -638,13 +638,14 @@ Phase 22 Status complete.
 
 ### Work items
 
-- [ ] 23.1 The palette adds lookup 053 key 61 (Page number) and key 62 (Page count). Both use the number mask. An omitted mask prints a plain integer.
-- [ ] 23.2 Compose writes the page's number and the report's page count into those items after the page list exists.
-- [ ] 23.3 Fixture: a two-page report prints `1` and `2`, and page count `2` on both pages. Hand the amendment over.
+- [x] 23.1 The System palette adds lookup 053 key 61 (Page number) and key 62 (Page count), click + drag. Both use the number mask. An omitted mask prints a plain integer.
+- [x] 23.2 New lookup 053 key 64 (Page label, Number group, value_int 7) is one text item with a freeform `template` string: `{n}` = page number, `{c}` = page count. New items start with `Page {n} of {c}`; a missing or empty template prints that default. Other `{...}` text is left as-is; no brace escape in v1. One item keeps alignment right when n and c grow (static text plus separate numbers does not). No presets: the property panel has one Template text field (Andrew 2026-11-03).
+- [x] 23.3 Compose (acuranzo_1454) writes the page number, page count and label into 61/62/64 after the page list exists; every band on a page gets the same values.
+- [x] 23.4 Fixture `pagenum.*`: two pages print `1` and `2`, count `02` (mask `00`) on both, Page label `Page 1 of 2` / `Page 2 of 2` (right aligned) and `Pg 1/2` / `Pg 2/2`. Hand the amendment over.
 
 ### Done means
 
-The two-page fixture shows the page number and the page count.
+The two-page fixture shows the page number, the page count and the Page label.
 
 ### Exit gate
 
@@ -652,7 +653,7 @@ Andrew's apply report and the fixture call.
 
 ### Status
 
-**not started**
+**packet handed over** (acuranzo_1454, 2026-11-03; next file 1455)
 
 ---
 

@@ -44,7 +44,7 @@ export function saveCategory(name, settings) {
 
 export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'bands', 'system']);
 
-const TYPE_NAMES = Object.freeze({ 20: 'text field', 21: 'number field', 24: 'datetime field' });
+const TYPE_NAMES = Object.freeze({ 5: 'date', 6: 'user', 20: 'text field', 21: 'number field', 24: 'datetime field', 61: 'page number', 62: 'page count', 64: 'page label' });
 
 export const reportFieldMethods = {
   _fieldElements() {
@@ -61,7 +61,7 @@ export const reportFieldMethods = {
       refreshBtn: root.querySelector('#reports-query-refresh-btn'),
       systemBtn: root.querySelector('#reports-system-btn'),
       paramBtn: root.querySelector('#reports-param-btn'),
-      sysBtns: [...root.querySelectorAll('#reports-sysdate-btn, #reports-sysuser-btn')],
+      sysBtns: [...root.querySelectorAll('#reports-sysdate-btn, #reports-sysuser-btn, #reports-pagenum-btn, #reports-pagecount-btn, #reports-pagelabel-btn')],
     };
   },
 
@@ -172,7 +172,7 @@ export const reportFieldMethods = {
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Added parameter ${added ? added.id : ''} on ${this._selectedBandId}`);
   },
 
-  /** System palette: System Date (5) or System User (6), as a drop would create. */
+  /** System palette: System Date (5), System User (6), Page Number (61), Page Count (62) or Page Label (64), as a drop would create. */
   _addSystem(typeKey) {
     if (!SYSTEM_TYPES.includes(typeKey)) return;
     if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
@@ -187,7 +187,7 @@ export const reportFieldMethods = {
     const added = band && band.items[band.items.length - 1];
     if (added) this._selectedItemId = added.id;
     this._commitDocument(next);
-    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added system ${typeKey === 5 ? 'date' : 'user'} ${added ? added.id : ''} on ${this._selectedBandId}`);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added system ${TYPE_NAMES[typeKey] || typeKey} ${added ? added.id : ''} on ${this._selectedBandId}`);
   },
 
   /** Bands palette: add one band (14 adds a header and footer pair). */

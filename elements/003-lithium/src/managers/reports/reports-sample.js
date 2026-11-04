@@ -60,10 +60,17 @@ export function datasourceNames(doc) {
     .filter((name) => typeof name === 'string' && name !== '');
 }
 
-/** System Date (5) and System User (6), lookup 053 (Phase 22). */
-export const SYSTEM_TYPES = Object.freeze([5, 6]);
-const SYSTEM_LABELS = Object.freeze({ 5: '[System Date]', 6: '[System User]' });
+/** System Date (5), System User (6), lookup 053 (Phase 22); Page Number (61), Page Count (62), Page Label (64) (Phase 23). */
+export const SYSTEM_TYPES = Object.freeze([5, 6, 61, 62, 64]);
+/** Page Label (053 key 64): template with {n} page number and {c} page count. */
+export const PAGE_LABEL_TYPE = 64;
+export const PAGE_LABEL_DEFAULT = 'Page {n} of {c}';
+const SYSTEM_LABELS = Object.freeze({ 5: '[System Date]', 6: '[System User]', 61: '[Page #]', 62: '[Page Count]' });
 export function systemItemLabel(item) {
+  if (item && item.typeKey === PAGE_LABEL_TYPE) {
+    const t = typeof item.template === 'string' && item.template !== '' ? item.template : PAGE_LABEL_DEFAULT;
+    return `[${t}]`;
+  }
   return SYSTEM_LABELS[item && item.typeKey] || 'System';
 }
 

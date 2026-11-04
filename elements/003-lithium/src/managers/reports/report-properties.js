@@ -18,7 +18,7 @@ import { parseLength } from './model/units.js';
 import {
   addDatasource, datasourceColumns, datasourceKinds, datasourceList, datasourceNames,
   LIVE_DS_CODES, removeDatasource, renameDatasource, setDatasourceKind,
-  PARAM_TYPE, parameterNames,
+  PAGE_LABEL_DEFAULT, PAGE_LABEL_TYPE, PARAM_TYPE, parameterNames,
 } from './reports-sample.js';
 import {
   findReportingQuery, queryLabel, setDatasourceParam, setDatasourceParams, setDatasourceQuery,
@@ -417,6 +417,8 @@ function endRows() {
 /** Static text body. Not a 054 key; shown in the Object section. */
 const TEXT_ROW_ID = 'text';
 export const PARAM_ROW_ID = 'param';
+/** Page Label (64) template; {n} page number, {c} page count (Phase 23). */
+export const TEMPLATE_ROW_ID = 'template';
 
 /** Phase 22: datetime items (System Date 5, Field datetime 24) take a timezone. */
 const ZONE_ITEM_TYPES = new Set([5, 24]);
@@ -624,6 +626,15 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       section: 4, group: 'Object', readOnly: false,
     });
   }
+  if (isItem && Number(findSelected(doc, sel).item.typeKey) === PAGE_LABEL_TYPE) {
+    const { item } = findSelected(doc, sel);
+    const empty = !own(item, 'template') || item.template === '';
+    rows.push({
+      id: TEMPLATE_ROW_ID, key: null, label: 'Template', value: empty ? '' : item.template, omitted: empty,
+      note: `{n} prints the page number, {c} the page count. Blank uses "${PAGE_LABEL_DEFAULT}".`,
+      editor: 'Text', list: null, section: 4, group: 'Object', readOnly: false,
+    });
+  }
   for (const key of attributeKeys(doc, sel, lookups)) {
     const row = attrs.find((entry) => Number(entry.key_idx) === key) || { key_idx: key, value_txt: `Key ${key}` };
     const collection = parseCollection(row.collection);
@@ -691,6 +702,11 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
   if (rowId === PARAM_ROW_ID) {
     if (!isItem) throw new Error('Parameter needs a selected item.');
     return editItem(doc, sel, (item) => { item.param = String(value ?? '').trim(); });
+  }
+  if (rowId === TEMPLATE_ROW_ID) {
+    if (!isItem) throw new Error('Template needs a selected item.');
+    const text = String(value ?? '');
+    return editItem(doc, sel, (item) => { if (text.trim()) item.template = text; else delete item.template; });
   }
   if (rowId === MASK_ROW_ID) {
     if (!isItem) throw new Error('Mask needs a selected item.');
