@@ -146,9 +146,15 @@ editor keeps its own keystroke undo while that buffer is focused.
 
 `kind` `json` stores its array as `rows` on the datasource in the
 definition (Phase 19b). Compose passes it as `sources[name]`. `kind`
-`query` names a QueryRef and binds; `queryRef` and `params` are
-reserved until Phase 28. The kind is a lookup key: JSON, Query, CSV
-(CSV is not read yet).
+`query` (Phase 28) stores `queryRef`, `queryName`, `params` (name to
+value, defaults from the query), `fields` (metadata), and `rows`. A
+designer Run calls `authQuery` and replaces `rows`; Compose sends
+them as `sources[name]`. A query with no rows is left out until
+Phase 29. Reporting queries are lookup 028 key 3 and Active; their
+`collection.reporting` holds `fields` and `parameters` (`name`,
+`type`, `default`). QueryRef 173 lists them. The kind is a lookup key: JSON, Query, CSV
+(CSV is not read yet). The datasource keeps `kindKey` (lookup 076
+key) and `kind` (its code: `json`, `query`, `csv`).
 
 v1 `typeKey` allowlist:
 

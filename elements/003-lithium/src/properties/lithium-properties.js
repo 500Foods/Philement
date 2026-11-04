@@ -407,7 +407,7 @@ export class LithiumProperties {
           title: 'Value', field: 'value', width: 160, minWidth: VALUE_MIN_WIDTH, headerSort: false,
           editable: (cell) => !cell.getRow().getData().readOnly,
           editor: (cell, onRendered, success, cancel, params) => this._editor(cell, onRendered, success, cancel, params),
-          formatter: (cell) => this._format(cell),
+          formatter: (cell) => this._format(cell), variableHeight: true,
         },
       ],
     });
@@ -740,6 +740,12 @@ export class LithiumProperties {
     span.className = 'lithium-properties-name';
     span.textContent = cell.getValue() ?? '';
     span.title = `${cell.getValue() ?? ''} (${data.id}). Drag to reorder; right-click for Favourite or Hidden.`;
+    if (data.labelType) {
+      const type = document.createElement('span');
+      type.className = 'lithium-properties-type';
+      type.textContent = ` ${data.labelType}`;
+      span.append(type);
+    }
     wrap.append(span);
     // Right-justified marks, shown only while the matching bar button is
     // hovered (or, for Hidden, while its filter is on). See reports.css.
@@ -767,6 +773,10 @@ export class LithiumProperties {
     const span = document.createElement('span');
     span.textContent = text;
     if (data.omitted) span.className = 'lithium-properties-default';
+    if (data.multiline) {
+      wrap.classList.add('lithium-properties-multiline');
+      span.className = `${span.className} lithium-properties-memo`.trim();
+    }
     wrap.append(span);
     if (data.note) {
       wrap.title = data.note;

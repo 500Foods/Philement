@@ -82,8 +82,8 @@ Andrew reports the apply.
 | 17 | Save and load packet | Helium, human apply | Medium | Complete |
 | 18 | Revisions in the manager | Lithium UI | Medium | Complete |
 | 19 | Compose skeleton | Helium seed, human apply | Medium | Complete |
-| 19b | Datasources editor and embedded JSON | Lithium UI + Helium lookup | Medium | Not started |
-| 20 | Value format | Helium amendment | Medium | In progress |
+| 19b | Datasources editor and embedded JSON | Lithium UI + Helium lookup | Medium | Complete |
+| 20 | Value format | Helium amendment | Medium | Complete |
 | 21 | Paging | Helium amendment | Easy | Not started |
 | 22 | System datetime and system user | Lithium UI + Lua | Medium | Not started |
 | 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
@@ -91,7 +91,7 @@ Andrew reports the apply.
 | 25 | Preview | Lithium UI | Medium | Not started |
 | 26 | Generation log | Lithium UI | Medium | Not started |
 | 27 | Over-cap preview | Lithium UI | Easy | Not started |
-| 28 | Query designer | Lithium UI | Medium | Not started |
+| 28 | Query designer | Lithium UI | Medium | Complete |
 | 29 | Query execution | Helium amendment | Medium | Not started |
 | 30 | Seed lua-pdfkit | Helium library pack | Easy | Not started |
 | 31 | PDF text | Helium amendment | Medium | Not started |
@@ -3449,3 +3449,57 @@ A new kind lookup (JSON, Query, CSV) gets one Acuranzo file after
 1445. QueryRef picker, `Reporting` status, the demo query, and query
 field and param metadata stay in Phase 28. Phase 20 stays in
 progress. Next Acuranzo file 1446.
+
+**2026-11-03 — Phase 19b started.** Report panel gains a Datasources
+section (Count adds or trims; per-datasource Name and Kind; blank Name
+removes). Kind stores `kindKey` (lookup 076) plus `kind` code;
+Lithium falls back to JSON/Query/CSV until 076 loads. Only JSON is
+accepted. Load Sample now writes `rows` into the selected band's
+datasource (else the first json one; creates `data1` if none) and
+needs edit mode; the session-only `_sample` is gone. Field lists the
+band datasource's columns. `composeSources` sends each json
+datasource its own rows; Compose strips `rows` from the definition
+it sends and names the first datasource on iterating bands that have
+none. Wrote acuranzo_1446 (lookup 076 Report Datasource Kinds).
+Waiting on Andrew to apply 1446 and the designer check. Next
+Acuranzo file 1447.
+
+**2026-11-03 — Phases 19b and 20 complete.** Andrew ran Compose on an
+embedded `json` datasource: `1,250.50` / `89.99` / `4,300.00` with
+mask `#,##0.00` and `"log": []`. That closes the 19b Compose path and
+the Phase 20 mask check. Andrew accepted designer check; 1446 is
+applied. Datasources UI "will need work but ok for now" — polish,
+group-sort enforcement, and Lua filter/custom fields follow later.
+Next: Phase 21 (Paging), not started. Next Acuranzo file 1447.
+
+**2026-11-03 — Phase 28 started ahead of 21.** Andrew: "Lets do 28
+first. Need to have some data to play with before we can do much of
+anything else." He waived the Phase 27 entry gate. Built 28.1 and
+28.2: `kind` `query` is live, Run writes the rows into the
+datasource definition, and Reporting queries are lookup 028 key 3
+(already present). acuranzo_1447.lua adds QueryRef 173 (List
+Reporting Queries) and acuranzo_1448.lua adds QueryRef 174 (Reporting
+Demo, synthetic rows). Neither is applied yet. 28.3 (parameter item)
+and the 28.4 browser check are open. Next Acuranzo file 1449. Next
+caller-facing QueryRef 175.
+
+### 2026-11-03 — Phase 28 panel polish + 28.3 Parameter item
+
+- Query datasource: Params JSON box replaced by one row per parameter
+  (`ROW_LIMIT int`, `TITLE str`, type in a muted span); Rows renamed
+  Fields, a multiline `name  type` list. Name/Kind/Query unchanged.
+  Run and Compose auto-run unchanged.
+- 28.3 built (not parked): System palette category → Parameter item
+  (053 key 63, `param` + `mask`). Acuranzo **1449** adds it to
+  Reports.Render compose. Not applied. Next file **1450**.
+
+### 2026-11-03 — Phase 28 closed; palette drag rule
+
+- Andrew's browser check: panel polish (28.2b) and System → Parameter
+  (28.3) "all looks pretty good". Acuranzo **1449** accepted. Phase 28
+  complete. Next: Phase 29, Acuranzo file **1450** (not started).
+- Rule (Andrew): **all future report-editor palette items (e.g. System
+  → Parameter and anything similar) must support drag onto the canvas,
+  not click-only.** Parameter is click-only today; drag is a deferred
+  follow-up tracked under Phase 28 in reporting/04-pdf.md, not a
+  Phase 28 reopen.

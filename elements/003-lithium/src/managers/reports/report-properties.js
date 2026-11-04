@@ -14,7 +14,14 @@
 
 import { GROUP_HEADER_TYPE, bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
 import { parseLength } from './model/units.js';
-import { datasourceNames } from './reports-sample.js';
+import {
+  addDatasource, datasourceColumns, datasourceKinds, datasourceList, datasourceNames,
+  LIVE_DS_CODES, removeDatasource, renameDatasource, setDatasourceKind,
+  PARAM_TYPE, parameterNames,
+} from './reports-sample.js';
+import {
+  findReportingQuery, queryLabel, setDatasourceParam, setDatasourceParams, setDatasourceQuery,
+} from './reports-query.js';
 
 export const REPORT_TYPE_KEY = 9;
 const TEXT_KEYS = new Set([29]);
@@ -239,7 +246,18 @@ const ITEM_FIELDS = {
  */
 export const END_SECTION_ID = 9001;
 export const RULER_SECTION_ID = 9002;
+export const DATASOURCE_SECTION_ID = 9003;
+/** Most datasources a report may declare (Count editor bound). */
+export const DS_MAX = 20;
+/** Section id for "Datasource N" (0-based index); one section per datasource. */
+export const datasourceSectionId = (index) => 9100 + index;
+export const DATASOURCE_ITEM_SECTIONS = Array.from({ length: DS_MAX }, (_, index) => ({
+  id: datasourceSectionId(index), label: `Datasource ${index + 1}`,
+  sortSeq: 8999 + (index + 1) / 100, icon: '<fa fa-table></fa>',
+}));
 export const CLIENT_SECTIONS = [
+  { id: DATASOURCE_SECTION_ID, label: 'Datasources', sortSeq: 8999, icon: '<fa fa-database></fa>' },
+  ...DATASOURCE_ITEM_SECTIONS,
   { id: END_SECTION_ID, label: 'End of Report', sortSeq: 9001, icon: '<fa fa-flag-checkered></fa>' },
   { id: RULER_SECTION_ID, label: 'Ruler', sortSeq: 9002, icon: '<fa fa-ruler-combined></fa>' },
 ];
@@ -272,6 +290,120 @@ function rulerRows(doc) {
   }));
 }
 
+const DS_ROW_PREFIX = 'ds-';
+export const DS_COUNT_ROW_ID = 'ds-count';
+
+/**
+ * Report-scope Datasources rows (Phase 19b). Count adds or trims from
+ * the end; each datasource gets its own panel section "Datasource N"
+ * (ids 9100+) with Name, Kind, (Query + one row per parameter) and a
+ * multiline Fields list. A blank Name removes that datasource.
+ */
+function datasourceRows(doc, lookups) {
+  const kinds = datasourceKinds(lookups && lookups.dsKinds);
+  const list = datasourceList(doc);
+  const base = { omitted: false, note: '', list: null, section: DATASOURCE_SECTION_ID, readOnly: false };
+  const rows = [{
+    ...base, id: DS_COUNT_ROW_ID, key: null, label: 'Count', value: String(list.length), editor: 'Number',
+    group: 'Datasources', note: 'The first datasource drives iteration.',
+  }];
+  list.forEach((ds, index) => {
+    const group = `Datasource ${index + 1}`;
+    const section = datasourceSectionId(index);
+    const kind = kinds.find((k) => k.key === Number(ds.kindKey)) || kinds.find((k) => k.code === (ds.kind || 'json'));
+    const count = Array.isArray(ds.rows) ? ds.rows.length : 0;
+    const cols = datasourceColumns(doc, ds.name);
+    rows.push(
+      { ...base, id: `${DS_ROW_PREFIX}${index}-name`, section, key: null, label: 'Name', value: ds.name || '', editor: 'Text', group,
+        note: 'One word, unique. Blank removes this datasource.' },
+      { ...base, id: `${DS_ROW_PREFIX}${index}-kind`, section, key: null, label: 'Kind', value: kind ? kind.label : String(ds.kind || ''),
+        editor: 'List', group,
+        list: kinds.map((k) => k.label),
+        note: kinds.filter((k) => !LIVE_DS_CODES.includes(k.code)).map((k) => k.label).join(', ') + ' not available yet.' },
+      ...queryRows(ds, index, section, group, lookups, base),
+      { ...base, id: `${DS_ROW_PREFIX}${index}-fields`, section, key: null, label: 'Fields', editor: 'None', group, readOnly: true,
+        multiline: true, value: fieldLines(ds, cols),
+        note: ds.kind === 'query'
+          ? `${count} row${count === 1 ? '' : 's'} stored. Run (Field toolbar) or Compose fetches rows.`
+          : `${count} row${count === 1 ? '' : 's'} stored. Load Sample with this datasource's band selected (or none) stores rows here.` },
+    );
+  });
+  return rows;
+}
+
+/** Query and Params rows for a query datasource (Phase 28). */
+function queryRows(ds, index, section, group, lookups, base) {
+  if (ds.kind !== 'query') return [];
+  const queries = (lookups && lookups.reportingQueries) || [];
+  const current = ds.queryRef == null ? null : findReportingQuery(queries, ds.queryRef);
+  const value = current ? queryLabel(current) : (ds.queryRef == null ? '' : `#${ds.queryRef} ${ds.queryName || ''}`.trim());
+  const list = queries.map(queryLabel);
+  if (value && !list.includes(value)) list.unshift(value);
+  const params = ds.params || {};
+  const meta = current ? current.parameters.filter((p) => p.kind !== 'calculated') : [];
+  const names = [...meta.map((p) => p.name), ...Object.keys(params).filter((n) => !meta.some((p) => p.name === n))];
+  return [
+    { ...base, id: `${DS_ROW_PREFIX}${index}-query`, section, key: null, label: 'Query', value, group,
+      editor: list.length ? 'List' : 'Text', list: list.length ? list : null,
+      note: queries.length ? 'Reporting queries (lookup 028 SQL - Reporting). Picking one resets parameters to their defaults.'
+        : 'No Reporting queries loaded. Use Refresh Queries, or type a QueryRef number.' },
+    ...names.map((name) => {
+      const p = meta.find((m) => m.name === name);
+      const type = shortType(p ? p.type : 'string');
+      const editor = type === 'int' || type === 'float' ? 'Number' : type === 'bool' ? 'Boolean' : 'Text';
+      const raw = params[name];
+      return {
+        ...base, id: `${DS_ROW_PREFIX}${index}-param-${name}`, section, key: null, label: name, labelType: type, group, editor,
+        value: editor === 'Boolean' ? (raw === true || raw === 'true' || raw === 1 ? 'True' : 'False') : (raw == null ? '' : String(raw)),
+        note: `Query parameter ${name} (${p ? p.type : 'string'})${p && p.default !== undefined ? `, default ${p.default}` : ''}.`,
+      };
+    }),
+  ];
+}
+
+const SHORT_TYPES = Object.freeze({
+  integer: 'int', int: 'int', float: 'float', number: 'float', double: 'float', boolean: 'bool', bool: 'bool',
+  string: 'str', str: 'str', text: 'str', memo: 'memo', date: 'date', datetime: 'datetime', time: 'time',
+});
+
+/** Short datatype tag for panel labels (int, float, str, memo...). */
+export function shortType(type) {
+  const t = String(type || 'string').toLowerCase();
+  return SHORT_TYPES[t] || t;
+}
+
+/** Fields value: one "name type" per line from metadata, else columns. */
+function fieldLines(ds, cols) {
+  const meta = Array.isArray(ds.fields) ? ds.fields : [];
+  const types = new Map(meta.map((f) => [f.name, f.type]));
+  const names = cols.length ? cols : meta.map((f) => f.name);
+  return names.map((n) => (types.has(n) ? `${n}  ${shortType(types.get(n))}` : n)).join('\n');
+}
+
+function applyDatasource(doc, rowId, value, ctx) {
+  if (rowId === DS_COUNT_ROW_ID) {
+    const want = Number.parseInt(String(value).trim(), 10);
+    if (!Number.isInteger(want) || want < 0 || want > DS_MAX) throw new Error(`Datasource count must be 0 to ${DS_MAX}.`);
+    let next = doc;
+    while (datasourceList(next).length < want) next = addDatasource(next);
+    while (datasourceList(next).length > want) next = removeDatasource(next, datasourceList(next).length - 1);
+    return next;
+  }
+  const param = /^ds-(\d+)-param-(.+)$/.exec(rowId);
+  if (param) return setDatasourceParam(doc, Number(param[1]), param[2], value);
+  const match = /^ds-(\d+)-(name|kind|query|params)$/.exec(rowId);
+  if (!match) throw new Error(`Property ${rowId} is read only.`);
+  const index = Number(match[1]);
+  if (index >= datasourceList(doc).length) throw new Error(`Datasource ${index + 1} does not exist.`);
+  if (match[2] === 'name') {
+    if (String(value ?? '').trim() === '') return removeDatasource(doc, index);
+    return renameDatasource(doc, index, value);
+  }
+  if (match[2] === 'query') return setDatasourceQuery(doc, index, value, ctx && ctx.reportingQueries);
+  if (match[2] === 'params') return setDatasourceParams(doc, index, value);
+  return setDatasourceKind(doc, index, value, datasourceKinds(ctx && ctx.dsKinds));
+}
+
 /** The End of Report marker has no height and nothing to edit. */
 function endRows() {
   return [{
@@ -283,6 +415,7 @@ function endRows() {
 
 /** Static text body. Not a 054 key; shown in the Object section. */
 const TEXT_ROW_ID = 'text';
+export const PARAM_ROW_ID = 'param';
 
 /** Number with no unit gets the report unit. */
 export function withUnit(value, doc) {
@@ -384,8 +517,8 @@ export function attributeKeys(doc, sel, lookups) {
 }
 
 /**
- * Choices for a Field or Datasource row. Field lists the session
- * sample's columns; Datasource lists the definition's `datasources`.
+ * Choices for a Field or Datasource row. Field lists the band
+ * datasource's columns (the caller passes them as sampleColumns); Datasource lists the definition's `datasources`.
  * The current value stays listed. Null when the row is not a binding.
  */
 function bindingChoices(editor, doc, lookups, current) {
@@ -428,6 +561,18 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       editor: 'Text', list: null, section: 4, group: 'Object', readOnly: false,
     });
   }
+  if (isItem && Number(findSelected(doc, sel).item.typeKey) === PARAM_TYPE) {
+    const { item } = findSelected(doc, sel);
+    const names = parameterNames(doc);
+    const value = item.param ?? '';
+    rows.push({
+      id: PARAM_ROW_ID, key: null, label: 'Parameter', value, omitted: !own(item, 'param'),
+      note: names.length ? 'Datasource parameter to print (NAME, or ds.NAME when two datasources share it).'
+        : 'No datasource parameters yet. Pick a Query on the report, or type a name.',
+      editor: names.length ? 'List' : 'Text', list: names.length ? (names.includes(value) || !value ? names : [value, ...names]) : null,
+      section: 4, group: 'Object', readOnly: false,
+    });
+  }
   for (const key of attributeKeys(doc, sel, lookups)) {
     const row = attrs.find((entry) => Number(entry.key_idx) === key) || { key_idx: key, value_txt: `Key ${key}` };
     const collection = parseCollection(row.collection);
@@ -465,7 +610,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       });
     }
   }
-  if (scope === 'report') rows.push(...rulerRows(doc));
+  if (scope === 'report') rows.push(...datasourceRows(doc, lookups), ...rulerRows(doc));
   return rows;
 }
 
@@ -484,6 +629,10 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
     if (!isItem) throw new Error('Text needs a selected item.');
     return editItem(doc, sel, (item) => { item.text = String(value); });
   }
+  if (rowId === PARAM_ROW_ID) {
+    if (!isItem) throw new Error('Parameter needs a selected item.');
+    return editItem(doc, sel, (item) => { item.param = String(value ?? '').trim(); });
+  }
   if (rowId === MASK_ROW_ID) {
     if (!isItem) throw new Error('Mask needs a selected item.');
     return editItem(doc, sel, (item) => { item.mask = String(value ?? '').trim(); });
@@ -498,6 +647,10 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
     rulers[side] = value === true || value === 'True';
     next.rulers = rulers;
     return next;
+  }
+  if (typeof rowId === 'string' && rowId.startsWith(DS_ROW_PREFIX)) {
+    if (scope !== 'report') throw new Error('Datasources are set on the report.');
+    return applyDatasource(doc, rowId, value, ctx);
   }
   const fields = { item: ITEM_FIELDS, band: BAND_FIELDS, report: REPORT_FIELDS }[scope];
   const key = Number(rowId);

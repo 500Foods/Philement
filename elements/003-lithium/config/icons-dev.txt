@@ -89,6 +89,7 @@
 <fa fa-font-case></fa>
 <fa fa-font></fa>
 <fa fa-gear-complex></fa>
+<fa fa-gear></fa>
 <fa fa-gears></fa>
 <fa fa-globe></fa>
 <fa fa-graduation-cap fa-flip-horizontal></fa>
@@ -148,6 +149,7 @@
 <fa fa-sign-out-alt></fa>
 <fa fa-signs-post></fa>
 <fa fa-sitemap></fa>
+<fa fa-sliders></fa>
 <fa fa-square-full></fa>
 <fa fa-square-terminal></fa>
 <fa fa-square></fa>

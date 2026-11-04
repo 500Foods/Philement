@@ -13,8 +13,10 @@ export const TEXT_DROP_KIND = 'reports-text';
 
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
-const FIELD_DROP_TYPES = new Set([20, 21, 24]);
-const FIELD_GHOST = { 20: 'Text field', 21: 'Number field', 24: 'Datetime field' };
+const FIELD_DROP_TYPES = new Set([20, 21, 24, 63]);
+const FIELD_GHOST = { 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 63: 'Parameter' };
+/** Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`. */
+const dropItem = (typeKey) => (typeKey === 63 ? { typeKey, param: '' } : { typeKey, field: '' });
 
 /**
  * Top-left of a default text box centered on the pointer.
@@ -42,7 +44,7 @@ export const reportDropMethods = {
     this._onTextDragEnd = () => this._endTextDrag();
     this._onTextDragOver = (event) => this._overTextDrag(event);
     this._onTextDrop = (event) => this._dropTextDrag(event);
-    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key]')];
+    this._fieldDragBtns = [...this.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key], #reports-param-btn')];
     this._fieldDragBtns.forEach((btn) => {
       btn.addEventListener('dragstart', this._onTextDragStart);
       btn.addEventListener('dragend', this._onTextDragEnd);
@@ -127,7 +129,7 @@ export const reportDropMethods = {
     let next;
     let addedId;
     try {
-      next = addItem(this.doc, bandId, isField ? { typeKey: fieldType, field: '' } : { typeKey: 0 });
+      next = addItem(this.doc, bandId, isField ? dropItem(fieldType) : { typeKey: 0 });
       const band = next.bands.find((entry) => entry.id === bandId);
       const added = band && band.items[band.items.length - 1];
       if (!added) return;

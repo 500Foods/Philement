@@ -1028,3 +1028,20 @@
 #reports-categories .reports-category-btn[aria-pressed='true'] svg {
   color: #1a1a1a;
 }
+
+/* Query parameter datatype tag and multiline Fields (Phase 28 polish). */
+.lithium-properties-type {
+  color: var(--accent-secondary, var(--text-secondary));
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
+.lithium-properties-multiline {
+  align-items: flex-start;
+}
+
+.lithium-properties-memo {
+  white-space: pre-line;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+}

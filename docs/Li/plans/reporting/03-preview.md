@@ -159,35 +159,39 @@ Phase 19 Status complete. Runs beside Phase 20; it does not wait for
 
 ### Work items
 
-- [ ] 19b.1 Report property panel: a Datasources section. Add and
+- [x] 19b.1 Report property panel: a Datasources section. Add and
        remove. Each entry is its own group (Datasource 1,
        Datasource 2, ...) with Name and Kind.
-- [ ] 19b.2 Kind comes from a new datasource-kind lookup: JSON,
+- [x] 19b.2 Kind comes from a new datasource-kind lookup: JSON,
        Query, CSV. JSON is live. Query is listed and disabled until
        Phase 28. CSV is listed and ignored; a later importer turns a
        CSV (then XLS, XML, YAML) into JSON rows.
-- [ ] 19b.3 Helium packet: one Acuranzo file for the kind lookup
+- [x] 19b.3 Helium packet: one Acuranzo file for the kind lookup
        (next file after 1445). The definition stores the lookup key,
        matching the other report lookups. Query status `Reporting`
        stays in Phase 28.
-- [ ] 19b.4 A `kind` `json` datasource stores `rows` in the
+- [x] 19b.4 A `kind` `json` datasource stores `rows` in the
        definition, permanently: saved, revisioned, exported. Load
        Sample writes into the chosen datasource's `rows`. Fixed JSON
        and lookup tables are first-class.
-- [ ] 19b.5 The first datasource drives iteration. Detail and group
+- [x] 19b.5 The first datasource drives iteration. Detail and group
        bands default to it. Grouping assumes, or enforces, a sort on
-       the group key.
-- [ ] 19b.6 The Field dropdown lists the columns of the band's
+       the group key. (Default to first DS done; grouping assumes the
+       sort — enforcing it is deferred.)
+- [x] 19b.6 The Field dropdown lists the columns of the band's
        datasource (the first one by default), not one global sample.
-- [ ] 19b.7 Field items pick Field only. Item Datasource stays
+- [x] 19b.7 Field items pick Field only. Item Datasource stays
        reserved for joins and lookups; not required here.
-- [ ] 19b.8 `composeSources` builds `sources[name]` from each `json`
+- [x] 19b.8 `composeSources` builds `sources[name]` from each `json`
        datasource's `rows`. No copying one array under every name.
-- [ ] 19b.9 `queryRef` and `params` are reserved keys on a `query`
+- [x] 19b.9 `queryRef` and `params` are reserved keys on a `query`
        datasource. Documented only; Phase 28 fills them.
-- [ ] 19b.10 Amend [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md):
+- [x] 19b.10 Amend [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md):
        `json` rows live in the definition. Drops the Phase 15.1
        session-only rule for this path.
+- [x] 19b.11 Each datasource gets its own panel section
+       "Datasource N" (client section ids 9100+, max 20) with Name,
+       Kind and Rows; the "Datasources" section keeps only Count.
 
 ### Done means
 
@@ -213,7 +217,19 @@ Andrew's check in the designer, plus the kind lookup apply report.
 
 ### Status
 
-**Not started** — decisions locked by Andrew 2026-11-03.
+**Complete** (2026-11-03). Andrew accepted the designer check:
+Compose printed `1,250.50` / `89.99` / `4,300.00` from an embedded
+`json` datasource with `"log": []`. Andrew accepted designer check;
+confirm 1446 applied. He noted the Datasources UI "will need work but
+ok for now" — polish follows later.
+
+### Handoff
+
+- Datasources panel needs UI work later (band DS picker, layout).
+- Grouping assumes a sort on the group key; enforcing it is deferred.
+- Query and CSV kinds wait on Phase 28 and a later importer.
+- Lua load, filter, and custom fields are not yet designed.
+- Next Acuranzo file 1447.
 
 ---
 
@@ -242,7 +258,7 @@ Phase 19 Status complete.
        [`masks.definition.json`](/elements/003-lithium/tests/fixtures/reporting/masks.definition.json),
        [`masks.sources.json`](/elements/003-lithium/tests/fixtures/reporting/masks.sources.json),
        [`masks.intermediate.json`](/elements/003-lithium/tests/fixtures/reporting/masks.intermediate.json).
-- [ ] 20.3 Hand the amendment over. Do not edit the applied Phase 19
+- [x] 20.3 Hand the amendment over. Do not edit the applied Phase 19
        file. After apply, both fixture calls match.
 
 ### Done means
@@ -268,8 +284,10 @@ Andrew's apply report and the two fixture calls.
 
 ### Status
 
-**In progress** — acuranzo_1445 written; all six fixtures match the
-local Lua 5.5 harness. Waiting on Andrew to apply 1445.
+**Complete** (2026-11-03). acuranzo_1445 handed over; all six
+fixtures match the local Lua 5.5 harness. Andrew's Compose run
+2026-11-03 showed masked totals `1,250.50` / `89.99` / `4,300.00`
+under `#,##0.00` and `"log": []`. Next Acuranzo file 1447.
 
 ---
 

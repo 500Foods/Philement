@@ -286,6 +286,8 @@ export const reportPanelMethods = {
     try {
       const next = applyProperty(this.doc, this._panelSelection(), id, value, {
         pageSizes: (this._lookups && this._lookups.pageSizes) || [],
+        dsKinds: (this._lookups && this._lookups.dsKinds) || [],
+        reportingQueries: (this._lookups && this._lookups.reportingQueries) || [],
       });
       this._commitDocument(next);
     } catch (error) {

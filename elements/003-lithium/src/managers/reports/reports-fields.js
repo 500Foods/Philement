@@ -1,13 +1,17 @@
 /**
- * Phase 15 manager methods: the Field category, field items, and the
- * session-only sample datasource. The sample sits on the manager as
- * `_sample` and never enters the definition, so export cannot carry it.
+ * Phase 15 manager methods: the Field category, field items, and sample
+ * data. Phase 19b: Load Sample writes the rows into a json datasource
+ * in the definition (the selected band's, else the first json one),
+ * so they save, revision, and export.
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import { toast } from '../../shared/toast.js';
 import { addBandInOrder, addItem, removeBand } from './model/document.js';
-import { FIELD_TYPES, parseSample, unboundFields } from './reports-sample.js';
+import {
+  FIELD_TYPES, PARAM_TYPE, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
+} from './reports-sample.js';
+import { loadReportingQueries, runQueryDatasources } from './reports-query.js';
 
 /** Profile path for the selected element group. */
 export const CATEGORY_PROFILE_PATH = 'reports.category';
@@ -37,7 +41,7 @@ export function saveCategory(name, settings) {
   if (service && REPORT_CATEGORIES.includes(name)) service.set(CATEGORY_PROFILE_PATH, name);
 }
 
-export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'bands']);
+export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'bands', 'system']);
 
 const TYPE_NAMES = Object.freeze({ 20: 'text field', 21: 'number field', 24: 'datetime field' });
 
@@ -52,6 +56,10 @@ export const reportFieldMethods = {
       sampleBtn: root.querySelector('#reports-sample-btn'),
       pasteBtn: root.querySelector('#reports-sample-paste-btn'),
       sampleInput: root.querySelector('#reports-sample-input'),
+      runBtn: root.querySelector('#reports-query-run-btn'),
+      refreshBtn: root.querySelector('#reports-query-refresh-btn'),
+      systemBtn: root.querySelector('#reports-system-btn'),
+      paramBtn: root.querySelector('#reports-param-btn'),
     };
   },
 
@@ -72,6 +80,14 @@ export const reportFieldMethods = {
     els.sampleBtn?.addEventListener('click', this._onSampleClick);
     els.sampleInput?.addEventListener('change', this._onSampleFile);
     els.pasteBtn?.addEventListener('click', this._onSamplePaste);
+    this._onQueryRun = () => this.runQueries();
+    this._onQueryRefresh = () => this.refreshReportingQueries();
+    els.runBtn?.addEventListener('click', this._onQueryRun);
+    els.refreshBtn?.addEventListener('click', this._onQueryRefresh);
+    this._onSystemCategory = () => this.selectCategory('system');
+    this._onParamAdd = () => this._addParameter();
+    els.systemBtn?.addEventListener('click', this._onSystemCategory);
+    els.paramBtn?.addEventListener('click', this._onParamAdd);
   },
 
   _unbindFields() {
@@ -84,6 +100,10 @@ export const reportFieldMethods = {
     els.sampleBtn?.removeEventListener('click', this._onSampleClick);
     els.sampleInput?.removeEventListener('change', this._onSampleFile);
     els.pasteBtn?.removeEventListener('click', this._onSamplePaste);
+    els.runBtn?.removeEventListener('click', this._onQueryRun);
+    els.refreshBtn?.removeEventListener('click', this._onQueryRefresh);
+    els.systemBtn?.removeEventListener('click', this._onSystemCategory);
+    els.paramBtn?.removeEventListener('click', this._onParamAdd);
     this._fieldEls = null;
   },
 
@@ -109,6 +129,7 @@ export const reportFieldMethods = {
     if (!els) return;
     els.itemBtns.forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
     els.bandBtns.forEach((btn) => { btn.disabled = !editing || !this.doc; });
+    if (els.paramBtn) els.paramBtn.disabled = !editing || !this._selectedBandId;
   },
 
   _addField(typeKey) {
@@ -126,6 +147,23 @@ export const reportFieldMethods = {
     if (added) this._selectedItemId = added.id;
     this._commitDocument(next);
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Added ${TYPE_NAMES[typeKey]} ${added ? added.id : ''} on ${this._selectedBandId}`);
+  },
+
+  /** System palette: add a Parameter item (053 key 63) to the selected band. */
+  _addParameter() {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
+    let next;
+    try {
+      next = addItem(this.doc, this._selectedBandId, { typeKey: PARAM_TYPE, param: '' });
+    } catch (error) {
+      this._failEdit(error, 'Parameter could not be added.');
+      return;
+    }
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added parameter ${added ? added.id : ''} on ${this._selectedBandId}`);
   },
 
   /** Bands palette: add one band (14 adds a header and footer pair). */
@@ -166,33 +204,102 @@ export const reportFieldMethods = {
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Deleted band ${id}`);
   },
 
+  /** Datasource the sample targets: the selected band's, else ''. */
+  _sampleTarget() {
+    if (!this.doc || !this._selectedBandId) return '';
+    const band = (this.doc.bands || []).find((entry) => entry.id === this._selectedBandId);
+    if (!band || ![14, 15, 16].includes(band.typeKey)) return '';
+    return band.datasource || '';
+  },
+
   /**
-   * Keep a parsed sample for this session. Never written to the definition.
+   * Store parsed rows on a json datasource in the definition.
    * @param {string} text
    * @returns {boolean}
    */
   loadSample(text) {
+    if (!this.doc) return false;
+    if (!this._recordEditing) {
+      toast.error('Sample data is stored in the report. Start editing first.', { subsystem: 'Manager' });
+      return false;
+    }
     let sample;
+    let result;
     try {
       sample = parseSample(text);
+      result = setDatasourceRows(this.doc, this._sampleTarget(), sample.rows);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sample data could not be read.';
       toast.error(message, { subsystem: 'Manager' });
       return false;
     }
-    this._sample = sample;
+    this._commitDocument(result.doc);
     toast.success('Sample data loaded', {
-      description: `${sample.rows.length} rows, ${sample.columns.length} columns. Session only; not exported.`,
+      description: `${sample.rows.length} rows, ${sample.columns.length} columns into datasource ${result.name}.`,
       duration: 3000,
     });
-    log(Subsystems.MANAGER, Status.INFO, `[Reports] Sample data: ${sample.rows.length} rows, columns ${sample.columns.join(', ')}`);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Sample data into ${result.name}: ${sample.rows.length} rows, columns ${sample.columns.join(', ')}`);
     this._paintPanel?.();
     return true;
   },
 
-  /** @returns {string[]} */
+  /**
+   * Columns of the selected band's datasource (the first one by default).
+   * @returns {string[]}
+   */
   sampleColumns() {
-    return this._sample ? this._sample.columns.slice() : [];
+    if (!this.doc) return [];
+    const band = (this.doc.bands || []).find((entry) => entry.id === this._selectedBandId);
+    return datasourceColumns(this.doc, bandDatasource(this.doc, band));
+  },
+
+  /**
+   * Phase 28: reload the Reporting query list (QueryRef 173).
+   * @param {{ quiet?: boolean }} [opts]
+   */
+  async refreshReportingQueries(opts = {}) {
+    if (!this.app || !this.app.api) return [];
+    try {
+      const list = await loadReportingQueries(this.app.api);
+      if (this._closed) return list;
+      this._lookups = { ...(this._lookups || {}), reportingQueries: list };
+      if (!opts.quiet) toast.success('Reporting queries refreshed', { description: `${list.length} found.`, duration: 2500 });
+      log(Subsystems.MANAGER, Status.INFO, `[Reports] Reporting queries: ${list.length}`);
+      this._paintPanel?.();
+      return list;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Reporting queries could not be loaded.';
+      log(Subsystems.MANAGER, Status.WARN, `[Reports] Reporting query list failed: ${message}`);
+      if (!opts.quiet) toast.error('Reporting queries could not be loaded', { description: message, subsystem: 'Manager' });
+      return [];
+    }
+  },
+
+  /** Phase 28: run every Query datasource and store its rows in the definition. */
+  async runQueries() {
+    if (!this.doc || !this.app || !this.app.api) return false;
+    if (!this._recordEditing) {
+      toast.error('Query rows are stored in the report. Start editing first.', { subsystem: 'Manager' });
+      return false;
+    }
+    const queries = (this._lookups && this._lookups.reportingQueries) || [];
+    const result = await runQueryDatasources(this.app.api, this.doc, queries);
+    if (this._closed) return false;
+    for (const err of result.errors) {
+      toast.error(`Query datasource ${err.name} failed`, { description: err.message, subsystem: 'Manager' });
+      log(Subsystems.MANAGER, Status.ERROR, `[Reports] Query ${err.name}: ${err.message}`);
+    }
+    if (!result.ran.length) {
+      if (!result.errors.length) toast.error('No Query datasource names a QueryRef.', { subsystem: 'Manager' });
+      return false;
+    }
+    this._commitDocument(result.doc);
+    toast.success('Query rows loaded', {
+      description: result.ran.map((r) => `${r.name}: ${r.rows}`).join(', '), duration: 3000,
+    });
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Ran queries ${result.ran.map((r) => `${r.name}=${r.rows}`).join(', ')}`);
+    this._paintPanel?.();
+    return true;
   },
 
   async _importSampleFile() {

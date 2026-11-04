@@ -403,4 +403,8 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1443](/elements/002-helium/acuranzo/migrations/acuranzo_1443.lua) | queries | 1.0.0 | 2026-11-03 | 4 | ✗ | QueryRef #165 include the audit columns |
 | [1444](/elements/002-helium/acuranzo/migrations/acuranzo_1444.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reporting Phase 19: seed Reports.Render (compose skeleton) |
 | [1445](/elements/002-helium/acuranzo/migrations/acuranzo_1445.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reports.Render compose applies value format masks (Reporting Phase 20) |
-| **370** | | | | **2125** | **370** | |
+| [1446](/elements/002-helium/acuranzo/migrations/acuranzo_1446.lua) | lookups | 1.0.0 | 2026-11-03 | 8 | ✗ | Lookup 076 (Report Datasource Kinds) for Reporting Phase 19b |
+| [1447](/elements/002-helium/acuranzo/migrations/acuranzo_1447.lua) | queries | 1.0.0 | 2026-11-03 | 4 | ✗ | QueryRef #173 - List Reporting Queries (Reporting Phase 28) |
+| [1448](/elements/002-helium/acuranzo/migrations/acuranzo_1448.lua) | queries | 1.0.1 | 2026-11-03 | 4 | ✗ | QueryRef #174 - Reporting Demo (Reporting Phase 28) |
+| [1449](/elements/002-helium/acuranzo/migrations/acuranzo_1449.lua) | scripts | 1.0.0 | 2026-11-03 | 4 | ✗ | Reports.Render compose prints Parameter items (Reporting Phase 28.3) |
+| **374** | | | | **2145** | **374** | |

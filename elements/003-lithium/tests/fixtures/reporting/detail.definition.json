@@ -25,7 +25,15 @@
   },
   "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
   "datasources": [
-    { "name": "orders", "kind": "json", "shape": "list" }
+    {
+      "name": "orders",
+      "kind": "json",
+      "kindKey": 1,
+      "shape": "list",
+      "rows": [
+        { "customer": "North", "amount": 1234.5, "note": null }
+      ]
+    }
   ],
   "bands": [
     {

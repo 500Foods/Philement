@@ -101,7 +101,7 @@ describe('Report Manager field items', () => {
     expect(q('#reports-sample-btn').hidden).toBe(true);
   });
 
-  it('adds an unbound field, refuses export, then exports once bound without the sample', async () => {
+  it('adds an unbound field, refuses export, then exports once bound with rows on the datasource', async () => {
     const saved = await open();
     q('#reports-field-btn').click();
     q('#reports-field-datetime-btn').click();
@@ -123,7 +123,7 @@ describe('Report Manager field items', () => {
     expect(q('.reports-item-field').textContent).toBe('when');
     manager.elements.exportBtn.click();
     expect(saved).toHaveLength(1);
-    expect(saved[0].json).not.toContain('2026-11-03');
+    expect(JSON.parse(saved[0].json).datasources[0]).toMatchObject({ name: 'data1', kind: 'json', kindKey: 1, rows: [{ customer: 'A', when: '2026-11-03' }] });
     expect(JSON.parse(saved[0].json).bands.find((b) => b.id === 'd1').items[0]).toMatchObject({ typeKey: 24, field: 'when' });
   });
 });

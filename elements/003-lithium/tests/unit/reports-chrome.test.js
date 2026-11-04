@@ -99,15 +99,27 @@ describe('report list columns', () => {
 });
 
 describe('compose helpers', () => {
-  it('sends the sample under each datasource, or empty sources when static', () => {
+  it('sends each json datasource its own rows, or empty sources when static', () => {
     const blank = createBlank();
-    expect(composeParams(blank, { rows: [{ a: 1 }] }).sources).toEqual({});
-    const doc = { ...blank, datasources: [{ name: 'main', kind: 'json' }] };
-    const params = composeParams(doc, { rows: [{ a: 1 }] });
+    expect(composeParams(blank).sources).toEqual({});
+    const doc = {
+      ...blank,
+      datasources: [
+        { name: 'main', kind: 'json', rows: [{ a: 1 }] },
+        { name: 'map', kind: 'json', rows: [{ k: 0, v: 'false' }] },
+        { name: 'none', kind: 'json' },
+        { name: 'later', kind: 'query', queryRef: 9 },
+      ],
+      bands: [{ id: 'd', typeKey: 15, items: [] }, { id: 'p', typeKey: 13, items: [] }],
+    };
+    const params = composeParams(doc);
     expect(params.stage).toBe('compose');
-    expect(params.sources).toEqual({ main: [{ a: 1 }] });
+    expect(params.sources).toEqual({ main: [{ a: 1 }], map: [{ k: 0, v: 'false' }], none: [] });
     expect(params.definition.history).toBeUndefined();
-    expect(composeParams(doc, null).sources).toEqual({});
+    expect(params.definition.datasources[0].rows).toBeUndefined();
+    expect(params.definition.bands[0].datasource).toBe('main');
+    expect(params.definition.bands[1].datasource).toBeUndefined();
+    expect(doc.datasources[0].rows).toEqual([{ a: 1 }]);
   });
 
   it('turns empty objects into lists for log, pages, bands and items', () => {
@@ -220,7 +232,7 @@ describe('Report Manager chrome', () => {
     expect(container.querySelector('#reports-new-btn')).toBeNull();
     expect(container.querySelector('#reports-page-size')).toBeNull();
     expect(container.querySelector('.reports-properties')).toBeNull();
-    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(3);
+    expect(categories.querySelectorAll('.reports-category-btn')).toHaveLength(4);
     expect(container.querySelector('#reports-text-btn')).not.toBeNull();
 
     manager.elements.jsonTab.click();

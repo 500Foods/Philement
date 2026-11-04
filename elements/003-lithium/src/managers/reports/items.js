@@ -10,7 +10,7 @@
 
 import { bandHeight } from './model/document.js';
 import { contentBox, toCssPx } from './model/units.js';
-import { fieldItemLabel, isFieldType } from './reports-sample.js';
+import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel } from './reports-sample.js';
 
 /** Smallest resize, in CSS pixels. */
 export const ITEM_MIN_PX = 1;
@@ -193,7 +193,7 @@ function itemNote(text) {
 export function paintBandItems(body, band, doc) {
   const items = Array.isArray(band && band.items) ? band.items : [];
   for (const item of items) {
-    if (!item || typeof item !== 'object' || (item.typeKey !== 0 && !isFieldType(item.typeKey))) continue;
+    if (!item || typeof item !== 'object' || (item.typeKey !== 0 && item.typeKey !== PARAM_TYPE && !isFieldType(item.typeKey))) continue;
     if (typeof item.id !== 'string' || item.id === '') {
       body.append(itemNote('Item needs an id.'));
       continue;
@@ -202,9 +202,14 @@ export function paintBandItems(body, band, doc) {
     el.className = 'reports-item';
     el.dataset.itemId = item.id;
     const field = isFieldType(item.typeKey);
+    const param = item.typeKey === PARAM_TYPE;
     if (field) {
       el.classList.add('reports-item-field');
       el.dataset.unbound = String(!(typeof item.field === 'string' && item.field.trim() !== ''));
+    }
+    if (param) {
+      el.classList.add('reports-item-field', 'reports-item-param');
+      el.dataset.unbound = String(!(typeof item.param === 'string' && item.param.trim() !== ''));
     }
     const align = item.align === 'Center' || item.align === 'Right' ? item.align : 'Left';
     el.dataset.align = align;
@@ -227,7 +232,7 @@ export function paintBandItems(body, band, doc) {
     }
     const label = document.createElement('span');
     label.className = 'reports-item-text';
-    label.textContent = field ? fieldItemLabel(item) : staticItemText(item);
+    label.textContent = param ? paramItemLabel(item) : field ? fieldItemLabel(item) : staticItemText(item);
     const corner = document.createElement('div');
     corner.className = 'reports-item-corner';
     corner.title = 'Resize item';

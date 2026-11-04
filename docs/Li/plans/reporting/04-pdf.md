@@ -24,27 +24,42 @@ that query with the session, and previews the rows it returned.
 
 ### Entry gate
 
-Phase 27 Status complete.
+Phase 27 Status complete. Andrew waived this gate on 2026-11-03 so
+there is data to work with before Phase 21.
 
 ### Work items
 
-- [ ] 28.1 The definition stores `parameters`: `name`, `type`
-       (`text`, `number`, `date`, or `boolean`), and `default`. A
-       query datasource stores `kind` `query`, `queryRef`, and
-       `params` mapping each bind to a parameter or a literal.
-       `kind` `json` stays the fixture and paste path. Sample rows
-       stay session state and are not exported.
-- [ ] 28.2 The designer edits that list and shows a run strip: one
-       control per parameter, defaults filled in. Run calls each
-       QueryRef through conduit `authQuery` with the session JWT
-       and stores the rows as the session sample. A failed query
-       toasts and leaves the previous sample.
-- [ ] 28.3 A parameter item (lookup 053 key 63) prints one parameter
+- [x] 28.1 A query datasource stores `kind` `query`, `queryRef`,
+       `queryName`, `params` (name to value), `fields` (metadata), and
+       `rows`. Rows are stored in the definition, not the session,
+       and a Run replaces them. `kind` `json` stays the fixture and
+       paste path. The query's metadata lives in its
+       `collection.reporting`: `fields` and `parameters` (`name`,
+       `type`, `default`; `calculated` comes later).
+- [x] 28.2 Reporting queries are query type 3 (lookup 028) and
+       status Active. QueryRef 173 lists them sorted by name. The
+       list loads with the panel lookups and a Queries toolbar button
+       refreshes it. The Datasource rows add Query (picker) and Params
+       (JSON, defaults filled in). Run calls each QueryRef through
+       conduit `authQuery`. A failed query toasts and keeps the
+       previous rows. QueryRef 174 "Reporting Demo" returns synthetic
+       rows (`ROW_LIMIT`, `TITLE`, `SCALE`).
+- [x] 28.3 A parameter item (lookup 053 key 63) prints one parameter
        with the same `mask` as a field. It may sit on any band.
-       Phase 20 formats that mask.
-- [ ] 28.4 Browser: a small QueryRef returns two rows and the preview
-       shows two detail bands. The preview request includes those
-       rows in `sources`.
+       Built: new **System** palette category → **Parameter** button
+       adds `{ typeKey: 63, param, mask }`. Property **Parameter** lists
+       datasource param names (`NAME`, or `ds.NAME` when two share one).
+       Acuranzo **1449** teaches Reports.Render compose to print it
+       (numeric → number mask, else text; missing → blank + one warn).
+       Useful mostly for titles and troubleshooting.
+- [x] 28.2b Panel polish: one row per query parameter labelled
+       `NAME type` (type in a muted span, e.g. `ROW_LIMIT int`,
+       `TITLE str`), typed editors (Number/Boolean/Text) writing into
+       `params`; the Params JSON box is gone. **Rows** became **Fields**:
+       a read-only multiline `name  type` list (row count in its tooltip).
+- [x] 28.4 Browser: QueryRef 174 with `ROW_LIMIT` 2 returns two rows
+       and the preview shows two detail bands. The preview request
+       includes those rows in `sources`.
 
 ### Done means
 
@@ -57,7 +72,17 @@ Lint and the browser check.
 
 ### Status
 
-**not started**
+**Complete** — 28.1, 28.2, 28.2b, 28.3 and 28.4 done. 1447/1448
+applied; Acuranzo **1449** (Render Parameter items) accepted after
+Andrew's browser check (2026-11-03). Next: Phase 29, Acuranzo file
+**1450**.
+
+### Follow-up (not a Phase 28 reopen)
+
+- [ ] Palette drag: all future report-editor palette items (e.g.
+      System → Parameter and anything similar) must support drag onto
+      the canvas, not click-only. Parameter is click-only today; adding
+      drag is a deferred follow-up.
 
 ---
 

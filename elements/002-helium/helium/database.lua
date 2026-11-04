@@ -243,6 +243,7 @@ local database = {
         -- Lookup #28
         cfg.TYPE_INTERNAL_SQL = self.query_types.internal_sql
         cfg.TYPE_SQL = self.query_types.system_sql
+        cfg.TYPE_REPORTING_SQL = self.query_types.reporting_sql
         cfg.TYPE_PUBLIC = self.query_types.public
         cfg.TYPE_PROTECTED = self.query_types.protected
         cfg.TYPE_FORWARD_MIGRATION = self.query_types.forward_migration

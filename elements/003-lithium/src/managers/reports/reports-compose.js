@@ -1,37 +1,72 @@
 /**
  * Compose page (Phase 19). Runs Reports.Render with stage=compose on
  * the open definition and shows the intermediate as read-only JSON.
- * Sources: the session sample under every declared datasource name.
- * A static report (no datasources or no sample) sends empty sources.
+ * Sources (Phase 19b): each json datasource sends its own stored
+ * `rows` as sources[name] ([] when it has none). A query datasource
+ * (Phase 28) sends its rows once a designer Run stored them; with no
+ * rows it is left out for Render to fetch (Phase 29). Detail and group bands with no datasource
+ * are sent naming the first one, which drives iteration.
  */
 
 import { invokeScript } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { reportBody } from './model/history.js';
-import { datasourceNames } from './reports-sample.js';
+import { bandDatasource, datasourceList } from './reports-sample.js';
 import { ReportJsonPage } from './reports-json.js';
+import { pendingQueryDatasources, runQueryDatasources } from './reports-query.js';
 
 export const RENDER_SCRIPT = 'Reports.Render';
 
 /**
  * @param {object} doc
- * @param {{ rows: object[] }|null|undefined} sample
  * @returns {object}
  */
-export function composeSources(doc, sample) {
+export function composeSources(doc) {
   const sources = {};
-  if (!sample || !Array.isArray(sample.rows)) return sources;
-  for (const name of datasourceNames(doc)) sources[name] = sample.rows;
+  for (const ds of datasourceList(doc)) {
+    if (typeof ds.name !== 'string' || ds.name === '') continue;
+    const kind = ds.kind || 'json';
+    if (kind === 'json') sources[ds.name] = Array.isArray(ds.rows) ? ds.rows : [];
+    else if (kind === 'query' && Array.isArray(ds.rows)) sources[ds.name] = ds.rows;
+  }
   return sources;
+}
+
+/** Iterating bands: detail (15), group header (14) and footer (16). */
+const ITERATING_BANDS = new Set([14, 15, 16]);
+
+/**
+ * Definition sent to Render: rows move to sources; bands with
+ * no datasource name the first one.
+ * @param {object} doc
+ * @returns {object}
+ */
+export function composeDefinition(doc) {
+  const body = reportBody(doc);
+  if (Array.isArray(body.datasources)) {
+    // Rows travel once, in sources; the definition keeps the declaration.
+    body.datasources = body.datasources.map((ds) => {
+      if (!ds || typeof ds !== 'object' || !Object.hasOwn(ds, 'rows')) return ds;
+      const rest = { ...ds };
+      delete rest.rows;
+      return rest;
+    });
+  }
+  if (!Array.isArray(body.bands)) return body;
+  const bands = body.bands.map((band) => {
+    if (!band || !ITERATING_BANDS.has(band.typeKey) || band.datasource) return band;
+    const name = bandDatasource(doc, band);
+    return name ? { ...band, datasource: name } : band;
+  });
+  return { ...body, bands };
 }
 
 /**
  * @param {object} doc
- * @param {{ rows: object[] }|null|undefined} sample
  * @returns {object}
  */
-export function composeParams(doc, sample) {
-  return { stage: 'compose', definition: reportBody(doc), sources: composeSources(doc, sample) };
+export function composeParams(doc) {
+  return { stage: 'compose', definition: composeDefinition(doc), sources: composeSources(doc) };
 }
 
 const isEmptyObject = (value) => Boolean(value) && typeof value === 'object'
@@ -115,9 +150,20 @@ export const reportComposeMethods = {
     this._composeBusy = true;
     if (this.elements.composeBtn) this.elements.composeBtn.disabled = true;
     try {
+      // Phase 28: Query datasources not yet Run are fetched for this
+      // Compose only (the stored definition is not changed).
+      let doc = this.doc;
+      if (pendingQueryDatasources(doc).length) {
+        const queries = (this._lookups && this._lookups.reportingQueries) || [];
+        const run = await runQueryDatasources(this.app.api, doc, queries);
+        for (const err of run.errors) {
+          toast.error(`Query datasource ${err.name} failed`, { description: err.message, subsystem: 'Manager' });
+        }
+        doc = run.doc;
+      }
       const envelope = await invokeScript(this.app.api, {
         script: RENDER_SCRIPT,
-        params: composeParams(this.doc, this._sample),
+        params: composeParams(doc),
         wait: true,
       });
       const result = composeResult(envelope);

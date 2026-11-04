@@ -94,6 +94,10 @@
         <fa fa-layer-group></fa>
         <span>Bands</span>
       </button>
+      <button type="button" class="lithium-toolbar-btn reports-category-btn" id="reports-system-btn" title="System items" aria-pressed="false">
+        <fa fa-gear></fa>
+        <span>System</span>
+      </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn" id="reports-undo-btn" title="Undo" data-shortcut-id="reports-undo" disabled>
         <fa fa-rotate-left></fa>
@@ -149,13 +153,25 @@
         <fa fa-arrow-down-to-line></fa>
         <span>Report Footer</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-sample-btn" title="Import sample data (JSON array). Session only, never exported." data-reports-category="field" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-param-btn" title="Add a Parameter item: prints one datasource parameter value, with a mask like a field" data-reports-category="system" hidden>
+        <fa fa-sliders></fa>
+        <span>Parameter</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-sample-btn" title="Import sample data (JSON array). Stored as rows on the selected band's datasource (else the first JSON one)." data-reports-category="field" hidden>
         <fa fa-file-import></fa>
         <span>Sample</span>
       </button>
-      <button type="button" class="lithium-toolbar-btn" id="reports-sample-paste-btn" title="Paste sample data (JSON array) from the clipboard. Session only, never exported." data-reports-category="field" hidden>
+      <button type="button" class="lithium-toolbar-btn" id="reports-sample-paste-btn" title="Paste sample data (JSON array) from the clipboard. Stored as rows on the selected band's datasource (else the first JSON one)." data-reports-category="field" hidden>
         <fa fa-clipboard></fa>
         <span>Paste</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-query-run-btn" title="Run each Query datasource with its Params and store the rows in the report." data-reports-category="field" hidden>
+        <fa fa-play></fa>
+        <span>Run</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-query-refresh-btn" title="Reload the Reporting query list (QueryRef 173) for the Query picker." data-reports-category="field" hidden>
+        <fa fa-arrows-rotate></fa>
+        <span>Queries</span>
       </button>
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn reports-grid-btn" id="reports-grid-btn" title="Show the grid" aria-pressed="true">
