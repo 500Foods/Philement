@@ -3,11 +3,13 @@
  * Each commit stores the diff from the new definition back to the
  * previous one. The open document carries those diffs in `history`.
  * Undo and redo apply one diff, so band and item ids come back unchanged.
- * A new commit drops the redo tail. Clear removes `history`.
+ * A new commit drops the redo tail. Clear removes `history` and
+ * drops image bytes no item still names.
  */
 
 import { importDefinition } from './document.js';
 import { applyPatch, diffValues } from './history-diff.js';
+import { pruneUnreferencedImages } from './images.js';
 
 const HISTORY = 'history';
 const READ_ERROR = 'Report history could not be read.';
@@ -124,7 +126,7 @@ export function createHistory(doc) {
     clear() {
       past = [];
       future = [];
-      current = reportBody(current);
+      current = pruneUnreferencedImages(reportBody(current));
       return current;
     },
   };

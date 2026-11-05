@@ -269,4 +269,23 @@ describe('LithiumProperties chrome', () => {
     input.remove();
     props.destroy();
   });
+
+  it('File editor opens the file prompt and does not commit the cell', async () => {
+    const onFile = vi.fn();
+    const { props } = mount({ onFile });
+    const row = { editor: 'File', id: 'static-file' };
+    const cell = { getValue: () => 'photo.png', getRow: () => ({ getData: () => row }) };
+    let rendered;
+    const success = vi.fn();
+    const cancel = vi.fn();
+    const marker = props._editor(cell, (fn) => { rendered = fn; }, success, cancel);
+    expect(onFile).toHaveBeenCalledWith(row);
+    expect(marker.textContent).toBe('photo.png');
+    rendered();
+    expect(cancel).not.toHaveBeenCalled();
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(success).not.toHaveBeenCalled();
+    props.destroy();
+  });
 });

@@ -169,6 +169,10 @@ v1 `typeKey` allowlist:
 | 17 | Page footer |
 | 18 | Report footer |
 | 0 | Static text |
+| 1 | Static number. A finite JSON number. A non-number prints blank and warns once. |
+| 2 | Static image. The item stores a content hash. Bytes live once in `doc.images`. |
+| 3 | Static memo. Plain text. `fitHeight` defaults to `both`. |
+| 4 | Static datetime. A civil string or a unix number. No `timezone` on the item. |
 | 20 | Field text |
 | 21 | Field number |
 | 24 | Field datetime |
@@ -294,6 +298,49 @@ That file is the `html` value, including its final newline.
   `Bold + Italic` map to weight 400 or 700 and style normal or italic.
 - Text is escaped and clips to the item box (`overflow: hidden` and
   `white-space: pre-line`).
+- A band whose items stay on `fitHeight` `clip` keeps that stored
+  height, and static text stays on the clip path above. `grow`,
+  `shrink`, and `both` use the lowest item bottom after the shift,
+  and not below `0.15 in`. The stored band height in the file does
+  not change. Each detail row measures its own text. Lines are
+  broken once, from the Helvetica AFM advances, and HTML paints
+  those lines with `white-space: pre`. A grown item is drawn in
+  Helvetica. `lineHeight` defaults to `1.2`. Memo defaults to
+  `pre-wrap` and `both`. Number and datetime default to `nowrap`
+  and `clip`. Static text and field text default to `pre-line` and
+  `clip`.
+- Static number prints with the number mask. A `%` mask multiplies
+  by 100. Static datetime prints with the Luxon mask. An omitted
+  mask prints `yyyy-MM-dd`, or `yyyy-MM-dd HH:mm` when the value
+  has a time. A civil string is not shifted. A unix number formats
+  in UTC. A value the mask cannot read warns once and prints the
+  raw text. Memo text is escaped.
+- `doc.images` maps a content hash to one data URI. The item stores
+  that hash on `image`. It may also store `fileName`, the name of
+  the file the author chose. The script does not read `fileName`.
+  Preview passes one display PNG per hash,
+  pixel size, fit, anchor, grayscale, and invert as `params.rasters`.
+  Display pixels are the box in inches times the item `dpi` (default
+  `72`), rounded half away from zero, at least 1 on a side. HTML
+  puts each display PNG once in a document-level SVG `<defs>`
+  `<image>`, and each placement is a `<use>` of that id. The same
+  id is the later PDF XObject key. A call without `params.rasters`
+  embeds the canonical bitmap and warns once that display dpi was
+  not applied. Cover is cropped into that PNG. Contain and
+  scale-down letterbox. Flip and rotation are the draw, flip first.
+  Opacity is on the placement. Grayscale and invert are baked into
+  the display PNG.
+- SVG in the subset svg, g, path, rect, circle, ellipse, line,
+  polyline, and polygon, with fill, stroke, stroke-width, opacity,
+  and a translate, scale, or rotate, stays in the file and in the
+  HTML. Script, filters, text, images, and foreignObject stay out
+  of that subset. The file still holds the original markup.
+- `embedFonts` defaults to `false`. HTML then names the family and
+  attaches no font bytes. When it is `true`, each used family other
+  than Helvetica is one `@font-face` whose source is a base64 WOFF2
+  from `params.fonts`. A flag that is on with no map warns once and
+  leaves the family named. The bytes stay out of the definition and
+  out of history. The flag does not change the Helvetica measure.
 - The same intermediate is the oracle for the Lua result and the
   preview.
 
@@ -348,6 +395,13 @@ files do not send `params.now`.
 
 The client must not send `params._hydrogen`. The server injects it.
 
+`params.rasters` is the display-PNG map for static images. The script
+does not call `image_scale`. `params.fonts` is the WOFF2 map used when
+`embedFonts` is true. Both stay out of the definition.
+[`/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua)
+is the script update. It points lookup 053 keys 1, 2, 3, and 4 at the
+static-text attribute list. QueryRef 175 stays unused.
+
 Client params stay under `ClientInvokeMaxParamsBytes` (256 KiB unless
 the operator changed it). These fixtures fit. The result cap is 1 MiB.
 A PDF that fits returns `{ "pdf_base64": "...", "log": [] }`. A PDF
@@ -382,6 +436,7 @@ That is a clamp, not a default.
 | Report | `grid.color` | `silver` | `silver` |
 | Report | `grid.background` | `white` | `white` |
 | Report | `font` | Vanadium Sans, `10 pt`, `Normal` | the same |
+| Report | `embedFonts` | `false` | `false`. HTML names the family and attaches no bytes |
 | Report | `datasources`, `functions` | `[]` | `[]` |
 | Function | `returns` | `text`, or the type of the item or break that added it | `text`. The panel says so |
 | Function | `source` | `return function(ctx)\n  return ""\nend` for text. Number returns `0`. Datetime returns nil. Boolean returns `false`. `rows` returns `{}` | empty source, which checks clean |
@@ -394,6 +449,24 @@ That is a clamp, not a default.
 | Item | static `text` | `Text` | `Text` |
 | Item | `mask` on number, datetime, calculated number, calculated datetime, aggregate number, aggregate datetime, parameter | `""` | the omitted-mask rule in Value format. A datetime uses the datetime rule. The panel says which rule |
 | Item | `mask` on text and aggregate text | omitted | the string itself. The panel shows no mask |
+| Item | static number `value` | `0` | blank, with no warn |
+| Item | static datetime `value` | `2026-01-01` | `yyyy-MM-dd`, or `yyyy-MM-dd HH:mm` when the value has a time |
+| Item | static memo `text` | `Memo` | `Memo` |
+| Item | `wrap` on static number and static datetime | `nowrap` | `nowrap` |
+| Item | `wrap` on static memo | `pre-wrap` | `pre-wrap` |
+| Item | `wrap` on static text and field text | omitted | `pre-line` |
+| Item | `fitHeight` on static memo | `both` | `both` |
+| Item | `fitHeight` on static text, field text, static number, and static datetime | `clip` on number and datetime; omitted on text | `clip` |
+| Item | `valign` on number, datetime, and memo | `top` | `top` |
+| Item | `lineHeight` | omitted | `1.2` |
+| Item | static memo box | `1.5 in` by `0.6 in` | that box |
+| Item | static image box | `1 in` by `0.75 in` | that box |
+| Item | static image `dpi` | `72` | `72` |
+| Item | static image `fit` | `contain` | `contain` |
+| Item | static image `fitAlign`, `fitValign` | `Center`, `Middle` | `Center`, `Middle` |
+| Item | static image `flip` | `none` | `none` |
+| Item | static image `opacity` | `1` | `1` |
+| Item | static image `grayscale`, `invert` | `false` | `false` |
 | Image | `dpi` | `72` | `72` |
 | Image | `format` | `png` | `png` |
 | Chart | `dpi` | `150` | `150` |

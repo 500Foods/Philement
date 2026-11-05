@@ -42,6 +42,10 @@ const BAND_PREFIX = {
  */
 const ITEM_PREFIX = {
   0: 'text',
+  1: 'staticnum',
+  2: 'image',
+  3: 'memo',
+  4: 'staticdate',
   5: 'date',
   6: 'user',
   20: 'textfield',
@@ -70,14 +74,19 @@ const BAND_RANK = {
 };
 
 const ITEM_TYPES = new Set([
-  0, 5, 6, 20, 21, 24, 25, 28, 29, 32, 34, 35, 38, 42, 43, 44, 45, 61, 62, 63, 64,
+  0, 1, 2, 3, 4, 5, 6, 20, 21, 24, 25, 28, 29, 32, 34, 35, 38, 42, 43, 44, 45, 61, 62, 63, 64,
 ]);
 
-const MASK_TYPES = new Set([5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
+const MASK_TYPES = new Set([1, 4, 5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
 
 const MIN_BAND_INCHES = 0.15;
 const ITEM_WIDTH = '1.5 in';
 const ITEM_HEIGHT = '0.2 in';
+/** Boxes that are not the ordinary 1.5 in by 0.2 in item. */
+const ITEM_BOX = {
+  2: ['1 in', '0.75 in'],
+  3: ['1.5 in', '0.6 in'],
+};
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -200,6 +209,7 @@ export function createBlank() {
       background: 'white',
     },
     font: { family: 'Vanadium Sans', size: '10 pt', style: 'Normal' },
+    embedFonts: false,
     datasources: [],
     bands: [
       blankBand('ph1', 13),
@@ -324,7 +334,7 @@ export function bandHeight(band) {
   throw new Error(`Band "${band.id}" needs a height.`);
 }
 
-function centeredBox(doc, band) {
+function centeredBox(doc, band, width = ITEM_WIDTH, height = ITEM_HEIGHT) {
   const unit = documentUnit(doc);
   const page = doc.page;
   if (!page || typeof page.width !== 'string' || typeof page.height !== 'string') {
@@ -338,16 +348,42 @@ function centeredBox(doc, band) {
   });
   const contentWidthIn = parseLength(convertLength(content.width, 'in')).value;
   const bandHeightIn = parseLength(convertLength(bandHeight(band), 'in')).value;
-  const itemWidthIn = parseLength(ITEM_WIDTH).value;
-  const itemHeightIn = parseLength(ITEM_HEIGHT).value;
+  const itemWidthIn = parseLength(width).value;
+  const itemHeightIn = parseLength(height).value;
   const leftIn = Math.max(0, (contentWidthIn - itemWidthIn) / 2);
   const topIn = Math.max(0, (bandHeightIn - itemHeightIn) / 2);
   return {
     left: storedLength(formatLength(leftIn, 'in'), unit),
     top: storedLength(formatLength(topIn, 'in'), unit),
-    width: storedLength(ITEM_WIDTH, unit),
-    height: storedLength(ITEM_HEIGHT, unit),
+    width: storedLength(width, unit),
+    height: storedLength(height, unit),
   };
+}
+
+/** Defaults for static number, image, memo, and datetime. Text stays bare. */
+function staticDefaults(item, typeKey) {
+  if (typeKey === 1 || typeKey === 4) {
+    if (!Object.hasOwn(item, 'value')) item.value = typeKey === 1 ? 0 : '2026-01-01';
+    if (!Object.hasOwn(item, 'wrap')) item.wrap = 'nowrap';
+    if (!Object.hasOwn(item, 'fitHeight')) item.fitHeight = 'clip';
+    if (!Object.hasOwn(item, 'valign')) item.valign = 'top';
+  }
+  if (typeKey === 3) {
+    if (!Object.hasOwn(item, 'text')) item.text = 'Memo';
+    if (!Object.hasOwn(item, 'wrap')) item.wrap = 'pre-wrap';
+    if (!Object.hasOwn(item, 'fitHeight')) item.fitHeight = 'both';
+    if (!Object.hasOwn(item, 'valign')) item.valign = 'top';
+  }
+  if (typeKey === 2) {
+    if (!Object.hasOwn(item, 'dpi')) item.dpi = 72;
+    if (!Object.hasOwn(item, 'fit')) item.fit = 'contain';
+    if (!Object.hasOwn(item, 'fitAlign')) item.fitAlign = 'Center';
+    if (!Object.hasOwn(item, 'fitValign')) item.fitValign = 'Middle';
+    if (!Object.hasOwn(item, 'flip')) item.flip = 'none';
+    if (!Object.hasOwn(item, 'opacity')) item.opacity = 1;
+    if (!Object.hasOwn(item, 'grayscale')) item.grayscale = false;
+    if (!Object.hasOwn(item, 'invert')) item.invert = false;
+  }
 }
 
 function storedBox(box, unit) {
@@ -650,8 +686,12 @@ export function addItem(doc, bandId, spec) {
   item.id = id;
   item.typeKey = typeKey;
   if (typeKey !== 25 && !Object.hasOwn(item, 'align')) item.align = 'Left';
-  item.box = item.box === undefined ? centeredBox(next, band) : storedBox(item.box, unit);
+  const sized = ITEM_BOX[typeKey];
+  item.box = item.box === undefined
+    ? centeredBox(next, band, sized ? sized[0] : ITEM_WIDTH, sized ? sized[1] : ITEM_HEIGHT)
+    : storedBox(item.box, unit);
   if (typeKey === 0 && !Object.hasOwn(item, 'text')) item.text = 'Text';
+  staticDefaults(item, typeKey);
   if (typeKey === 25 && !Object.hasOwn(item, 'kind')) item.kind = 'rectangle';
   if (isAggregateType(typeKey)) {
     if (!Object.hasOwn(item, 'op')) {

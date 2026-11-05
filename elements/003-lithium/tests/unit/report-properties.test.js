@@ -45,7 +45,10 @@ describe('report property rows', () => {
     expect(report).toEqual([6, 18, 29, 30, 21, 24, 16]);
     const sel = { bandId: 'd1', itemId: 't1' };
     const labels = propertyRows(doc, sel, lookups).map((row) => row.label);
-    expect(labels).toEqual(['ID', 'Text', 'Top', 'Left', 'Width', 'Height', 'Align', 'Rotation', 'Notes', 'Link']);
+    expect(labels).toEqual([
+      'ID', 'Text', 'Top', 'Left', 'Width', 'Height', 'Align', 'Rotation',
+      'Wrap', 'Fit height', 'Vertical align', 'Line height', 'Notes', 'Link',
+    ]);
     const data = tableData(propertyRows(doc, sel, lookups), [
       { id: 4, label: 'Object', sortSeq: 4 },
       { id: 5, label: 'Position', sortSeq: 5 },

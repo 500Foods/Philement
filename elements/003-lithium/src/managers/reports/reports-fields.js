@@ -11,6 +11,7 @@ import { dropItem } from './reports-drop.js';
 import { toast } from '../../shared/toast.js';
 import { addBandInOrder, addItem, removeBand, reorderItem, stepItem } from './model/document.js';
 import { SHAPE_TYPE, defaultShapeFields, setShapeCatalog } from './reports-shape.js';
+import { STATIC_GHOST, STATIC_IMAGE, placeImportedImage, staticItemSpec } from './reports-static.js';
 import {
   FIELD_TYPES, PARAM_TYPE, SYSTEM_TYPES, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
 } from './reports-sample.js';
@@ -69,6 +70,8 @@ export const reportFieldMethods = {
       shapeBtn: root.querySelector('#reports-shape-btn'),
       raiseBtn: root.querySelector('#reports-raise-btn'),
       lowerBtn: root.querySelector('#reports-lower-btn'),
+      staticBtns: [...root.querySelectorAll('#reports-static-number-btn, #reports-static-date-btn, #reports-static-image-btn, #reports-static-memo-btn')],
+      imageInput: root.querySelector('#reports-image-file'),
     };
   },
 
@@ -116,6 +119,31 @@ export const reportFieldMethods = {
     els.shapeBtn?.addEventListener('click', this._onShapeClick);
     els.raiseBtn?.addEventListener('click', this._onRaise);
     els.lowerBtn?.addEventListener('click', this._onLower);
+    this._onStaticAdd = (event) => {
+      if (this._textDragged) {
+        this._textDragged = false;
+        return;
+      }
+      this._addStatic(Number(event.currentTarget.dataset.typeKey));
+    };
+    els.staticBtns.forEach((btn) => btn.addEventListener('click', this._onStaticAdd));
+    this._onImageFile = (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (file) placeImportedImage(this, file);
+    };
+    els.imageInput?.addEventListener('change', this._onImageFile);
+    this._onImagePaste = (event) => {
+      if (!this._recordEditing || !this.doc) return;
+      const items = event.clipboardData && event.clipboardData.items;
+      if (!items) return;
+      const found = [...items].find((entry) => entry.kind === 'file' && String(entry.type || '').startsWith('image/'));
+      if (!found) return;
+      event.preventDefault();
+      const file = found.getAsFile();
+      if (file) placeImportedImage(this, file);
+    };
+    this.container?.addEventListener('paste', this._onImagePaste);
   },
 
   _unbindFields() {
@@ -138,6 +166,9 @@ export const reportFieldMethods = {
     els.shapeBtn?.removeEventListener('click', this._onShapeClick);
     els.raiseBtn?.removeEventListener('click', this._onRaise);
     els.lowerBtn?.removeEventListener('click', this._onLower);
+    (els.staticBtns || []).forEach((btn) => btn.removeEventListener('click', this._onStaticAdd));
+    els.imageInput?.removeEventListener('change', this._onImageFile);
+    this.container?.removeEventListener('paste', this._onImagePaste);
     this._fieldEls = null;
   },
 
@@ -173,6 +204,7 @@ export const reportFieldMethods = {
     if (els.raiseBtn) els.raiseBtn.disabled = !editing || index < 0 || index >= items.length - 1;
     if (els.lowerBtn) els.lowerBtn.disabled = !editing || index <= 0;
     if (els.shapeBtn) els.shapeBtn.disabled = !editing || !this._selectedBandId;
+    (els.staticBtns || []).forEach((btn) => { btn.disabled = !editing || !this._selectedBandId; });
     const canBack = Boolean(editing && index > 0);
     const canFront = Boolean(editing && index >= 0 && index < items.length - 1);
     this._props?.setOrderEnabled({
@@ -200,6 +232,25 @@ export const reportFieldMethods = {
     if (added) this._selectedItemId = added.id;
     this._commitDocument(next);
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Added shape rectangle ${added ? added.id : ''} on ${this._selectedBandId}`);
+  },
+
+  /** Add a static number, datetime, image, or memo on the selected band. */
+  _addStatic(typeKey) {
+    if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
+    if (!STATIC_GHOST[typeKey]) return;
+    let next;
+    try {
+      next = addItem(this.doc, this._selectedBandId, staticItemSpec(typeKey));
+    } catch (error) {
+      this._failEdit(error, `${STATIC_GHOST[typeKey]} could not be added.`);
+      return;
+    }
+    const band = next.bands.find((entry) => entry.id === this._selectedBandId);
+    const added = band && band.items[band.items.length - 1];
+    if (added) this._selectedItemId = added.id;
+    this._commitDocument(next);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] Added ${STATIC_GHOST[typeKey].toLowerCase()} ${added ? added.id : ''} on ${this._selectedBandId}`);
+    if (typeKey === STATIC_IMAGE) this._fieldEls?.imageInput?.click();
   },
 
   /** Raise (+1, paints later) or lower (-1) the selected item one step. */

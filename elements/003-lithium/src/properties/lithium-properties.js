@@ -332,6 +332,7 @@ export class LithiumProperties {
    *   showSearch?: boolean, showOutline?: boolean,
    *   state?: object, onStateChange?: (state: object) => void,
    *   onNavigate?: (delta: number) => void,
+   *   onFile?: (row: object) => void,
    *   onOrder?: (action: string) => void }} options
    *   state: a saved getState() result; onStateChange gets each change.
    *   onNavigate: Previous (-1) / Next (+1) object on the bottom bar.
@@ -344,6 +345,7 @@ export class LithiumProperties {
     this.sections = [];
     this.onStub = options.onStub || (() => {});
     this.onNavigate = options.onNavigate || null;
+    this.onFile = options.onFile || null;
     this.onOrder = options.onOrder || null;
     const state = options.state || {};
     this.onStateChange = options.onStateChange || null;
@@ -837,6 +839,16 @@ export class LithiumProperties {
 
   _editor(cell, onRendered, success, cancel) {
     const data = cell.getRow().getData();
+    if (data.editor === 'File') {
+      const marker = document.createElement('span');
+      marker.className = 'lithium-properties-value';
+      marker.textContent = cell.getValue() ?? '';
+      if (typeof this.onFile === 'function') this.onFile(data);
+      // Open the file dialog on this click, then leave the cell.
+      // Cancelling inside this call tears the editor down mid-edit.
+      onRendered(() => { setTimeout(() => cancel(), 0); });
+      return marker;
+    }
     if (data.editor === 'Color') return colorEditor(cell, onRendered, success, cancel);
     if (data.editor === 'Date') return dateEditor(cell, onRendered, success, cancel);
     let choices = data.editor === 'PageSize'

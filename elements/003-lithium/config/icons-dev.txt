@@ -37,6 +37,7 @@
 <fa fa-broom></fa>
 <fa fa-bug></fa>
 <fa fa-bullseye></fa>
+<fa fa-calendar-clock></fa>
 <fa fa-calendar-days></fa>
 <fa fa-calendar></fa>
 <fa fa-camera></fa>
@@ -104,6 +105,7 @@
 <fa fa-history></fa>
 <fa fa-id-badge></fa>
 <fa fa-id-card></fa>
+<fa fa-image></fa>
 <fa fa-images></fa>
 <fa fa-info-circle></fa>
 <fa fa-key></fa>
@@ -120,6 +122,7 @@
 <fa fa-magnifying-glass-plus></fa>
 <fa fa-magnifying-glass></fa>
 <fa fa-maximize></fa>
+<fa fa-memo></fa>
 <fa fa-minimize></fa>
 <fa fa-minus></fa>
 <fa fa-name></fa>

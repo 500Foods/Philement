@@ -136,6 +136,7 @@ export const reportPanelMethods = {
         outline: this._outlineHost,
         onNavigate: (delta) => this._stepSelection(delta),
         onEdit: (id, value) => this._onPanelEdit(id, value),
+        onFile: () => this._fieldEls?.imageInput?.click(),
         onOrder: (action) => this._orderItem(action),
         state: prefs,
         onStateChange: (state) => savePanelPrefs(state),

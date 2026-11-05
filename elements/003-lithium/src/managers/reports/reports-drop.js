@@ -11,6 +11,7 @@ import { readViewScale } from './scale.js';
 import { AGGREGATE_NUMBER_TYPE } from './reports-aggregate.js';
 import { PAGE_LABEL_DEFAULT, PAGE_LABEL_TYPE } from './reports-sample.js';
 import { SHAPE_TYPE, defaultShapeFields } from './reports-shape.js';
+import { STATIC_BOX, STATIC_GHOST, STATIC_IMAGE, staticItemSpec } from './reports-static.js';
 
 export const TEXT_DROP_KIND = 'reports-text';
 export const SHAPE_DROP_KIND = 'reports-shape';
@@ -18,6 +19,8 @@ export const SHAPE_DROP_KIND = 'reports-shape';
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
 const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 35, 61, 62, 63, 64]);
+const STATIC_DROP_TYPES = new Set([1, 2, 3, 4]);
+const STATIC_DROP_PREFIX = 'reports-static:';
 const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 35: 'Aggregate', 61: 'Page number', 62: 'Page count', 63: 'Parameter', 64: 'Page label' };
 /**
  * Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`.
@@ -45,10 +48,10 @@ export const dropItem = (typeKey) => {
  * @param {number} scale
  * @returns {{ left: number, top: number }}
  */
-export function textDropOrigin(bodyRect, clientX, clientY, scale) {
+export function textDropOrigin(bodyRect, clientX, clientY, scale, size) {
   const factor = scale > 0 ? scale : 1;
-  const width = toCssPx('1.5 in');
-  const height = toCssPx('0.2 in');
+  const width = toCssPx(size && size.width ? size.width : '1.5 in');
+  const height = toCssPx(size && size.height ? size.height : '0.2 in');
   return {
     left: (clientX - bodyRect.left) / factor - width / 2,
     top: (clientY - bodyRect.top) / factor - height / 2,
@@ -72,6 +75,11 @@ export const reportDropMethods = {
     this._shapeDragBtn = this.container.querySelector('#reports-shape-btn');
     this._shapeDragBtn?.addEventListener('dragstart', this._onTextDragStart);
     this._shapeDragBtn?.addEventListener('dragend', this._onTextDragEnd);
+    this._staticDragBtns = [...this.container.querySelectorAll('#reports-static-number-btn, #reports-static-date-btn, #reports-static-image-btn, #reports-static-memo-btn')];
+    this._staticDragBtns.forEach((btn) => {
+      btn.addEventListener('dragstart', this._onTextDragStart);
+      btn.addEventListener('dragend', this._onTextDragEnd);
+    });
     stage.addEventListener('dragover', this._onTextDragOver);
     stage.addEventListener('drop', this._onTextDrop);
   },
@@ -90,6 +98,11 @@ export const reportDropMethods = {
     this._shapeDragBtn?.removeEventListener('dragstart', this._onTextDragStart);
     this._shapeDragBtn?.removeEventListener('dragend', this._onTextDragEnd);
     this._shapeDragBtn = null;
+    (this._staticDragBtns || []).forEach((btn) => {
+      btn.removeEventListener('dragstart', this._onTextDragStart);
+      btn.removeEventListener('dragend', this._onTextDragEnd);
+    });
+    this._staticDragBtns = null;
     elements.stage?.removeEventListener('dragover', this._onTextDragOver);
     elements.stage?.removeEventListener('drop', this._onTextDrop);
   },
@@ -105,6 +118,7 @@ export const reportDropMethods = {
     const typeKey = Number(event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.typeKey);
     const isField = FIELD_DROP_TYPES.has(typeKey);
     const isShape = typeKey === SHAPE_TYPE;
+    const isStatic = STATIC_DROP_TYPES.has(typeKey);
     let dragKind = TEXT_DROP_KIND;
     let ghostText = 'Text';
     if (isField) {
@@ -113,6 +127,9 @@ export const reportDropMethods = {
     } else if (isShape) {
       dragKind = SHAPE_DROP_KIND;
       ghostText = 'Shape';
+    } else if (isStatic) {
+      dragKind = `${STATIC_DROP_PREFIX}${typeKey}`;
+      ghostText = STATIC_GHOST[typeKey];
     }
     transfer.setData('text/plain', dragKind);
     transfer.effectAllowed = 'copy';
@@ -153,19 +170,25 @@ export const reportDropMethods = {
       : NaN;
     const isField = FIELD_DROP_TYPES.has(fieldType);
     const isShape = kind === SHAPE_DROP_KIND;
-    if (kind !== TEXT_DROP_KIND && !isField && !isShape) return;
+    const staticType = typeof kind === 'string' && kind.startsWith(STATIC_DROP_PREFIX)
+      ? Number(kind.slice(STATIC_DROP_PREFIX.length))
+      : NaN;
+    const isStatic = STATIC_DROP_TYPES.has(staticType);
+    if (kind !== TEXT_DROP_KIND && !isField && !isShape && !isStatic) return;
     event.preventDefault();
     const origin = textDropOrigin(
       body.getBoundingClientRect(),
       event.clientX,
       event.clientY,
       readViewScale(body),
+      isStatic ? STATIC_BOX[staticType] : null,
     );
     let next;
     let addedId;
     let spec = { typeKey: 0 };
     if (isField) spec = dropItem(fieldType);
     else if (isShape) spec = { typeKey: SHAPE_TYPE, ...defaultShapeFields('rectangle') };
+    else if (isStatic) spec = staticItemSpec(staticType);
     try {
       next = addItem(this.doc, bandId, spec);
       const band = next.bands.find((entry) => entry.id === bandId);
@@ -177,7 +200,10 @@ export const reportDropMethods = {
         top: `${origin.top} px`,
       });
     } catch (error) {
-      this._failEdit(error, isShape ? 'Shape could not be added.' : 'Static text could not be added.');
+      let label = 'Static text';
+      if (isShape) label = 'Shape';
+      else if (isStatic) label = STATIC_GHOST[staticType];
+      this._failEdit(error, `${label} could not be added.`);
       return;
     }
     this._selectedBandId = bandId;
@@ -186,6 +212,8 @@ export const reportDropMethods = {
     let name = 'static text';
     if (isField) name = FIELD_GHOST[fieldType].toLowerCase();
     else if (isShape) name = 'shape';
+    else if (isStatic) name = STATIC_GHOST[staticType].toLowerCase();
     log(Subsystems.MANAGER, Status.INFO, `[Reports] Dropped ${name} ${addedId} on ${bandId}`);
+    if (staticType === STATIC_IMAGE) this._fieldEls?.imageInput?.click();
   },
 };

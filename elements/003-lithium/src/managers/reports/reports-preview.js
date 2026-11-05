@@ -13,6 +13,7 @@ import { restorePreviewShapes, SHAPE_PURIFY, shieldPreviewShapes } from './repor
 import { composeDefinition, composeResult, composeSources, RENDER_SCRIPT } from './reports-compose.js';
 import { pendingQueryDatasources, runQueryDatasources } from './reports-query.js';
 import { reportKey, saveListedReport } from './reports-save.js';
+import { buildRasterMap } from './reports-rasters.js';
 
 const SHELL_HEAD = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff}</style></head><body>';
 const SHELL_TAIL = '</body></html>';
@@ -133,6 +134,8 @@ function overCapSaveError(title, message) {
  */
 export async function resolvePreviewParams(manager, doc, options = {}) {
   const inline = previewParams(doc);
+  const rasters = await buildRasterMap(doc, options.draw);
+  if (Object.keys(rasters).length > 0) inline.rasters = rasters;
   if (!inlineParamsExceedCap(inline, options.cap)) return { params: inline, stored: false };
   const row = typeof manager._selectedRow === 'function' ? manager._selectedRow() : null;
   if (!row) {
@@ -162,7 +165,9 @@ export async function resolvePreviewParams(manager, doc, options = {}) {
   });
   notify(PREVIEW_OVER_CAP_TOAST.title, PREVIEW_OVER_CAP_TOAST.description);
   log(Subsystems.MANAGER, Status.INFO, `[Reports] Preview saved report ${reportId} revision ${revId}`);
-  return { params: storedPreviewParams(doc, { report_id: reportId, rev_id: revId }), stored: true };
+  const stored = storedPreviewParams(doc, { report_id: reportId, rev_id: revId });
+  if (inline.rasters) stored.rasters = inline.rasters;
+  return { params: stored, stored: true };
 }
 
 /**

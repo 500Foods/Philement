@@ -8,11 +8,13 @@
  * to the box. The band does not grow.
  */
 
+import './reports-static.css';
 import { bandHeight } from './model/document.js';
 import { contentBox, toCssPx } from './model/units.js';
 import { aggregateItemLabel, isAggregateType } from './reports-aggregate.js';
 import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, systemItemLabel } from './reports-sample.js';
 import { SHAPE_TYPE, paintShape } from './reports-shape.js';
+import { paintMeasuredItem, paintsMeasured } from './reports-static.js';
 
 /** Smallest resize, in CSS pixels. */
 export const ITEM_MIN_PX = 1;
@@ -221,6 +223,19 @@ export function paintBandItems(body, band, doc) {
       shapeCorner.title = 'Resize item';
       shape.append(shapeCorner);
       body.append(shape);
+      continue;
+    }
+    if (paintsMeasured(item)) {
+      if (typeof item.id !== 'string' || item.id === '') {
+        body.append(itemNote('Item needs an id.'));
+        continue;
+      }
+      try {
+        paintMeasuredItem(body, item, doc);
+      } catch (error) {
+        const message = error instanceof Error && error.message ? error.message : 'Item could not be measured.';
+        body.append(itemNote(message));
+      }
       continue;
     }
     const aggregate = isAggregateType(item.typeKey);

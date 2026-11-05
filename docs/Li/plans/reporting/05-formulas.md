@@ -12,7 +12,7 @@ per conversation. Write Status, Accomplished, Lessons learned, and
 Handoff on the phase in this file, set the same Status in the parent's
 phase table, and append the Working Log in the parent.
 
-**Entry:** Phases 33–37 have not started. Phase 38 is complete (2026-11-04). Phase 39 is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name `acuranzo_1463.lua` or `acuranzo_1464.lua`, and he did not quote the fixture figures. That check is the apply report. Phase 44a is complete (2026-11-04). Phase 44b is complete (2026-11-04). Andrew said the gradients render on Preview HTML and that 1467 is the latest migration applied. He did not quote the fixture colours. Leave `acuranzo_1455.lua` through `acuranzo_1467.lua` as written. The next free Acuranzo file is **1468**. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Phase 44c is drafted and revised (2026-11-04) and has not started. Naming it starts the phase. Do not write 1468 until that phase changes `Reports.Render`. Phase 45 has not started. Its fixture needs the Phase 33 compiler. Phase 44c is not Phase 45's gate.
+**Entry:** Phases 33–37 have not started. Phase 38 is complete (2026-11-04). Phase 39 is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name `acuranzo_1463.lua` or `acuranzo_1464.lua`, and he did not quote the fixture figures. That check is the apply report. Phase 44a is complete (2026-11-04). Phase 44b is complete (2026-11-04). Andrew said the gradients render on Preview HTML and that 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c** is in progress (2026-11-04). `acuranzo_1468.lua` is written and not applied. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. The next free Acuranzo file is **1469**. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Do not start Phase 45. Its fixture needs the Phase 33 compiler. Phase 44c is not Phase 45's gate.
 **Next file:** [`/docs/Li/plans/reporting/06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) after Phase 49.
 
 ## Phase 33 — Text formula
@@ -1496,7 +1496,7 @@ and crosstab twins stay hidden.
 
 ### Work items
 
-- [ ] 44c.1 Static Number is lookup 053 key 1. The id word is
+- [x] 44c.1 Static Number is lookup 053 key 1. The id word is
        `staticnum_`. A new item stores `value` `0`, `wrap`
        `nowrap`, `fitHeight` `clip`, and `valign` `top`. The
        box is the ordinary item box. `mask` follows the number
@@ -1508,7 +1508,7 @@ and crosstab twins stay hidden.
        non-number warns once and prints blank. A `%` mask
        multiplies by 100. Align and font match static text.
        Rotation stays off this item.
-- [ ] 44c.2 Static DateTime is lookup 053 key 4. The id word is
+- [x] 44c.2 Static DateTime is lookup 053 key 4. The id word is
        `staticdate_`. A new item stores `value` `2026-01-01`,
        `wrap` `nowrap`, `fitHeight` `clip`, and `valign` `top`.
        `mask` is the Luxon subset from Phase 22b. Lookup 077
@@ -1519,7 +1519,7 @@ and crosstab twins stay hidden.
        item does not store `timezone`. Clearing `value` prints
        blank, with no warn. A value the mask cannot read warns
        once and prints the raw text. Rotation stays off.
-- [ ] 44c.3 Wrap is one function, shared by the designer, the
+- [x] 44c.3 Wrap is one function, shared by the designer, the
        HTML emit, and the later PDF emit. It breaks the text.
        The emitters paint those lines and do not break again.
        `wrap` is `normal`, `pre`, `pre-line`, `pre-wrap`, or
@@ -1536,7 +1536,7 @@ and crosstab twins stay hidden.
        then a grown item is drawn in Helvetica in HTML and in
        PDF, so a measured line fits the box it was measured for.
        `embedFonts` does not switch that measure.
-- [ ] 44c.4 `fitHeight` is `clip`, `grow`, `shrink`, or `both`.
+- [x] 44c.4 `fitHeight` is `clip`, `grow`, `shrink`, or `both`.
        `clip` keeps the stored box and drops lines that do not
        fit. `grow` lengthens the item by whole line-heights when
        the text needs more, and pushes down items whose top is
@@ -1553,7 +1553,7 @@ and crosstab twins stay hidden.
        static datetime default to `clip`, and field text may be
        set to `both` for an invoice line. An unknown value warns
        once and uses the type default.
-- [ ] 44c.5 Static Memo is lookup 053 key 3. The id word is
+- [x] 44c.5 Static Memo is lookup 053 key 3. The id word is
        `memo_`. A new item stores `text` `Memo`, `wrap`
        `pre-wrap`, `fitHeight` `both`, `valign` `top`, and a box
        `1.5 in` by `0.6 in`. The memo is plain text and the emit
@@ -1561,7 +1561,7 @@ and crosstab twins stay hidden.
        its current clip path until its `fitHeight` is changed.
        Number and datetime use the same wrap, `fitHeight`,
        valign, and line height.
-- [ ] 44c.6 Static Image is lookup 053 key 2. The id word is
+- [x] 44c.6 Static Image is lookup 053 key 2. The id word is
        `image_`. Bytes live once in `doc.images`, keyed by the
        content hash. The item stores that hash on `image`, plus
        placement. A history step that only moves the item stores
@@ -1575,7 +1575,7 @@ and crosstab twins stay hidden.
        first frame. ICO keeps its largest frame. EXIF orientation
        is applied, so the stored raster is upright. SVG is stored
        as SVG and is not rasterized at import.
-- [ ] 44c.7 Display size is the item's `dpi` (default `72`) times
+- [x] 44c.7 Display size is the item's `dpi` (default `72`) times
        the box, in pixels, rounded half away from zero, and at
        least 1 on a side. A banner and an
        icon set their own dpi. At preview, Lithium builds one
@@ -1601,7 +1601,7 @@ and crosstab twins stay hidden.
        display PNG because the port has no image color matrix.
        Blur, shadow, brightness,
        contrast, hue, and sepia stay off.
-- [ ] 44c.8 HTML contains each display PNG once, in one SVG
+- [x] 44c.8 HTML contains each display PNG once, in one SVG
        `<defs>` image, and each placement references that id.
        The same id is the PDF XObject key Phase 52 will draw
        with `doc:image`. Fifty copies of one icon at one size
@@ -1618,7 +1618,7 @@ and crosstab twins stay hidden.
        `params.rasters` embeds the canonical bitmap and warns
        once that display dpi was not applied. The worker has no
        JWT for `image_scale`.
-- [ ] 44c.9 The script update is the next free Acuranzo file.
+- [x] 44c.9 The script update is the next free Acuranzo file.
        Re-check that number the day it is written. On this draft
        it is **1468**. `sql_old` is the 1467 body. Do not edit
        `acuranzo_1455.lua` through `acuranzo_1467.lua`. The same
@@ -1627,7 +1627,7 @@ and crosstab twins stay hidden.
        lookup 054 key. QueryRef 175 stays unused. The contract
        note gains the four keys, `fitHeight`, `embedFonts`,
        `doc.images`, and the raster map.
-- [ ] 44c.10 Fixture: a number `1234.5` with `#,##0.00` prints
+- [x] 44c.10 Fixture: a number `1234.5` with `#,##0.00` prints
        `1,234.50`. A datetime `2026-03-05T14:07:09` with
        `yyyy-MMM-dd HH:mm` prints `2026-Mar-05 14:07`. Two detail
        rows share a field text with `fitHeight` `both` and
@@ -1637,7 +1637,7 @@ and crosstab twins stay hidden.
        placed twice at the same box and dpi, and the HTML
        contains its data URI once. With `embedFonts` false the
        HTML has no `@font-face`. Hand the packet over.
-- [ ] 44c.11 The report stores `embedFonts`, default `false`.
+- [x] 44c.11 The report stores `embedFonts`, default `false`.
        The report panel shows it. No new lookup 054 key. When
        the flag is false, HTML names the family and attaches no
        font bytes. When it is true, each used family is one
@@ -1675,9 +1675,91 @@ The script update applied, `npm test`, `npm run lint`,
 
 ### Status
 
-**not started.** Drafted 2026-11-04 and revised the same day
-after Andrew's review. Naming the phase starts it. Do not write
-`acuranzo_1468.lua` until then.
+**in progress.** Andrew named this phase on 2026-11-04. The
+packet is written. He has not applied it, and he has not
+checked Preview HTML. Do not mark this phase complete. Do not
+start Phase 45.
+
+### Accomplished
+
+- Work items 44c.1 through 44c.11 are checked. The last
+  finished work item is 44c.11.
+- Static Number, DateTime, Image, and Memo are on the Static
+  row. A new number stores `0`, `nowrap`, `clip`, and `top`.
+  A new datetime stores `2026-01-01` with the same wrap. A new
+  memo stores `Memo`, `pre-wrap`, `both`, and a box `1.5 in`
+  by `0.6 in`. A new image is `1 in` by `0.75 in` at 72 dpi,
+  `contain`, and the bytes live once in `doc.images`.
+- Wrap and `fitHeight` are one measure. The Helvetica AFM
+  fixture locks space, `A`, and `n`, and the broken lines of
+  "Annual notes cover the narrow column". A one-line detail
+  row uses 12 pt. A two-line row uses 24 pt. Both name
+  Helvetica. Clip-only bands keep the stored height, so the
+  detail HTML fixture matches the 1467 body.
+- Preview builds `params.rasters`. HTML stores each display
+  PNG once in an SVG `<defs>` image. Two placements of the
+  fixture PNG share one data URI. A missing raster embeds the
+  canonical bytes and warns once. `embedFonts` defaults to
+  `false`. A flag that is on with no `params.fonts` warns once
+  and names the family.
+- [`/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua)
+  copies the 1467 body into `sql_old`. Lookup 053 keys 1, 2,
+  3, and 4 use the static-text attribute list. Reverse
+  restores the 1467 body and the 1086 lists. 1455 through
+  1467 were not edited. QueryRef 175 stays unused. No new
+  lookup id. No new lookup 054 key.
+- The contract note
+  [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md)
+  records the four keys, `fitHeight`, `embedFonts`,
+  `doc.images`, and the raster map.
+
+### Lessons learned
+
+- A clip-only band keeps its stored height. The detail HTML
+  fixture is byte-identical to the 1467 script. A band reflows
+  when any item's `fitHeight` is not `clip`. The one-line row
+  is grown as well, because 12 pt is not the stored `0.2 in`,
+  so both rows are drawn in Helvetica.
+- The used height is the lowest item bottom after the shift,
+  and not below `0.15 in`. An item's shift is the sum of the
+  deltas of items whose stored bottom is at or above its
+  stored top. The deltas do not depend on order.
+- The preview shield splits a transform list on the closing
+  parenthesis. Each part needs that parenthesis put back
+  before the check, or a flip-then-rotate placement loses its
+  transform.
+- The compose harness still expects the raw field number
+  `1234.5` where the live script prints `1,234.50`. The 1467
+  body does the same. presets and zones fail in that harness
+  because it does not pass `params.now` and `luatz` is not
+  installed. The HTML probe is the check that matters.
+
+### Handoff
+
+- The packet is
+  [`/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua).
+  Andrew applies it, regenerates the payload, restarts
+  Hydrogen, and checks Preview HTML on
+  `https://lithium.500courses.com`. The page should show
+  `1,234.50`, `2026-Mar-05 14:07`, a one-line row beside a
+  two-line row, and one shared image bitmap. This phase stays
+  in progress until he reports that check.
+- Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as
+  written. The next free Acuranzo file is **1469**. Do not
+  write it until a later change to `Reports.Render`. QueryRef
+  **175** stays unused. Next free lookup id **079**. Next free
+  lookup 054 key **52**.
+- Phase 45 has not started. Its written gate is met, and its
+  fixture needs the Phase 33 compiler. Do not start Phase 45.
+  Phases 33–37, 46–48, PDFs, barcodes, and charts stay on the
+  temporary skip.
+- On this sitting, `npm test` was 96 files, 1517 passed, 12
+  skipped. `npm run lint` exited 0. `npm run lint:css` exited
+  0. `luacheck` on `acuranzo_1468.lua` reported 0 warnings.
+  `luac -p` parsed the wrapper and the extracted script body.
+  The Lua 5.5.1 probe matched `detail.html` and the 44c
+  fixture. The designer was not opened in this chat. Preview
+  HTML on `https://lithium.500courses.com` was not opened.
 
 ---
 

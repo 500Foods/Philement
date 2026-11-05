@@ -125,14 +125,31 @@
       </button>
     </div>
     <div class="lithium-toolbar" id="reports-items-toolbar" data-reports-page="editor">
+      <button type="button" class="lithium-toolbar-btn" id="reports-static-number-btn" title="Add a static number to the selected band" draggable="true" data-reports-category="static" data-type-key="1">
+        <fa fa-hashtag></fa>
+        <span>Number</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-static-date-btn" title="Add a static date and time to the selected band" draggable="true" data-reports-category="static" data-type-key="4">
+        <fa fa-calendar-clock></fa>
+        <span>Datetime</span>
+      </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-text-btn" title="Add static text to the selected band" draggable="true" data-reports-category="static">
         <fa fa-font-case></fa>
         <span>Text</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-static-memo-btn" title="Add a static memo to the selected band" draggable="true" data-reports-category="static" data-type-key="3">
+        <fa fa-memo></fa>
+        <span>Memo</span>
       </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-shape-btn" title="Add a rectangle to the selected band. Drag it onto a band." draggable="true" data-reports-category="static" data-type-key="25">
         <fa fa-shapes></fa>
         <span>Shape</span>
       </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-static-image-btn" title="Add a static image to the selected band" draggable="true" data-reports-category="static" data-type-key="2">
+        <fa fa-image></fa>
+        <span>Image</span>
+      </button>
+      <input type="file" id="reports-image-file" accept="image/*,.svg,.ico,.bmp,.tif,.tiff,.webp,.gif" hidden>
       <button type="button" class="lithium-toolbar-btn" id="reports-field-text-btn" title="Add a text field to the selected band" draggable="true" data-reports-category="field" data-type-key="20" hidden>
         <fa fa-font></fa>
         <span>Text</span>

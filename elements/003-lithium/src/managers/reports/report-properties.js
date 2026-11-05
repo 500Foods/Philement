@@ -32,6 +32,11 @@ import {
 import {
   applyShapeFill, fillStyleChoices, shapeAttrMeta, shapeAttributeKeys, shapeFillRows, shapeItemFields, shapeKindOptions,
 } from './reports-shape.js';
+import {
+  LAYOUT_TYPES, STATIC_DATE, STATIC_IMAGE, STATIC_MEMO, STATIC_NUMBER,
+  applyStaticProperty, embedFontsRow, imageFitRow, imageRows, layoutRows, numberMaskRow, staticValueRows,
+} from './reports-static.js';
+import { IMAGE_FITS } from './model/images.js';
 
 export const REPORT_TYPE_KEY = 9;
 const TEXT_KEYS = new Set([29]);
@@ -39,12 +44,12 @@ const PAGE_SIZE_KEY = 30;
 /** Number keys that hold a length; the rest are plain numbers. */
 const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38, 43, 48, 49, 50, 51]);
 /** Editors the panel knows. Field and Datasource (Phase 15) become Lists. */
-export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None', 'Field', 'Datasource']);
+export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None', 'Field', 'Datasource', 'File']);
 /** Items that take a mask string (Phase 15.5 edits it). */
-const MASK_ITEM_TYPES = new Set([5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
+const MASK_ITEM_TYPES = new Set([1, 4, 5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
 export const DEFAULT_MASK_NOTE = 'No mask: the Value format default applies.';
 /** Number items that take a mask: field, calculated, aggregate, page number, page count. */
-const NUMBER_TYPES = new Set([21, 29, 35, 61, 62]);
+const NUMBER_TYPES = new Set([1, 21, 29, 35, 61, 62]);
 export const MASK_ROW_ID = 'mask';
 export const OMITTED_NOTE = 'Not in the file; default shown.';
 export const FONT_NOTE = 'No item font in the file; report font shown.';
@@ -659,12 +664,15 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
   const isItem = scope === 'item';
   const fields = { item: ITEM_FIELDS, band: BAND_FIELDS, report: REPORT_FIELDS }[scope];
   const rows = [];
-  if (isItem && findSelected(doc, sel).item.typeKey === 0) {
+  if (isItem && (findSelected(doc, sel).item.typeKey === 0 || Number(findSelected(doc, sel).item.typeKey) === STATIC_MEMO)) {
     const { item } = findSelected(doc, sel);
     rows.push({
       id: TEXT_ROW_ID, key: null, label: 'Text', value: item.text ?? '', omitted: !own(item, 'text'), note: '',
       editor: 'Text', list: null, section: 4, group: 'Object', readOnly: false,
     });
+  }
+  if (isItem && (Number(findSelected(doc, sel).item.typeKey) === STATIC_NUMBER || Number(findSelected(doc, sel).item.typeKey) === STATIC_DATE)) {
+    rows.push(...staticValueRows(findSelected(doc, sel).item));
   }
   if (isItem && Number(findSelected(doc, sel).item.typeKey) === PARAM_TYPE) {
     const { item } = findSelected(doc, sel);
@@ -719,7 +727,9 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       editor: 'Text', list: null, section: 4, group: 'Object', readOnly: false,
     });
   }
+  const itemType = isItem ? Number(findSelected(doc, sel).item.typeKey) : 0;
   for (const key of attributeKeys(doc, sel, lookups)) {
+    if (isItem && key === 14 && (itemType === STATIC_NUMBER || itemType === STATIC_DATE)) continue;
     const found = attrs.find((entry) => Number(entry.key_idx) === key);
     const meta = shapeAttrMeta(key);
     const row = found || { key_idx: key, value_txt: meta ? meta.Label : `Key ${key}` };
@@ -736,6 +746,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     }
     const choices = bindingChoices(editor, doc, lookups, read.value);
     let list = choices || (editor === 'List' && Array.isArray(collection.List) ? collection.List : null);
+    if (key === 5 && itemType === STATIC_IMAGE) list = [...IMAGE_FITS];
     if (key === 41) {
       list = shapeKindOptions(lookups && lookups.shapeKinds).map((entry) => ({
         value: entry.code, label: entry.label,
@@ -759,6 +770,11 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
   if (isItem) {
     const { item } = findSelected(doc, sel);
     const typeKey = Number(item.typeKey);
+    if (LAYOUT_TYPES.has(typeKey)) rows.push(...layoutRows(item));
+    if (typeKey === STATIC_IMAGE) {
+      if (!rows.some((entry) => entry.id === '5')) rows.push(imageFitRow(item));
+      rows.push(...imageRows(item));
+    }
     if (MASK_ITEM_TYPES.has(typeKey)) {
       const empty = !own(item, 'mask');
       rows.push({
@@ -767,7 +783,16 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
         editor: 'Text', list: null, section: 7, group: 'Formatting', readOnly: false,
       });
     }
-    if (ZONE_ITEM_TYPES.has(typeKey)) rows.push(...zoneRows(item, datetimePresets(lookups && lookups.datetimePresets)));
+    if (typeKey === STATIC_NUMBER) rows.push(numberMaskRow());
+    const presets = datetimePresets(lookups && lookups.datetimePresets);
+    if (typeKey === STATIC_DATE && presets.length) {
+      rows.push({
+        id: PRESET_ROW_ID, key: null, label: 'Mask preset', value: '', omitted: true,
+        note: 'Pick one to copy its mask into Mask (lookup 077).',
+        editor: 'List', list: presets.map((preset) => presetLabel(preset)), section: 7, group: 'Formatting', readOnly: false,
+      });
+    }
+    if (ZONE_ITEM_TYPES.has(typeKey)) rows.push(...zoneRows(item, presets));
   }
   if (scope === 'report') {
     rows.push({
@@ -776,7 +801,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       editor: 'Text', list: null, section: null, group: 'Report', readOnly: false,
     });
   }
-  if (scope === 'report') rows.push(...datasourceRows(doc, lookups), ...rulerRows(doc));
+  if (scope === 'report') rows.push(embedFontsRow(doc), ...datasourceRows(doc, lookups), ...rulerRows(doc));
   const fillAt = rows.findIndex((row) => row.key === 46);
   if (fillAt >= 0) rows.splice(fillAt + 1, 0, ...shapeFillRows(doc, sel));
   return finishPanelRows(rows, doc, sel);
@@ -792,6 +817,8 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
  * @returns {object}
  */
 export function applyProperty(doc, sel, rowId, value, ctx) {
+  const staticDoc = applyStaticProperty(doc, sel, rowId, value);
+  if (staticDoc) return staticDoc;
   const isItem = Boolean(sel && sel.itemId && findSelected(doc, sel).item);
   if (rowId === TEXT_ROW_ID) {
     if (!isItem) throw new Error('Text needs a selected item.');

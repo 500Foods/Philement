@@ -58,12 +58,15 @@ export const SEEDED_PATHS = Object.freeze({
 
 /** Tags Preview HTML adds. Other sanitizeHtml callers stay on the default. */
 export const SHAPE_PURIFY = Object.freeze({
-  ADD_TAGS: ['svg', 'path', 'g', 'defs', 'clipPath', 'linearGradient', 'radialGradient', 'stop', 'circle'],
+  ADD_TAGS: [
+    'svg', 'path', 'g', 'defs', 'clipPath', 'linearGradient', 'radialGradient', 'stop', 'circle',
+    'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon',
+  ],
   ADD_ATTR: [
     'viewBox', 'viewbox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray',
     'stroke-linecap', 'stroke-linejoin', 'transform', 'preserveAspectRatio', 'preserveaspectratio', 'xmlns',
     'id', 'offset', 'stop-color', 'gradientUnits', 'gradientunits', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r',
-    'clip-path', 'width', 'height', 'overflow',
+    'clip-path', 'width', 'height', 'overflow', 'href', 'xlink:href', 'opacity', 'points', 'rx', 'ry',
   ],
 });
 
@@ -595,6 +598,7 @@ export function paintShape(el, item, doc) {
 
 const PREVIEW_SHAPE_TAGS = new Set([
   'svg', 'path', 'g', 'defs', 'clippath', 'lineargradient', 'radialgradient', 'stop', 'circle',
+  'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon',
 ]);
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 const PATH_D = /^[MLCZ0-9.\s,-]+$/i;
@@ -602,14 +606,29 @@ const SAFE_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const PAINT_REF = /^(?:none|#[0-9A-Fa-f]{6}|url\(#[A-Za-z][A-Za-z0-9_-]*\))$/;
 const UNIT_NUM = /^-?\d+(?:\.\d+)?$/;
 
+function transformSequenceOk(text) {
+  const parts = text.trim().split(/\)\s+(?=[A-Za-z])/);
+  if (parts.length === 0 || text.trim() === '') return false;
+  const one = /^(?:translate|scale|rotate)\(-?\d+(?:\.\d+)?(?:[\s,]+-?\d+(?:\.\d+)?){0,2}\)$/;
+  return parts.every((part, index) => {
+    const closed = index === parts.length - 1 ? part.trim() : `${part.trim()})`;
+    return one.test(closed);
+  });
+}
+
 function previewShapeAttrOk(name, value) {
   const attr = String(name).toLowerCase();
   const text = String(value);
   if (attr.startsWith('on')) return false;
-  if (text.length > (attr === 'd' ? 200000 : 4000)) return false;
+  const href = attr === 'href' || attr === 'xlink:href';
+  if (text.length > (attr === 'd' ? 200000 : href ? 8000000 : 4000)) return false;
   if (/[<>]/.test(text) || /javascript\s*:/i.test(text)) return false;
+  if (href) {
+    if (text.startsWith('#')) return SAFE_ID.test(text.slice(1));
+    return /^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(text);
+  }
   if (attr === 'xmlns') return text === 'http://www.w3.org/2000/svg';
-  if (attr === 'width' || attr === 'height') return text === '100%';
+  if (attr === 'width' || attr === 'height') return text === '100%' || text === '0' || /^-?\d+(?:\.\d+)?$/.test(text);
   if (attr === 'overflow') return text === 'visible';
   if (attr === 'viewbox') return /^-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?){3}$/.test(text.trim());
   if (attr === 'preserveaspectratio') return text === 'none';
@@ -625,7 +644,7 @@ function previewShapeAttrOk(name, value) {
   if (attr === 'stroke-dasharray') return /^\d+(?:\.\d+)?(?:\s+\d+(?:\.\d+)?)+$/.test(text);
   if (attr === 'stroke-linecap') return text === 'butt' || text === 'round' || text === 'square';
   if (attr === 'stroke-linejoin') return text === 'miter' || text === 'round' || text === 'bevel';
-  if (attr === 'transform') return /^rotate\(-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?){0,2}\)$/.test(text.trim());
+  if (attr === 'transform') return transformSequenceOk(text);
   if (attr === 'd') return PATH_D.test(text);
   return false;
 }

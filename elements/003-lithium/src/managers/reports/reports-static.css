@@ -1,0 +1,33 @@
+/* Wrapped static text paints the pre-broken lines. The image fills its box. */
+
+.reports-item.reports-item-wrapped,
+.reports-item.reports-item-image-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  white-space: pre;
+}
+
+.reports-item.reports-item-wrapped[data-valign='middle'] {
+  justify-content: center;
+}
+
+.reports-item.reports-item-wrapped[data-valign='bottom'] {
+  justify-content: flex-end;
+}
+
+.reports-item.reports-item-wrapped .reports-item-text {
+  line-height: var(--reports-item-line-height, 1.2);
+  white-space: pre;
+}
+
+.reports-item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: var(--reports-image-fit, contain);
+  object-position: var(--reports-image-position, center center);
+  transform: var(--reports-image-transform, none);
+  opacity: var(--reports-image-opacity, 1);
+  filter: var(--reports-image-filter, none);
+  pointer-events: none;
+}
