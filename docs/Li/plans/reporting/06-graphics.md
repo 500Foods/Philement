@@ -27,34 +27,38 @@ Phase 49 Status complete.
 
 ### Work items
 
-- [ ] 50.1 Palette shows lookup 053 keys 2 (Static Image) and 22
-       (Field Image). A new item stores `dpi` `72`. `format` is
-       `png`, or `jpeg` when the stored bytes are JPEG. Reuse is the
-       rule, not a switch. There is no downsample-cap property.
+- [ ] 50.1 Palette shows lookup 053 key 22 (Field Image). Static
+       Image (key 2) is Phase 44c and is not added again. A field
+       image uses the same `doc.images` registry, the same `image`
+       hash, and the same placement: `dpi`, `fit`, `fitAlign`,
+       `fitValign`, flip, rotation, opacity, grayscale, and invert.
+       The field value supplies the bytes. Import conversion matches
+       Phase 44c. JPEG with no alpha stays JPEG. PNG, GIF, WebP,
+       ICO, BMP, and TIFF become PNG. SVG stays SVG. There is no
+       second resample store and no downsample-cap property.
 - [ ] 50.2 The image browser loads a local file or takes a clipboard
-       paste. A designer panel shows the suggested pixel size from
-       the physical box and the item dpi, and lets the author change
-       the width and the height. Each side is at least 1 pixel. A
-       side that rounds to zero, or that the author sets below 1,
-       is kept at 1. The panel states that confirming stores those
-       pixels and does not keep the original file.
-       Confirm calls `image_scale` unless the chosen size is the
-       source's own pixel size, in which case the original bytes are
-       stored. Embedded bytes dedupe into the definition's
-       content-hash registry. Changing the box later does not
-       resample. Confirm commits through report `history`. The
-       step stores the previous bytes of that picture. Other
-       pictures stay out of the step. Clear drops that trail.
-- [ ] 50.3 `stage=html` repeats the data URI of the stored bytes in
-       each placement. DOMPurify keeps that data URI. The script
-       does not call `image_scale`.
-- [ ] 50.4 Browser: the panel shows a suggested size, an edited size
-       is what gets stored, and the same PNG on two detail rows
-       shows in both rows of the preview, at the box size.
+       paste. Import converts immediately and stores one registry
+       entry. The panel shows the display pixel size from the box
+       and the item dpi, at least 1 pixel on a side, and lets the
+       author change `dpi`. It does not replace the canonical bytes
+       with a display PNG. Display PNGs are built at preview into
+       `params.rasters` and are not written into the definition or
+       into history. Confirm commits the hash through report
+       `history`. A step that moves the item stores the hash.
+       Previous bytes stay only in the undo step that removed them.
+       Clear drops history and drops an unreferenced registry entry.
+- [ ] 50.3 `stage=html` contains each display PNG once, in one SVG
+       `<defs>` image, and each placement references that id.
+       DOMPurify keeps that reference. The script does not call
+       `image_scale`. A headless render without `params.rasters`
+       embeds the canonical bitmap and warns once.
+- [ ] 50.4 Browser: the same PNG on two detail rows shows in both
+       rows, at the box size, and the HTML contains that data URI
+       once.
 
 ### Done means
 
-The preview shows the same embedded PNG on two detail rows.
+The preview shows the same embedded PNG on two detail rows, and the HTML contains that bitmap once.
 
 ### Exit gate
 
@@ -118,11 +122,13 @@ Phase 51 Status complete.
 
 ### Work items
 
-- [ ] 52.1 `stage=pdf` calls `doc:image` with the same resolved bytes
-       for every placement of that image. The port stores one image
-       object and each placement references it. JPEG sources stay
-       JPEG. Everything else stores as PNG. There is no XO embedder.
-       The script does not call `image_scale`.
+- [ ] 52.1 `stage=pdf` draws each `params.rasters` entry once
+       through `doc:image` and references that XObject for every
+       placement. Cover is already cropped in that raster. Opacity,
+       flip, and rotation are the draw. A supported SVG is one form
+       XObject of paths. A headless render without `params.rasters`
+       embeds the canonical bitmap once and warns once. The script
+       does not call `image_scale`. There is no second embedder.
 - [ ] 52.2 Fixture: the same PNG on two detail rows. The PDF contains
        one image object and two drawing references. A second,
        different PNG is a second object. The fixture stays under the

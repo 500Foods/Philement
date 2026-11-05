@@ -322,7 +322,14 @@ Phase 30 and Phase 21 Status complete.
        the port already carries. Positions are in PDF points. Align,
        font size, and font style come from the item, then the
        definition font. Bold and italic are the PDF flags. The face
-       stays that standard face. Text clips to the item box.
+       stays that standard face when `embedFonts` is false or
+       absent. When `embedFonts` is true, each used non-standard
+       family is one subset TrueType from `params.fonts`, referenced
+       for every placement. A standard face is never attached.
+       Text clips to the item box when
+       `fitHeight` is `clip`. When the item grows or shrinks, paint
+       the shared IR lines in the used box at the shared line height,
+       in the face those lines were measured with.
 - [ ] 31.3 A call that omits `stage` now runs `pdf`. The detail
        fixture returns `{ "pdf_base64": "...", "log": [] }` and
        opens with the right page count. The result-cap behavior is

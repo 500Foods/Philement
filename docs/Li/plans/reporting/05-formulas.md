@@ -12,7 +12,7 @@ per conversation. Write Status, Accomplished, Lessons learned, and
 Handoff on the phase in this file, set the same Status in the parent's
 phase table, and append the Working Log in the parent.
 
-**Entry:** Phases 33–37 have not started. Phase 38 is complete (2026-11-04). Phase 39 is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name `acuranzo_1463.lua` or `acuranzo_1464.lua`, and he did not quote the fixture figures. That check is the apply report. The next free Acuranzo file is **1465**. QueryRef **175** stays unused. No new lookup. Phases 44a and 44b are written and have not started. Phase 45 has not started.
+**Entry:** Phases 33–37 have not started. Phase 38 is complete (2026-11-04). Phase 39 is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name `acuranzo_1463.lua` or `acuranzo_1464.lua`, and he did not quote the fixture figures. That check is the apply report. Phase 44a is complete (2026-11-04). Phase 44b is complete (2026-11-04). Andrew said the gradients render on Preview HTML and that 1467 is the latest migration applied. He did not quote the fixture colours. Leave `acuranzo_1455.lua` through `acuranzo_1467.lua` as written. The next free Acuranzo file is **1468**. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Phase 44c is drafted and revised (2026-11-04) and has not started. Naming it starts the phase. Do not write 1468 until that phase changes `Reports.Render`. Phase 45 has not started. Its fixture needs the Phase 33 compiler. Phase 44c is not Phase 45's gate.
 **Next file:** [`/docs/Li/plans/reporting/06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) after Phase 49.
 
 ## Phase 33 — Text formula
@@ -1375,7 +1375,7 @@ Phase 44a Status complete.
 - [x] 44b.3 Preview HTML draws the pattern and the gradient from
        the same commands as Phase 44a. PDF still does not draw
        the shape.
-- [ ] 44b.4 Fixture: a hatched rectangle with a two-stop linear
+- [x] 44b.4 Fixture: a hatched rectangle with a two-stop linear
        gradient, and a noise ellipse whose second run matches
        the first. Hand the amendment over. The preview shows both.
 
@@ -1390,11 +1390,13 @@ The script packet apply, the fixture call, and the browser preview.
 
 ### Status
 
-**in progress**
+**complete — 2026-11-04.** Andrew said the gradients render on
+Preview HTML, everything tested passes, and 1467 is the latest
+migration applied. He did not quote the fixture colours.
 
 ### Accomplished
 
-- Phase 44a is complete. This sitting is Phase 44b. Phase 45
+- Phase 44a is complete. This sitting closed Phase 44b. Phase 45
   has not started.
 - The designer and `Reports.Render` draw the same SVG.
   [`/elements/003-lithium/src/managers/reports/reports-shape-fill.js`](/elements/003-lithium/src/managers/reports/reports-shape-fill.js)
@@ -1410,7 +1412,7 @@ The script packet apply, the fixture call, and the browser preview.
   with the fill. Lookup 054 key 46 lists `none`, `solid`,
   `grid`, `dots`, `hatched`, and `noise`. Reverse restores the
   1466 body and the `none`, `solid` list. 1465 and 1466 were
-  not edited. The file is not applied.
+  not edited. Andrew reports 1467 applied.
 - The fixture is
   [`/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json).
   `hatch` is a rectangle, linear angle 0, `#1d4e89` at 0 and
@@ -1447,30 +1449,235 @@ The script packet apply, the fixture call, and the browser preview.
 - Lua 5.5.1 and the designer printed the same SVG for the
   hatched gradient, the noise ellipse, a solid rectangle, a
   radial paint, a hatch rotated 15 degrees, and a line.
+  Andrew's Preview HTML check is the apply report. He did not
+  quote the colours.
 
 ### Handoff
 
-- Apply
-  [`/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua).
-  Leave `acuranzo_1455.lua` through `acuranzo_1466.lua` as
-  written. Do not write `acuranzo_1468.lua` until a later
-  change to `Reports.Render`. QueryRef **175** stays unused.
-  Next free lookup id **079**. Next free lookup 054 key **52**.
-- Regenerate the Hydrogen payload and restart Hydrogen. Import
-  [`/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json`](/elements/003-lithium/tests/fixtures/reporting/shape-fill.definition.json)
-  and run Preview HTML on `https://lithium.500courses.com`.
-  The preview should show the hatched rectangle with the
-  linear gradient and the noise ellipse. Run it again. The
-  noise field should match. He has not been asked to quote
-  the colours.
-- The phase stays in progress until that preview. Do not start
-  Phase 45. Phases 33–37, 45–48, PDFs, barcodes, and charts
-  stay on the temporary skip.
-- On this close, `npm test` was 95 files, 1506 passed, 12
+- Leave `acuranzo_1455.lua` through `acuranzo_1467.lua` as
+  written. The next free Acuranzo file is **1468**. Do not
+  write it until a later change to `Reports.Render`.
+  QueryRef **175** stays unused. Next free lookup id **079**.
+  Next free lookup 054 key **52**.
+- Phase 45 is next in the index. Its written gate is met.
+  The fixture groups by a text function, and that compiler is
+  Phase 33, which has not started. A named function still
+  prints blank. Phase 45.2 also uses the Functions buffer from
+  Phase 34. The one-field group (`band.field`) stays. Do not
+  start Phase 45 until Andrew names it. Phases 33–37, 46–48,
+  PDFs, barcodes, and charts stay on the temporary skip.
+- On the close, `npm test` was 95 files, 1506 passed, 12
   skipped. `npm run lint` exited 0. `npm run lint:css` exited
   0. `luacheck` on `acuranzo_1467.lua` reported 0 warnings.
-  `luac -p` parsed the file. The designer was not opened in a
-  browser. The live preview was not opened.
+  `luac -p` parsed the file. The designer was not opened in
+  this chat. Andrew checked Preview HTML on
+  `https://lithium.500courses.com`.
+
+---
+
+## Phase 44c — Static number, datetime, image, and memo
+
+### Goal
+
+The Static palette places a number, a datetime, an image, and a
+memo. A wrapping line can grow or shrink its own row. Preview
+HTML draws the broken lines and embeds each display image once.
+PDF is not emitted here. It consumes the same lines and the same
+image ids.
+
+### Entry gate
+
+Phase 44b is complete (2026-11-04). Andrew named this phase on
+the day work starts. Phases 33–37, 45–48, PDFs, barcodes, and
+charts stay on the temporary skip. This phase does not wait on
+them. Field Image stays in Phase 50. A document reference or a
+URL stays in Phase 51. Field memo and the calculated, aggregate,
+and crosstab twins stay hidden.
+
+### Work items
+
+- [ ] 44c.1 Static Number is lookup 053 key 1. The id word is
+       `staticnum_`. A new item stores `value` `0`, `wrap`
+       `nowrap`, `fitHeight` `clip`, and `valign` `top`. The
+       box is the ordinary item box. `mask` follows the number
+       rule. The editor offers `#,##0.00`, `$#,##0.00`,
+       `(#,##0.00)`, and `0%` as a client list and copies the
+       chosen string into `mask`. `value` is a finite JSON
+       number. Clearing it deletes `value` and prints blank,
+       with no warn. A non-numeric edit is refused. Render of a
+       non-number warns once and prints blank. A `%` mask
+       multiplies by 100. Align and font match static text.
+       Rotation stays off this item.
+- [ ] 44c.2 Static DateTime is lookup 053 key 4. The id word is
+       `staticdate_`. A new item stores `value` `2026-01-01`,
+       `wrap` `nowrap`, `fitHeight` `clip`, and `valign` `top`.
+       `mask` is the Luxon subset from Phase 22b. Lookup 077
+       writes the mask string. An omitted mask prints
+       `yyyy-MM-dd`, or `yyyy-MM-dd HH:mm` when the value has a
+       time. `value` is a civil string or a unix number. A civil
+       string is not shifted. A unix number formats in UTC. The
+       item does not store `timezone`. Clearing `value` prints
+       blank, with no warn. A value the mask cannot read warns
+       once and prints the raw text. Rotation stays off.
+- [ ] 44c.3 Wrap is one function, shared by the designer, the
+       HTML emit, and the later PDF emit. It breaks the text.
+       The emitters paint those lines and do not break again.
+       `wrap` is `normal`, `pre`, `pre-line`, `pre-wrap`, or
+       `nowrap`. `lineHeight` is a unitless multiple of the font
+       size, default `1.2`. The used line height is that
+       multiple times the font size, in the same unit on both
+       sides. Widths are the Helvetica AFM advances for the
+       item's style (Helvetica, Helvetica-Bold, Helvetica-Oblique,
+       Helvetica-BoldOblique) at that font size. A word longer
+       than the box breaks by character. JS and Lua share the
+       advance table. A fixture locks the advances of space,
+       `A`, and `n`, and locks the broken lines of one paragraph.
+       Vanadium widths are a later swap of that table. Until
+       then a grown item is drawn in Helvetica in HTML and in
+       PDF, so a measured line fits the box it was measured for.
+       `embedFonts` does not switch that measure.
+- [ ] 44c.4 `fitHeight` is `clip`, `grow`, `shrink`, or `both`.
+       `clip` keeps the stored box and drops lines that do not
+       fit. `grow` lengthens the item by whole line-heights when
+       the text needs more, and pushes down items whose top is
+       at or below that item's stored bottom. `shrink` shortens
+       it the same way, not below one line, and pulls those
+       items up. `both` does each. The band instance's used
+       height is the lowest item bottom after that shift, and
+       not below `0.15 in`. The stored band height in the file
+       does not change. Each detail row does this from its own
+       text, so one wrapping invoice line grows and the other
+       lines stay at their own height. Paging and the
+       group-keep rule use the used height. Static memo defaults
+       to `both`. Static text, field text, static number, and
+       static datetime default to `clip`, and field text may be
+       set to `both` for an invoice line. An unknown value warns
+       once and uses the type default.
+- [ ] 44c.5 Static Memo is lookup 053 key 3. The id word is
+       `memo_`. A new item stores `text` `Memo`, `wrap`
+       `pre-wrap`, `fitHeight` `both`, `valign` `top`, and a box
+       `1.5 in` by `0.6 in`. The memo is plain text and the emit
+       escapes it. Rich text stays unnumbered. Static text keeps
+       its current clip path until its `fitHeight` is changed.
+       Number and datetime use the same wrap, `fitHeight`,
+       valign, and line height.
+- [ ] 44c.6 Static Image is lookup 053 key 2. The id word is
+       `image_`. Bytes live once in `doc.images`, keyed by the
+       content hash. The item stores that hash on `image`, plus
+       placement. A history step that only moves the item stores
+       the hash and does not copy the bytes. Adding an image
+       inserts one registry entry. Replacing one leaves the
+       previous bytes only in the undo step that removed them.
+       Clear drops history and drops a registry entry no item
+       references. Bitmap import converts immediately through
+       `image_scale`: JPEG with no alpha stays JPEG, and PNG,
+       GIF, WebP, ICO, BMP, and TIFF become PNG. GIF keeps the
+       first frame. ICO keeps its largest frame. EXIF orientation
+       is applied, so the stored raster is upright. SVG is stored
+       as SVG and is not rasterized at import.
+- [ ] 44c.7 Display size is the item's `dpi` (default `72`) times
+       the box, in pixels, rounded half away from zero, and at
+       least 1 on a side. A banner and an
+       icon set their own dpi. At preview, Lithium builds one
+       display PNG per distinct source, pixel size, fit, anchor,
+       grayscale, and invert, and passes that map as
+       `params.rasters`. The script does not call `image_scale`.
+       `fit` is `stretch`, `contain`, `cover`, `none`, or
+       `scale-down`. Cover uses the port's rule: the smallest
+       uniform size that covers the box. The port does not clip
+       that overflow, so the display PNG is cropped to the box
+       and both emitters draw that bitmap at the box size.
+       Contain and scale-down letterbox with `fitAlign` and
+       `fitValign`. Stretch fills the box. `none` keeps the
+       intrinsic pixels, clipped to the box. An unknown fit warns
+       once and uses `contain`. Flip (`none`,
+       `horizontal`, `vertical`, `both`) and rotation (key 14)
+       are draw transforms about the box center, flip first, and
+       they do not make another bitmap. An unknown flip warns
+       once and uses `none`. The item stores `opacity`
+       from 0 to 1, `grayscale`, and `invert`. HTML sets `opacity`.
+       PDF uses the port's image opacity, which is an extended
+       graphics state. Grayscale and invert are baked into that
+       display PNG because the port has no image color matrix.
+       Blur, shadow, brightness,
+       contrast, hue, and sepia stay off.
+- [ ] 44c.8 HTML contains each display PNG once, in one SVG
+       `<defs>` image, and each placement references that id.
+       The same id is the PDF XObject key Phase 52 will draw
+       with `doc:image`. Fifty copies of one icon at one size
+       are one bitmap. SVG in the supported subset (svg, g, path,
+       rect, circle, ellipse, line, polyline, polygon, with fill,
+       stroke, stroke-width, opacity, and a translate, scale, or
+       rotate) stays a vector in the file, in the HTML, and as
+       one PDF form XObject of those paths. Script, filters,
+       text, images, and foreignObject are outside the subset.
+       The file still holds the SVG. HTML keeps the subset. PDF
+       uses a display PNG for that placement until the path
+       subset grows. A zint PDF XObject is a later phase and is
+       embedded as given. A headless render that arrives without
+       `params.rasters` embeds the canonical bitmap and warns
+       once that display dpi was not applied. The worker has no
+       JWT for `image_scale`.
+- [ ] 44c.9 The script update is the next free Acuranzo file.
+       Re-check that number the day it is written. On this draft
+       it is **1468**. `sql_old` is the 1467 body. Do not edit
+       `acuranzo_1455.lua` through `acuranzo_1467.lua`. The same
+       file points lookup 053 keys 1, 2, 3, and 4 at the
+       static-text attribute list. No new lookup id. No new
+       lookup 054 key. QueryRef 175 stays unused. The contract
+       note gains the four keys, `fitHeight`, `embedFonts`,
+       `doc.images`, and the raster map.
+- [ ] 44c.10 Fixture: a number `1234.5` with `#,##0.00` prints
+       `1,234.50`. A datetime `2026-03-05T14:07:09` with
+       `yyyy-MMM-dd HH:mm` prints `2026-Mar-05 14:07`. Two detail
+       rows share a field text with `fitHeight` `both` and
+       `lineHeight` `1.2`. One value fits on one line and the
+       other breaks to two. The second row's used height is two
+       line-heights and the first row's is one. One PNG is
+       placed twice at the same box and dpi, and the HTML
+       contains its data URI once. With `embedFonts` false the
+       HTML has no `@font-face`. Hand the packet over.
+- [ ] 44c.11 The report stores `embedFonts`, default `false`.
+       The report panel shows it. No new lookup 054 key. When
+       the flag is false, HTML names the family and attaches no
+       font bytes. When it is true, each used family is one
+       `@font-face` whose source is a base64 WOFF2 from
+       `params.fonts`, and every item of that family references
+       it. The product WOFF2 files are about 1.5 MB each, so the
+       map entry is a subset of the glyphs the report uses. The
+       full file is not attached. This phase adds no font
+       package. A flag that is on with no `params.fonts` warns
+       once and leaves the family named. The bytes stay out of
+       the definition and out of history. PDF embedding of the
+       same flag is Phase 31.
+
+### PDF placement
+
+This phase does not emit `stage=pdf`. Phase 31 paints the IR
+lines at the shared line height in the face they were measured
+with. When `embedFonts` is true, each used non-standard family
+is one subset TrueType from `params.fonts`. A standard face is
+never attached.
+Phase 52 draws each `params.rasters` entry once through
+`doc:image` and references that XObject for every placement.
+Cover is already cropped. Opacity, flip, and rotation are the
+draw. A supported SVG is one form XObject of paths.
+
+### Done means
+
+Preview HTML shows the masked number, the Luxon datetime, a
+one-line row beside a two-line row, and one shared image bitmap.
+
+### Exit gate
+
+The script update applied, `npm test`, `npm run lint`,
+`npm run lint:css`, and Andrew's Preview HTML check.
+
+### Status
+
+**not started.** Drafted 2026-11-04 and revised the same day
+after Andrew's review. Naming the phase starts it. Do not write
+`acuranzo_1468.lua` until then.
 
 ---
 
@@ -1482,9 +1689,11 @@ A group band can take its key from a text or number function.
 
 ### Entry gate
 
-Phase 44 Status complete. Phases 44a and 44b sit ahead of this
-phase. Andrew named Phase 44a next. Do not start Phase 45 while
-44a or 44b is open.
+Phase 44, Phase 44a, and Phase 44b are complete (2026-11-04).
+The fixture groups by a text function. Phase 33 has not
+started, and a named function still prints blank. Phase 44c
+is drafted and revised and is not this phase's gate. Do not start
+Phase 45 until Andrew names it.
 
 ### Work items
 
@@ -1526,8 +1735,8 @@ Phase 45 Status complete.
 
 - [ ] 46.1 A detail band may set `pageBreak` to a boolean function.
        A true result starts a new page before that row. Any other
-       value warns once and counts as false. Fixed-height paging
-       still applies.
+       value warns once and counts as false. Paging uses the used
+       height from `fitHeight`. The stored band height stays.
 - [ ] 46.2 The detail band's picker lists boolean functions.
 - [ ] 46.3 Fixture: start a new page when `ctx.row.break_before` is
        true. Hand the amendment over. Browser: the preview shows the
@@ -1564,7 +1773,8 @@ Phase 46 Status complete.
        row. Any other value warns once and counts as false. A
        newline inside a calculated value is kept by HTML
        (`white-space: pre-line`) and by the PDF text drawer. The
-       stored band height does not change. Overflow clips.
+       stored band height does not change. A newline inside a value
+       follows that item's `fitHeight`. `clip` drops the extra lines.
 - [ ] 47.2 The detail band's picker lists boolean functions.
 - [ ] 47.3 Fixture: insert a blank line when `ctx.row.blank_before`
        is true. Hand the amendment over. Browser: the preview shows
