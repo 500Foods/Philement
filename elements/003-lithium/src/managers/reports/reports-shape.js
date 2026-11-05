@@ -7,6 +7,7 @@
  */
 
 import './reports-shape.css';
+import { duotoneOpacityRules, prepareDuotone } from './model/images.js';
 import { toCssPx } from './model/units.js';
 import {
   FILL_STYLES, fillPlan, fillStyleChoices, mountShape, patchShapeFill, shapeDomId, shapeFillRowList,
@@ -601,9 +602,10 @@ const PREVIEW_SHAPE_TAGS = new Set([
   'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon',
 ]);
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
-const PATH_D = /^[MLCZ0-9.\s,-]+$/i;
+const PATH_D = /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+\-]+$/;
 const SAFE_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const PAINT_REF = /^(?:none|#[0-9A-Fa-f]{6}|url\(#[A-Za-z][A-Za-z0-9_-]*\))$/;
+const PAINT_REF = /^(?:none|currentColor|#[0-9A-Fa-f]{3}|#[0-9A-Fa-f]{4}|#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{8}|url\(#[A-Za-z][A-Za-z0-9_-]*\))$/;
+const OPACITY_ATTR = /^(?:0(?:\.0+)?|1(?:\.0+)?|0?\.\d+)$/;
 const UNIT_NUM = /^-?\d+(?:\.\d+)?$/;
 
 function transformSequenceOk(text) {
@@ -634,6 +636,8 @@ function previewShapeAttrOk(name, value) {
   if (attr === 'preserveaspectratio') return text === 'none';
   if (attr === 'id') return SAFE_ID.test(text);
   if (attr === 'fill' || attr === 'stroke') return PAINT_REF.test(text);
+  if (attr === 'opacity' || attr === 'fill-opacity' || attr === 'stroke-opacity') return OPACITY_ATTR.test(text.trim());
+  if (attr === 'fill-rule' || attr === 'clip-rule') return /^(?:evenodd|nonzero)$/i.test(text.trim());
   if (attr === 'clip-path') return /^url\(#[A-Za-z][A-Za-z0-9_-]*\)$/.test(text);
   if (attr === 'gradientunits') return text === 'userSpaceOnUse';
   if (attr === 'offset' || attr === 'x1' || attr === 'y1' || attr === 'x2' || attr === 'y2' || attr === 'cx' || attr === 'cy' || attr === 'r') {
@@ -667,42 +671,84 @@ function prunePreviewShape(el) {
   }
 }
 
-function cleanPreviewShape(source) {
-  const svg = source.cloneNode(true);
-  prunePreviewShape(svg);
-  const html = svg.outerHTML;
+function cleanSvgMarkup(markup, rules) {
+  if (typeof DOMParser === 'undefined') return '';
+  const doc = new DOMParser().parseFromString(markup, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (!root || String(root.localName).toLowerCase() !== 'svg') return '';
+  prepareDuotone(root, rules);
+  prunePreviewShape(root);
+  const html = root.outerHTML;
   if (/<\s*script\b/i.test(html)) return '';
   return html;
 }
 
+/** One top-level svg, including a nested svg, from `start` at `<svg`. */
+function takeSvg(html, start) {
+  const lower = html.toLowerCase();
+  const openEnd = html.indexOf('>', start);
+  if (openEnd < 0) return null;
+  let depth = 1;
+  let scan = openEnd + 1;
+  while (depth > 0) {
+    const nextOpen = lower.indexOf('<svg', scan);
+    const nextClose = lower.indexOf('</svg', scan);
+    if (nextClose < 0) return null;
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1;
+      const nested = html.indexOf('>', nextOpen);
+      if (nested < 0) return null;
+      scan = nested + 1;
+      continue;
+    }
+    depth -= 1;
+    const closeEnd = html.indexOf('>', nextClose);
+    if (closeEnd < 0) return null;
+    scan = closeEnd + 1;
+  }
+  return { markup: html.slice(start, scan), end: scan };
+}
+
 /**
  * Lift each svg out of the fragment before DOMPurify.
- * happy-dom's DOMPurify reads an empty tag name and unwraps svg,
- * which leaves a path that the iframe cannot paint. The token is
- * text, so it survives that pass. A real browser keeps the same svg.
+ * The markup is parsed as XML. An HTML parse treats `<style>` as
+ * raw text and, in happy-dom, drops the paths that follow it.
+ * A bare text token is deleted, so the token sits in a span.
  * @param {string} html
  * @returns {{ html: string, shapes: { token: string, clean: string }[] }}
  */
 export function shieldPreviewShapes(html) {
   if (typeof html !== 'string' || !/<svg[\s>/]/i.test(html)) return { html, shapes: [] };
-  const host = document.createElement('div');
-  host.innerHTML = html;
+  const rules = duotoneOpacityRules(html);
   const shapes = [];
   let nonce = Math.random().toString(36).slice(2);
-  const nodes = [...host.querySelectorAll('svg')].filter((node) => !node.parentElement || !node.parentElement.closest('svg'));
-  for (const node of nodes) {
-    const clean = cleanPreviewShape(node);
+  let out = '';
+  let cursor = 0;
+  const lower = html.toLowerCase();
+  while (cursor < html.length) {
+    const start = lower.indexOf('<svg', cursor);
+    if (start < 0) {
+      out += html.slice(cursor);
+      break;
+    }
+    const taken = takeSvg(html, start);
+    if (!taken) {
+      out += html.slice(cursor);
+      break;
+    }
+    out += html.slice(cursor, start);
+    const clean = cleanSvgMarkup(taken.markup, rules);
     let token = `[[reports-shape-${nonce}-${shapes.length}]]`;
-    if (html.includes(token) || host.innerHTML.includes(token)) {
+    if (html.includes(token) || out.includes(token)) {
       nonce = `${nonce}${shapes.length}x`;
       token = `[[reports-shape-${nonce}-${shapes.length}]]`;
     }
     shapes.push({ token, clean });
-    // A bare text token is deleted. Text inside a span is kept.
-    const holder = document.createElement('span');
-    holder.textContent = token;
-    node.replaceWith(holder);
+    out += `<span>${token}</span>`;
+    cursor = taken.end;
   }
+  const host = document.createElement('div');
+  host.innerHTML = out;
   return { html: host.innerHTML, shapes };
 }
 

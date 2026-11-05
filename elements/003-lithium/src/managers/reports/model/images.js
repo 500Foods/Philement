@@ -14,12 +14,16 @@ export const FIT_ALIGNS = Object.freeze(['Left', 'Center', 'Right']);
 export const FIT_VALIGNS = Object.freeze(['Top', 'Middle', 'Bottom']);
 export const DEFAULT_DPI = 72;
 
-const SVG_TAGS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']);
+const SVG_TAGS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'defs']);
 const SVG_ATTRS = new Set([
-  'fill', 'stroke', 'stroke-width', 'opacity', 'transform', 'd', 'x', 'y',
+  'fill', 'stroke', 'stroke-width', 'opacity', 'fill-opacity', 'stroke-opacity',
+  'fill-rule', 'clip-rule', 'transform', 'd', 'x', 'y',
   'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'width', 'height',
   'points', 'viewbox', 'xmlns', 'id',
 ]);
+const PATH_D = /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+\-]+$/;
+const OPACITY_VALUE = /^(?:0(?:\.0+)?|1(?:\.0+)?|0?\.\d+)$/;
+const OPACITY_DECL = /(?:^|[{;\s])opacity\s*:\s*(0(?:\.0+)?|1(?:\.0+)?|0?\.\d+)\s*(?:[;}\s]|$)/i;
 
 /**
  * Half away from zero.
@@ -226,9 +230,69 @@ function attrOk(name, value) {
   if (attr === 'xmlns') return text === 'http://www.w3.org/2000/svg';
   if (attr === 'id') return /^[A-Za-z][A-Za-z0-9_-]*$/.test(text);
   if (attr === 'points') return /^-?\d+(?:\.\d+)?(?:[\s,]+-?\d+(?:\.\d+)?)*$/.test(text.trim());
-  if (attr === 'd') return /^[MLCZ0-9.\s,-]+$/i.test(text);
-  if (attr === 'fill' || attr === 'stroke') return /^(?:none|#[0-9A-Fa-f]{3,8}|currentColor)$/.test(text);
+  if (attr === 'd') return PATH_D.test(text);
+  if (attr === 'fill' || attr === 'stroke') return /^(?:none|currentColor|#[0-9A-Fa-f]{3}|#[0-9A-Fa-f]{4}|#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{8})$/.test(text);
+  if (attr === 'opacity' || attr === 'fill-opacity' || attr === 'stroke-opacity') return OPACITY_VALUE.test(text.trim());
+  if (attr === 'fill-rule' || attr === 'clip-rule') return /^(?:evenodd|nonzero)$/i.test(text.trim());
   return /^-?\d+(?:\.\d+)?%?$/.test(text) || text === '100%';
+}
+
+/**
+ * A 0–1 opacity token, including the leading-dot form `.4`.
+ * @param {string} value
+ * @returns {string}
+ */
+export function unitOpacity(value) {
+  const text = String(value ?? '').trim();
+  return OPACITY_VALUE.test(text) ? text : '';
+}
+
+/**
+ * Class opacities written in `<style>` blocks. Duotone uses
+ * `.fa-secondary { opacity: .4 }`. Other declarations are ignored.
+ * @param {string} markup
+ * @returns {Map<string, string>}
+ */
+export function duotoneOpacityRules(markup) {
+  const rules = new Map();
+  const blocks = String(markup ?? '').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+  for (const block of blocks) {
+    const rule = /\.([A-Za-z_][\w-]*)\s*\{([^}]*)\}/g;
+    for (let match = rule.exec(block[1]); match; match = rule.exec(block[1])) {
+      const found = match[2].match(OPACITY_DECL);
+      const value = found ? unitOpacity(found[1]) : '';
+      if (value) rules.set(match[1], value);
+    }
+  }
+  return rules;
+}
+
+/**
+ * Copy duotone opacity onto the element. A style block and an inline
+ * style are presentation, and the subset does not keep either one.
+ * An opacity attribute already on the element stays.
+ * @param {Element} svg
+ * @param {Map<string, string>} [rules]
+ */
+export function prepareDuotone(svg, rules) {
+  if (!svg || typeof svg.querySelectorAll !== 'function') return;
+  const map = rules instanceof Map ? rules : duotoneOpacityRules(svg.outerHTML || '');
+  const nodes = [svg, ...svg.querySelectorAll('*')];
+  for (const el of nodes) {
+    if (typeof el.getAttribute !== 'function' || el.hasAttribute('opacity')) continue;
+    const inline = String(el.getAttribute('style') || '').match(OPACITY_DECL);
+    const inlineValue = inline ? unitOpacity(inline[1]) : '';
+    if (inlineValue) {
+      el.setAttribute('opacity', inlineValue);
+      continue;
+    }
+    for (const name of String(el.getAttribute('class') || '').split(/\s+/)) {
+      if (map.has(name)) {
+        el.setAttribute('opacity', map.get(name));
+        break;
+      }
+    }
+  }
 }
 
 /**
@@ -243,6 +307,7 @@ export function svgSubset(markup) {
   const doc = new DOMParser().parseFromString(markup, 'image/svg+xml');
   const root = doc.documentElement;
   if (!root || String(root.localName).toLowerCase() !== 'svg') return { ok: false, markup: '' };
+  prepareDuotone(root, duotoneOpacityRules(markup));
   let dropped = false;
   const clean = (node) => {
     const copy = doc.createElementNS('http://www.w3.org/2000/svg', node.localName);

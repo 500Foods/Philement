@@ -285,6 +285,51 @@ export function applyStaticProperty(doc, sel, rowId, value) {
   return null;
 }
 
+const SOURCE_LINE = /^Source:\s+\S.*$/;
+const FAKE_PATH = /^[A-Za-z]:\\fakepath\\/i;
+
+/**
+ * Notes may take `Source: <path>` when they are empty or that line alone.
+ * Any other text stays.
+ * @param {unknown} notes
+ * @returns {boolean}
+ */
+export function sourceNoteOpen(notes) {
+  const text = typeof notes === 'string' ? notes.trim() : '';
+  return text === '' || SOURCE_LINE.test(text);
+}
+
+/**
+ * The source line to store, or `''` when Notes must stay as they are.
+ * @param {unknown} notes
+ * @param {string} path
+ * @returns {string}
+ */
+export function sourceNoteFor(notes, path) {
+  const source = typeof path === 'string' ? path.trim() : '';
+  if (!source || !sourceNoteOpen(notes)) return '';
+  return `Source: ${source}`;
+}
+
+/**
+ * Path for the source note. `file.path` is the full path when the
+ * host provides one. A dialog value of `C:\fakepath\` is the name
+ * the browser is allowed to share.
+ * @param {File|null|undefined} file
+ * @param {string} [chosen] The file input value before it is cleared.
+ * @returns {string}
+ */
+export function imageSourcePath(file, chosen) {
+  const host = file && typeof file.path === 'string' ? file.path.trim() : '';
+  if (host && !FAKE_PATH.test(host)) return host;
+  const raw = typeof chosen === 'string' ? chosen.trim() : '';
+  if (raw && !FAKE_PATH.test(raw)) return raw;
+  const relative = file && typeof file.webkitRelativePath === 'string' ? file.webkitRelativePath.trim() : '';
+  if (relative) return relative;
+  const name = file && typeof file.name === 'string' ? file.name.trim() : '';
+  return name;
+}
+
 /**
  * Store a data URI on one image item and drop the previous bytes
  * when nothing else names them. The caller commits.
@@ -293,9 +338,10 @@ export function applyStaticProperty(doc, sel, rowId, value) {
  * @param {string} itemId
  * @param {string} dataUri
  * @param {string} [fileName] Original file name. A blank name leaves the stored name.
+ * @param {string} [sourcePath] Full path for a `Source:` note. A blank path leaves Notes.
  * @returns {object}
  */
-export function assignItemImage(doc, bandId, itemId, dataUri, fileName) {
+export function assignItemImage(doc, bandId, itemId, dataUri, fileName, sourcePath) {
   const next = clone(doc);
   const item = selectedItem(next, { bandId, itemId });
   if (!item || Number(item.typeKey) !== STATIC_IMAGE) throw new Error('Image needs a selected image item.');
@@ -304,6 +350,8 @@ export function assignItemImage(doc, bandId, itemId, dataUri, fileName) {
   item.image = hash;
   const name = typeof fileName === 'string' ? fileName.trim() : '';
   if (name) item.fileName = name;
+  const note = sourceNoteFor(item.notes, sourcePath);
+  if (note) item.notes = note;
   if (previous && previous !== hash) releaseImage(next, previous);
   return next;
 }
@@ -475,8 +523,9 @@ export async function importImageFile(post, file) {
  * Put imported bytes on the selected image, or add an image item.
  * @param {object} manager
  * @param {File} file
+ * @param {string} [sourcePath] Full path for a `Source:` note.
  */
-export async function placeImportedImage(manager, file) {
+export async function placeImportedImage(manager, file, sourcePath) {
   if (!manager._recordEditing || !manager.doc || !file) return;
   let dataUri;
   try {
@@ -492,11 +541,14 @@ export async function placeImportedImage(manager, file) {
   const bandId = manager._selectedBandId;
   const current = selectedItem(manager.doc, { bandId, itemId: manager._selectedItemId });
   const fileName = file && typeof file.name === 'string' ? file.name : '';
+  const path = typeof sourcePath === 'string' && sourcePath.trim() !== ''
+    ? sourcePath.trim()
+    : imageSourcePath(file);
   try {
     let next;
     let itemId = manager._selectedItemId;
     if (current && Number(current.typeKey) === STATIC_IMAGE) {
-      next = assignItemImage(manager.doc, bandId, current.id, dataUri, fileName);
+      next = assignItemImage(manager.doc, bandId, current.id, dataUri, fileName, path);
     } else {
       if (!bandId) throw new Error('Select a band before adding an image.');
       next = addItem(manager.doc, bandId, staticItemSpec(STATIC_IMAGE));
@@ -504,7 +556,7 @@ export async function placeImportedImage(manager, file) {
       const added = band && band.items[band.items.length - 1];
       if (!added) return;
       itemId = added.id;
-      next = assignItemImage(next, bandId, itemId, dataUri, fileName);
+      next = assignItemImage(next, bandId, itemId, dataUri, fileName, path);
     }
     manager._selectedItemId = itemId;
     manager._commitDocument(next);

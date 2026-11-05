@@ -12,7 +12,7 @@ per conversation. Write Status, Accomplished, Lessons learned, and
 Handoff on the phase in this file, set the same Status in the parent's
 phase table, and append the Working Log in the parent.
 
-**Entry:** Phases 33–37 have not started. Phase 38 is complete (2026-11-04). Phase 39 is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name `acuranzo_1463.lua` or `acuranzo_1464.lua`, and he did not quote the fixture figures. That check is the apply report. Phase 44a is complete (2026-11-04). Phase 44b is complete (2026-11-04). Andrew said the gradients render on Preview HTML and that 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c** is in progress (2026-11-04). `acuranzo_1468.lua` is written and not applied. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. The next free Acuranzo file is **1469**. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Do not start Phase 45. Its fixture needs the Phase 33 compiler. Phase 44c is not Phase 45's gate.
+**Entry:** Phases 33–37 have not started. Phase 38 is complete (2026-11-04). Phase 39 is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name `acuranzo_1463.lua` or `acuranzo_1464.lua`, and he did not quote the fixture figures. That check is the apply report. Phase 44a is complete (2026-11-04). Phase 44b is complete (2026-11-04). Andrew said the gradients render on Preview HTML and that 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c** is complete (2026-11-05). Andrew said the new version renders a Font Awesome duotone icon and asked to close the phase. He did not name `acuranzo_1468.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. The next free Acuranzo file is **1469**. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Phase 45 has not started. Its fixture needs the Phase 33 compiler. Phase 44c is not Phase 45's gate. Naming Phase 45 starts it.
 **Next file:** [`/docs/Li/plans/reporting/06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) after Phase 49.
 
 ## Phase 33 — Text formula
@@ -1675,10 +1675,11 @@ The script update applied, `npm test`, `npm run lint`,
 
 ### Status
 
-**in progress.** Andrew named this phase on 2026-11-04. The
-packet is written. He has not applied it, and he has not
-checked Preview HTML. Do not mark this phase complete. Do not
-start Phase 45.
+**complete — 2026-11-05.** Andrew said the new version renders
+a Font Awesome duotone icon and asked to close the phase. He
+accepted the browser file dialog hiding the directory. He did
+not name `acuranzo_1468.lua`. He did not quote `1,234.50` or
+`2026-Mar-05 14:07`. He had already said the fit options work.
 
 ### Accomplished
 
@@ -1712,6 +1713,21 @@ start Phase 45.
   [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md)
   records the four keys, `fitHeight`, `embedFonts`,
   `doc.images`, and the raster map.
+- The preview shield keeps path `opacity` (including `.4`),
+  `fill-opacity`, `stroke-opacity`, `fill-rule`, and
+  `currentColor`. A duotone rule `.fa-secondary { opacity: .4 }`
+  is copied onto the path and the `<style>` element is dropped.
+  `acuranzo_1468.lua` allows `defs` and `style` so that icon is
+  not skipped. SVG `<text>` stays out. The stored file is the
+  original SVG. The design surface paints that file in an image
+  element.
+- An image item stores `fileName`, the chosen file's name. The
+  File row and a drop on a band open `#reports-image-file`.
+  The static toolbar order is number, datetime, text, memo,
+  shape, image. Notes that are empty, or only `Source: <path>`,
+  become that line. Any other note stays. A browser
+  `C:\fakepath\` value contributes the file name. The script
+  does not read `fileName` or `notes`.
 
 ### Lessons learned
 
@@ -1733,33 +1749,42 @@ start Phase 45.
   body does the same. presets and zones fail in that harness
   because it does not pass `params.now` and `luatz` is not
   installed. The HTML probe is the check that matters.
+- happy-dom parses `<style>` as HTML and drops the paths that
+  follow it. The shield lifts each `<svg>` from the source
+  string and parses it as XML. The designer image element
+  already showed the in-file opacity. The old shield deleted
+  `opacity` and `currentColor`, so both duotone paths painted
+  black. A PNG never takes that path.
+- A browser file dialog does not share the directory.
+  `C:\fakepath\` becomes the file name on the `Source:` line.
+  `file.path` is the full path when the host sets it.
 
 ### Handoff
 
-- The packet is
-  [`/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua).
-  Andrew applies it, regenerates the payload, restarts
-  Hydrogen, and checks Preview HTML on
-  `https://lithium.500courses.com`. The page should show
-  `1,234.50`, `2026-Mar-05 14:07`, a one-line row beside a
-  two-line row, and one shared image bitmap. This phase stays
-  in progress until he reports that check.
 - Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as
-  written. The next free Acuranzo file is **1469**. Do not
-  write it until a later change to `Reports.Render`. QueryRef
-  **175** stays unused. Next free lookup id **079**. Next free
-  lookup 054 key **52**.
-- Phase 45 has not started. Its written gate is met, and its
-  fixture needs the Phase 33 compiler. Do not start Phase 45.
-  Phases 33–37, 46–48, PDFs, barcodes, and charts stay on the
-  temporary skip.
-- On this sitting, `npm test` was 96 files, 1517 passed, 12
+  written. The packet is
+  [`/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua).
+  Andrew did not name that file on the close. The next free
+  Acuranzo file is **1469**. Do not write it until a later
+  change to `Reports.Render`. QueryRef **175** stays unused.
+  Next free lookup id **079**. Next free lookup 054 key **52**.
+- Phase 45 is next in the index. Its written gate is met.
+  The fixture groups by the pack-code month letter, and that
+  compiler is Phase 33, which has not started. A named
+  function still prints blank. Phase 45.2 also uses the
+  Functions buffer from Phase 34. The one-field group
+  (`band.field`) stays. Do not start Phase 45 until Andrew
+  names it. Phases 33–37, 46–48, PDFs, barcodes, and charts
+  stay on the temporary skip. SVG `<text>` stays out until
+  barcode lettering.
+- On the close, `npm test` was 96 files, 1521 passed, 12
   skipped. `npm run lint` exited 0. `npm run lint:css` exited
-  0. `luacheck` on `acuranzo_1468.lua` reported 0 warnings.
-  `luac -p` parsed the wrapper and the extracted script body.
-  The Lua 5.5.1 probe matched `detail.html` and the 44c
-  fixture. The designer was not opened in this chat. Preview
-  HTML on `https://lithium.500courses.com` was not opened.
+  0 on the duotone sitting, and CSS did not change after that.
+  `luacheck` on `acuranzo_1468.lua` reported 0 warnings.
+  `luac -p` parsed the wrapper. The Lua 5.5.1 probe matched
+  `detail.html` and the 44c fixture. Andrew checked Preview
+  HTML and said the Font Awesome icon renders. The designer
+  was not opened in this chat.
 
 ---
 
@@ -1774,7 +1799,7 @@ A group band can take its key from a text or number function.
 Phase 44, Phase 44a, and Phase 44b are complete (2026-11-04).
 The fixture groups by a text function. Phase 33 has not
 started, and a named function still prints blank. Phase 44c
-is drafted and revised and is not this phase's gate. Do not start
+is complete (2026-11-05) and is not this phase's gate. Do not start
 Phase 45 until Andrew names it.
 
 ### Work items

@@ -4022,6 +4022,7 @@ local IMAGE_VALIGNS = { Top = true, Middle = true, Bottom = true }
 local SVG_TAGS = {
     svg = true, g = true, path = true, rect = true, circle = true,
     ellipse = true, line = true, polyline = true, polygon = true,
+    defs = true, style = true,
 }
 
 local function svg_subset(uri)

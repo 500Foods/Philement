@@ -11,7 +11,7 @@ import { applyProperty, propertyRows } from '../../src/managers/reports/report-p
 import { formatStaticDate, formatStaticNumber } from '../../src/managers/reports/reports-format.js';
 import { previewParams, previewSrcdoc, resolvePreviewParams } from '../../src/managers/reports/reports-preview.js';
 import { buildRasterMap } from '../../src/managers/reports/reports-rasters.js';
-import { assignItemImage, importFailureMessage } from '../../src/managers/reports/reports-static.js';
+import { assignItemImage, imageSourcePath, importFailureMessage } from '../../src/managers/reports/reports-static.js';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 const OTHER = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
@@ -209,6 +209,38 @@ describe('static image registry', () => {
     expect(importFailureMessage(new Error('Server error. Please try again later.'))).toBe('Server error. Please try again later.');
   });
 
+  it('records the full path in Notes and leaves any other note', () => {
+    const path = '/home/asimard/icons/flame.svg';
+    const sel = { bandId: 'd1', itemId: 'image_1' };
+    const placed = assignItemImage(
+      addItem(createBlank(), 'd1', { typeKey: 2, id: 'image_1' }),
+      'd1', 'image_1', PNG, 'flame.svg', path,
+    );
+    expect(itemOf(placed, 'image_1')).toMatchObject({
+      fileName: 'flame.svg', notes: `Source: ${path}`,
+    });
+    const replaced = assignItemImage(placed, 'd1', 'image_1', OTHER, 'leaf.png', '/home/asimard/icons/leaf.png');
+    expect(itemOf(replaced, 'image_1').notes).toBe('Source: /home/asimard/icons/leaf.png');
+    expect(itemOf(replaced, 'image_1').fileName).toBe('leaf.png');
+    const kept = assignItemImage(
+      applyProperty(replaced, sel, 'notes', 'Approved crop'),
+      'd1', 'image_1', PNG, 'other.svg', '/tmp/other.svg',
+    );
+    expect(itemOf(kept, 'image_1').notes).toBe('Approved crop');
+    expect(itemOf(kept, 'image_1').fileName).toBe('other.svg');
+    const caption = assignItemImage(
+      applyProperty(placed, sel, 'notes', 'Source: /old/flame.svg\nKeep this'),
+      'd1', 'image_1', OTHER, 'next.svg', '/new/next.svg',
+    );
+    expect(itemOf(caption, 'image_1').notes).toBe('Source: /old/flame.svg\nKeep this');
+    const blank = assignItemImage(placed, 'd1', 'image_1', OTHER, 'leaf.png', '  ');
+    expect(itemOf(blank, 'image_1').notes).toBe(`Source: ${path}`);
+    expect(imageSourcePath({ name: 'flame.svg', path }, 'C:\\fakepath\\flame.svg')).toBe(path);
+    expect(imageSourcePath({ name: 'flame.svg' }, 'C:\\fakepath\\flame.svg')).toBe('flame.svg');
+    expect(imageSourcePath({ name: 'flame.svg', webkitRelativePath: 'icons/flame.svg' }, '')).toBe('icons/flame.svg');
+    expect(imageSourcePath({ name: 'flame.svg' }, path)).toBe(path);
+  });
+
   it('hashes the fixture PNG and shares one raster for two placements', () => {
     expect(imageHash(PNG)).toBe('21b32f6d');
     expect(displayPixels('1 in', 72)).toBe(72);
@@ -261,6 +293,47 @@ describe('static image registry', () => {
     expect(src).toContain('rotate(90 36 27) translate(36 27) scale(-1 1) translate(-36 -27)');
     expect(src).toContain('<image');
     expect(src).toContain('<use');
+  });
+
+  it('keeps duotone opacity and currentColor, and still drops text', () => {
+    const styled = [
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">',
+      '<defs><style>.fa-secondary{opacity:.4} .fa-primary{opacity:1}</style></defs>',
+      '<path class="fa-secondary" fill="currentColor" d="M0 0 L10 0 L10 10 Z"/>',
+      '<path class="fa-primary" fill="currentColor" d="M2 2 L4 2 L4 4 Z"/>',
+      '</svg>',
+    ].join('');
+    const src = previewSrcdoc(styled);
+    expect(src).toContain('opacity=".4"');
+    expect(src).toContain('fill="currentColor"');
+    expect(src).not.toContain('fa-secondary');
+    expect(src).not.toContain('javascript');
+    const hostile = previewSrcdoc(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><style>.x{opacity:.4;background:url(javascript:alert(1))}</style><path class="x" fill="url(javascript:alert(1))" d="M0 0 L1 1"/></svg>',
+    );
+    expect(hostile).toContain('opacity=".4"');
+    expect(hostile).not.toContain('fa-secondary');
+    expect(hostile).not.toContain('javascript');
+    const direct = previewSrcdoc(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path opacity=".4" fill="currentColor" fill-rule="evenodd" d="M0 0 A5 5 0 1 0 10 0 Z"/></svg>',
+    );
+    expect(direct).toContain('opacity=".4"');
+    expect(direct).toContain('fill-rule="evenodd"');
+    expect(direct).toContain('A5 5 0 1 0 10 0');
+    const inline = previewSrcdoc(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><path style="opacity:0.4" fill="#000000" d="M0 0 L4 4"/></svg>',
+    );
+    expect(inline).toContain('opacity="0.4"');
+    expect(inline).not.toContain('style=');
+    const lettered = previewSrcdoc(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><text>12</text><path opacity=".4" d="M0 0 L1 1"/></svg>',
+    );
+    expect(lettered.toLowerCase()).not.toContain('<text');
+    expect(lettered).toContain('opacity=".4"');
+    const subset = svgSubset(styled);
+    expect(subset.markup).toContain('opacity=".4"');
+    expect(subset.markup).toContain('fill="currentColor"');
+    expect(subset.markup.toLowerCase()).not.toContain('<style');
   });
 
   it('leaves rasters off an imageless preview and attaches one display PNG', async () => {

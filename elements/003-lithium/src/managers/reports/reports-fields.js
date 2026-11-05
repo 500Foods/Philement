@@ -11,7 +11,7 @@ import { dropItem } from './reports-drop.js';
 import { toast } from '../../shared/toast.js';
 import { addBandInOrder, addItem, removeBand, reorderItem, stepItem } from './model/document.js';
 import { SHAPE_TYPE, defaultShapeFields, setShapeCatalog } from './reports-shape.js';
-import { STATIC_GHOST, STATIC_IMAGE, placeImportedImage, staticItemSpec } from './reports-static.js';
+import { STATIC_GHOST, STATIC_IMAGE, imageSourcePath, placeImportedImage, staticItemSpec } from './reports-static.js';
 import {
   FIELD_TYPES, PARAM_TYPE, SYSTEM_TYPES, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
 } from './reports-sample.js';
@@ -128,9 +128,11 @@ export const reportFieldMethods = {
     };
     els.staticBtns.forEach((btn) => btn.addEventListener('click', this._onStaticAdd));
     this._onImageFile = (event) => {
-      const file = event.target.files && event.target.files[0];
-      event.target.value = '';
-      if (file) placeImportedImage(this, file);
+      const input = event.target;
+      const file = input.files && input.files[0];
+      const sourcePath = imageSourcePath(file, input && input.value);
+      if (input) input.value = '';
+      if (file) placeImportedImage(this, file, sourcePath);
     };
     els.imageInput?.addEventListener('change', this._onImageFile);
     this._onImagePaste = (event) => {

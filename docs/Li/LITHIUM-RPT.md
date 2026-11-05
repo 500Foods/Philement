@@ -318,6 +318,11 @@ That file is the `html` value, including its final newline.
 - `doc.images` maps a content hash to one data URI. The item stores
   that hash on `image`. It may also store `fileName`, the name of
   the file the author chose. The script does not read `fileName`.
+  An empty Notes value, or a Notes value that is only
+  `Source: <path>`, becomes `Source:` plus the path the dialog
+  provides. `file.path` is that path when the host sets it. A
+  `C:\fakepath\` dialog value contributes the file name. Any other
+  note is left as written. The script does not read `notes`.
   Preview passes one display PNG per hash,
   pixel size, fit, anchor, grayscale, and invert as `params.rasters`.
   Display pixels are the box in inches times the item `dpi` (default
@@ -330,11 +335,17 @@ That file is the `html` value, including its final newline.
   scale-down letterbox. Flip and rotation are the draw, flip first.
   Opacity is on the placement. Grayscale and invert are baked into
   the display PNG.
-- SVG in the subset svg, g, path, rect, circle, ellipse, line,
-  polyline, and polygon, with fill, stroke, stroke-width, opacity,
-  and a translate, scale, or rotate, stays in the file and in the
-  HTML. Script, filters, text, images, and foreignObject stay out
-  of that subset. The file still holds the original markup.
+- SVG in the subset svg, g, defs, path, rect, circle, ellipse,
+  line, polyline, and polygon, with fill, stroke, stroke-width,
+  opacity, fill-opacity, stroke-opacity, fill-rule, and a
+  translate, scale, or rotate, stays in the file and in the HTML.
+  `fill` and `stroke` may be `currentColor` or a hex paint. A
+  duotone `<style>` rule such as `.fa-secondary { opacity: .4 }`
+  is copied onto the path as `opacity`, and the style element is
+  dropped. An inline `style="opacity: .4"` is copied the same way.
+  Script, filters, text, images, and foreignObject stay out of
+  that subset. Text waits for barcode lettering. The file still
+  holds the original markup.
 - `embedFonts` defaults to `false`. HTML then names the family and
   attaches no font bytes. When it is `true`, each used family other
   than Helvetica is one `@font-face` whose source is a base64 WOFF2
