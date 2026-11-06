@@ -1,0 +1,23 @@
+/* The box is a free rectangle. The symbol keeps its aspect. The corner stays put. */
+
+.reports-item.reports-item-barcode {
+  padding: 0;
+  overflow: hidden;
+}
+
+.reports-item-barcode svg {
+  display: block;
+  width: var(--reports-barcode-svg-width, 100%);
+  height: var(--reports-barcode-svg-height, 100%);
+  margin-left: var(--reports-barcode-svg-x, 0);
+  margin-top: var(--reports-barcode-svg-y, 0);
+  pointer-events: none;
+  transform: var(--reports-barcode-transform, none);
+}
+
+.reports-barcode-note {
+  margin: 0;
+  color: #6a6a6a;
+  font-size: 11px;
+  pointer-events: none;
+}

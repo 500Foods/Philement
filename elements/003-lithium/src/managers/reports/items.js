@@ -12,8 +12,11 @@ import './reports-static.css';
 import { bandHeight } from './model/document.js';
 import { contentBox, toCssPx } from './model/units.js';
 import { aggregateItemLabel, isAggregateType } from './reports-aggregate.js';
-import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, systemItemLabel } from './reports-sample.js';
-import { SHAPE_TYPE, paintShape } from './reports-shape.js';
+import { imageDataUriValue } from './model/images.js';
+import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, boundFieldText, systemItemLabel } from './reports-sample.js';
+import { isBarcodeType } from './model/barcode.js';
+import { paintBarcode } from './reports-barcode.js';
+import { FIELD_SHAPE, SHAPE_TYPE, paintShape, shapeKindFromValue } from './reports-shape.js';
 import { paintMeasuredItem, paintsMeasured } from './reports-static.js';
 
 /** Smallest resize, in CSS pixels. */
@@ -186,6 +189,13 @@ function itemNote(text) {
   return note;
 }
 
+/** A query value needs both a datasource name and a field name. */
+function queryBound(item) {
+  const fieldOk = typeof item.field === 'string' && item.field.trim() !== '';
+  const sourceOk = typeof item.datasource === 'string' && item.datasource.trim() !== '';
+  return fieldOk && sourceOk;
+}
+
 /**
  * Paint static text (typeKey 0) and field items (20, 21, 24) into the
  * band body. A field shows its bound name, or its type caption when
@@ -198,7 +208,7 @@ export function paintBandItems(body, band, doc) {
   const items = Array.isArray(band && band.items) ? band.items : [];
   for (const item of items) {
     if (!item || typeof item !== 'object') continue;
-    if (item.typeKey === SHAPE_TYPE) {
+    if (item.typeKey === SHAPE_TYPE || item.typeKey === FIELD_SHAPE) {
       if (typeof item.id !== 'string' || item.id === '') {
         body.append(itemNote('Item needs an id.'));
         continue;
@@ -217,12 +227,38 @@ export function paintBandItems(body, band, doc) {
         body.append(itemNote(message));
         continue;
       }
-      paintShape(shape, item, doc);
+      let view = item;
+      if (item.typeKey === FIELD_SHAPE) {
+        const code = shapeKindFromValue(boundFieldText(doc, item));
+        if (code) view = { ...item, kind: code };
+        shape.dataset.unbound = String(!queryBound(item));
+      }
+      paintShape(shape, view, doc);
       const shapeCorner = document.createElement('div');
       shapeCorner.className = 'reports-item-corner';
       shapeCorner.title = 'Resize item';
       shape.append(shapeCorner);
       body.append(shape);
+      continue;
+    }
+    if (item.typeKey === 22 || item.typeKey === 23) {
+      if (typeof item.id !== 'string' || item.id === '') {
+        body.append(itemNote('Item needs an id.'));
+        continue;
+      }
+      try {
+        const raw = boundFieldText(doc, item);
+        const unbound = !queryBound(item);
+        if (item.typeKey === 22) {
+          paintMeasuredItem(body, item, doc, { src: imageDataUriValue(raw), unbound });
+        } else {
+          const text = raw !== '' ? raw : (unbound ? 'Memo' : '');
+          paintMeasuredItem(body, item, doc, { text, unbound });
+        }
+      } catch (error) {
+        const message = error instanceof Error && error.message ? error.message : 'Item could not be measured.';
+        body.append(itemNote(message));
+      }
       continue;
     }
     if (paintsMeasured(item)) {
@@ -236,6 +272,33 @@ export function paintBandItems(body, band, doc) {
         const message = error instanceof Error && error.message ? error.message : 'Item could not be measured.';
         body.append(itemNote(message));
       }
+      continue;
+    }
+    if (isBarcodeType(item.typeKey)) {
+      if (typeof item.id !== 'string' || item.id === '') {
+        body.append(itemNote('Item needs an id.'));
+        continue;
+      }
+      const el = document.createElement('div');
+      el.className = 'reports-item reports-item-barcode';
+      el.dataset.itemId = item.id;
+      try {
+        const box = measuredBox(item);
+        el.style.left = `${box.left}px`;
+        el.style.top = `${box.top}px`;
+        el.style.width = `${box.width}px`;
+        el.style.height = `${box.height}px`;
+      } catch (error) {
+        const message = error instanceof Error && error.message ? error.message : 'Item could not be measured.';
+        body.append(itemNote(message));
+        continue;
+      }
+      paintBarcode(el, item, doc);
+      const barcodeCorner = document.createElement('div');
+      barcodeCorner.className = 'reports-item-corner';
+      barcodeCorner.title = 'Resize item';
+      el.append(barcodeCorner);
+      body.append(el);
       continue;
     }
     const aggregate = isAggregateType(item.typeKey);

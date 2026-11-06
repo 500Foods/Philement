@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "npm run dev",
+    "predev": "node scripts/copy-pdf-worker.js",
     "dev": "vite dev",
     "validate:tabulator": "node scripts/validate-tabulator-config.js",
     "style:registry": "node scripts/generate-style-registry.js",
@@ -64,6 +65,7 @@
     "luxon": "^3.7.2",
     "marked": "^18.0.14",
     "overlayscrollbars": "^2.15.1",
+    "pdfjs-dist": "^6.5.438",
     "shepherd.js": "^15.2.2",
     "sql-formatter": "^15.3.0",
     "suneditor": "^3.0.0-beta.0",

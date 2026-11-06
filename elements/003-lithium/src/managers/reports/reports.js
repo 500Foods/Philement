@@ -121,6 +121,7 @@ export default class ReportsManager {
     this._page = 'editor';
     this._category = 'static';
     this._json = null;
+    this._pdfPage = null;
     this._jsonHeld = false;
     this._jsonLock = false;
     this._jsonErrorText = '';
@@ -177,6 +178,8 @@ export default class ReportsManager {
       htmlTab: this.container.querySelector('#reports-html-tab'),
       logTab: this.container.querySelector('#reports-log-tab'),
       pdfTab: this.container.querySelector('#reports-pdf-tab'),
+      pdfToolbar: this.container.querySelector('#reports-pdf-toolbar'),
+      pdfHost: this.container.querySelector('#reports-pdf'),
       composeBtn: this.container.querySelector('#reports-compose-btn'),
       previewBtn: this.container.querySelector('#reports-preview-btn'),
       previewFrame: this.container.querySelector('#reports-preview-frame'),
@@ -231,7 +234,7 @@ export default class ReportsManager {
   _missingControl() {
     const required = [
       'collapseBtn', 'reportTab', 'editorTab', 'jsonTab', 'revisionsTab',
-      'composeTab', 'htmlTab', 'logTab', 'pdfTab', 'composeBtn', 'previewBtn', 'previewFrame', 'composeHost', 'composeFooter', 'logHost', 'logFooter',
+      'composeTab', 'htmlTab', 'logTab', 'pdfTab', 'pdfToolbar', 'pdfHost', 'composeBtn', 'previewBtn', 'previewFrame', 'composeHost', 'composeFooter', 'logHost', 'logFooter',
       'revisionSelect', 'revisionCopy', 'revisionRevert', 'revisionStatus', 'revisionForm',
       'importBtn', 'exportBtn',
       'undoBtn', 'redoBtn', 'clearBtn', 'foldBtn', 'unfoldBtn', 'fontBtn', 'viewControls',
@@ -503,6 +506,24 @@ export default class ReportsManager {
     this._paneWatch.observe(this.elements.stage);
   }
 
+  async openPdf() {
+    if (this._closed) return;
+    try {
+      if (!this._pdfPage) {
+        const { ReportPdfPage } = await import('./reports-pdf.js');
+        if (this._closed) return;
+        this._pdfPage = new ReportPdfPage(this);
+      }
+      if (this._closed) return;
+      await this._pdfPage.open();
+    } catch (error) {
+      if (this._closed) return;
+      const message = error instanceof Error ? error.message : 'Preview PDF failed.';
+      log(Subsystems.MANAGER, Status.ERROR, `[Reports] ${message}`);
+      toast.error('Preview PDF failed', { description: message, subsystem: 'Manager' });
+    }
+  }
+
   _release() {
     this._closed = true;
     this._clearItemDrag();
@@ -513,6 +534,8 @@ export default class ReportsManager {
     this._dropPane();
     if (this._json) this._json.destroy();
     this._json = null;
+    if (this._pdfPage) this._pdfPage.destroy();
+    this._pdfPage = null;
     this._destroyReportFont();
     if (this._compose) this._compose.destroy();
     this._compose = null;

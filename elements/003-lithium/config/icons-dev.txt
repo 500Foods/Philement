@@ -5,9 +5,15 @@
 <fa class="manager-footer-export-icon fa-list"></fa>
 <fa fa-00></fa>
 <fa fa-address-book></fa>
+<fa fa-angle-down></fa>
+<fa fa-angle-left></fa>
 <fa fa-angle-right class="lithium-group-toggle-icon"></fa>
+<fa fa-angle-right></fa>
+<fa fa-angle-up></fa>
 <fa fa-angles-left class="lithium-collapse-icon"></fa>
 <fa fa-angles-left id="collapse-icon"></fa>
+<fa fa-angles-left></fa>
+<fa fa-angles-right></fa>
 <fa fa-aperture></fa>
 <fa fa-arrow-down-a-z></fa>
 <fa fa-arrow-down-to-line></fa>
@@ -22,9 +28,12 @@
 <fa fa-arrow-up-right-from-square></fa>
 <fa fa-arrow-up-to-line></fa>
 <fa fa-arrow-up></fa>
+<fa fa-arrows-left-right></fa>
 <fa fa-arrows-rotate></fa>
+<fa fa-arrows-up-down></fa>
 <fa fa-at></fa>
 <fa fa-atom-simple></fa>
+<fa fa-barcode></fa>
 <fa fa-bars></fa>
 <fa fa-bell-concierge></fa>
 <fa fa-bell></fa>
@@ -62,6 +71,7 @@
 <fa fa-comments></fa>
 <fa fa-compress></fa>
 <fa fa-copy></fa>
+<fa fa-crop></fa>
 <fa fa-crosshairs></fa>
 <fa fa-cube></fa>
 <fa fa-database></fa>
@@ -103,6 +113,7 @@
 <fa fa-hashtag></fa>
 <fa fa-highlighter></fa>
 <fa fa-history></fa>
+<fa fa-i-cursor></fa>
 <fa fa-id-badge></fa>
 <fa fa-id-card></fa>
 <fa fa-image></fa>
@@ -139,6 +150,7 @@
 <fa fa-phone></fa>
 <fa fa-play></fa>
 <fa fa-plus></fa>
+<fa fa-print></fa>
 <fa fa-project-diagram></fa>
 <fa fa-rabbit-running></fa>
 <fa fa-radiation></fa>
@@ -168,6 +180,7 @@
 <fa fa-swap-arrows fa-rotate-90></fa>
 <fa fa-sync-alt></fa>
 <fa fa-sync></fa>
+<fa fa-table-cells></fa>
 <fa fa-table-layout></fa>
 <fa fa-table></fa>
 <fa fa-thought-bubble></fa>
@@ -176,6 +189,7 @@
 <fa fa-trash></fa>
 <fa fa-triple-chevrons-left></fa>
 <fa fa-triple-chevrons-right></fa>
+<fa fa-up-down-left-right></fa>
 <fa fa-up-down></fa>
 <fa fa-up></fa>
 <fa fa-upload></fa>

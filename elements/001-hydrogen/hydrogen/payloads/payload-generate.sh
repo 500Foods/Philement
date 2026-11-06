@@ -14,6 +14,8 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.6.1 - 2026-11-05 - Pack lua/pdfkit for the payload require searcher
+# 4.6.0 - 2026-11-05 - Pack lua/zint and lua/luatz for the payload require searcher
 # 4.5.2 - 2026-10-16 - Pack courses when its migrations directory exists
 # 4.5.1 - 2026-10-16 - Require helium/database.lua and every engine file the C loader opens
 # 4.5.0 - 2026-10-16 - Pack one helium/database*.lua set for every design
@@ -47,7 +49,7 @@ fi
 set -e
 
 # Display script information
-echo "payload-generate.sh version 4.5.2"
+echo "payload-generate.sh version 4.6.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Helium project migrations to include (same as test_31_migrations.sh).
@@ -295,6 +297,37 @@ generate_terminal_payload() {
     fi
 
     echo -e "${GREEN}${PASS} Terminal payload generated successfully.${NC}"
+}
+
+# Shipped Lua libraries. require finds these in the payload cache.
+# lua/zint is lua-zint-svg 0.1.0, commit 89a8231386682109312c29d8b84dc525c271eea3.
+# lua/luatz is the patched v0.4 pack from acuranzo_1452.lua.
+# lua/pdfkit is lua-pdfkit 1.0.0 with the module name pdfkit. Nested
+# folders stay: require("pdfkit.font.standard") is lua/pdfkit/font/standard.lua.
+copy_lua_libraries() {
+    print_header "Copying Lua libraries"
+
+    local lua_src="${SCRIPT_DIR}/lua"
+    if [[ ! -d "${lua_src}/zint" || ! -d "${lua_src}/luatz" || ! -d "${lua_src}/pdfkit" ]]; then
+        echo -e "${RED}${FAIL} payloads/lua is missing zint, luatz, or pdfkit${NC}"
+        exit 1
+    fi
+    if [[ ! -f "${lua_src}/zint/init.lua" || ! -f "${lua_src}/zint/barcode.lua" ]]; then
+        echo -e "${RED}${FAIL} lua/zint/init.lua or lua/zint/barcode.lua missing${NC}"
+        exit 1
+    fi
+    if [[ ! -f "${lua_src}/luatz/init.lua" || ! -f "${lua_src}/luatz/tzcache.lua" ]]; then
+        echo -e "${RED}${FAIL} lua/luatz/init.lua or lua/luatz/tzcache.lua missing${NC}"
+        exit 1
+    fi
+    if [[ ! -f "${lua_src}/pdfkit/init.lua" || ! -f "${lua_src}/pdfkit/font/standard.lua" || ! -f "${lua_src}/pdfkit/fontkit/init.lua" ]]; then
+        echo -e "${RED}${FAIL} lua/pdfkit/init.lua or a nested pdfkit module is missing${NC}"
+        exit 1
+    fi
+
+    mkdir -p "${SWAGGERUI_DIR}/lua"
+    cp -a "${lua_src}/zint" "${lua_src}/luatz" "${lua_src}/pdfkit" "${SWAGGERUI_DIR}/lua/"
+    echo -e "${GREEN}${PASS} Copied lua/zint, lua/luatz, and lua/pdfkit${NC}"
 }
 
 # Function to copy migration files into payload
@@ -649,6 +682,16 @@ create_tarball() {
         TAR_FILES+=("${engine_name}")
     done
 
+    if [[ -d "${SWAGGERUI_DIR}/lua" ]]; then
+        while IFS= read -r -d '' lua_file; do
+            local rel_path="${lua_file#"${SWAGGERUI_DIR}"/}"
+            TAR_FILES+=("${rel_path}")
+        done < <("${FIND}" "${SWAGGERUI_DIR}/lua" -name "*.lua" -type f -print0 2>/dev/null || true)
+    else
+        echo -e "${RED}${FAIL} lua/ missing from payload stage${NC}"
+        exit 1
+    fi
+
     # Add migration files for each design
     for design in "${DESIGNS[@]}"; do
         if [[ -d "${SWAGGERUI_DIR}/${design}" ]]; then
@@ -923,6 +966,7 @@ main() {
     download_swaggerui
     generate_terminal_payload
     copy_migration_files
+    copy_lua_libraries
     compress_static_assets
     create_tarball
 

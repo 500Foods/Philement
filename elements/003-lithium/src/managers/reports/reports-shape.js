@@ -17,6 +17,8 @@ import {
 export { fillStyleChoices, shapeSpacingPx };
 
 export const SHAPE_TYPE = 25;
+/** Field Shape. The designed kind is the fallback. A query value that names a kind replaces it. */
+export const FIELD_SHAPE = 26;
 const KAPPA = 0.5522847498;
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 const SIDES = new Set(['top', 'right', 'bottom', 'left']);
@@ -61,13 +63,14 @@ export const SEEDED_PATHS = Object.freeze({
 export const SHAPE_PURIFY = Object.freeze({
   ADD_TAGS: [
     'svg', 'path', 'g', 'defs', 'clipPath', 'linearGradient', 'radialGradient', 'stop', 'circle',
-    'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon',
+    'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'desc', 'style',
   ],
   ADD_ATTR: [
     'viewBox', 'viewbox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray',
     'stroke-linecap', 'stroke-linejoin', 'transform', 'preserveAspectRatio', 'preserveaspectratio', 'xmlns',
     'id', 'offset', 'stop-color', 'gradientUnits', 'gradientunits', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r',
     'clip-path', 'width', 'height', 'overflow', 'href', 'xlink:href', 'opacity', 'points', 'rx', 'ry',
+    'x', 'y', 'font-family', 'font-size', 'font-weight', 'text-anchor', 'style',
   ],
 });
 
@@ -190,6 +193,22 @@ export function shapeOutlineLabel(item) {
 function knownKind(kind, rows) {
   if (Object.hasOwn(SHAPE_LABELS, kind)) return true;
   return catalogMap(rows).has(kind);
+}
+
+/**
+ * Shape kind named by a query cell. Empty when the cell is not a kind code.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function shapeKindFromValue(value) {
+  const code = typeof value === 'string' ? value.trim() : '';
+  return code && knownKind(code) ? code : '';
+}
+
+/** Static shape (25) and field shape (26). */
+export function isShapeItem(typeKey) {
+  const key = Number(typeKey);
+  return key === SHAPE_TYPE || key === FIELD_SHAPE;
 }
 
 /**
@@ -370,14 +389,14 @@ export const shapeItemFields = {
 /** Paint rows for a shape. Empty for every other selection. */
 export function shapeFillRows(doc, sel) {
   const item = selectedItem(doc, sel);
-  if (!item || Number(item.typeKey) !== SHAPE_TYPE) return [];
+  if (!item || !isShapeItem(item.typeKey)) return [];
   return shapeFillRowList(item);
 }
 
 /** Write Paint, Angle, or Stops. The color row stays key 47. */
 export function applyShapeFill(doc, sel, rowId, value) {
   const item = selectedItem(doc, sel);
-  if (!item || Number(item.typeKey) !== SHAPE_TYPE) throw new Error('Fill needs a selected shape.');
+  if (!item || !isShapeItem(item.typeKey)) throw new Error('Fill needs a selected shape.');
   return editShape(doc, sel, (next) => patchShapeFill(next, rowId, value));
 }
 
@@ -599,8 +618,15 @@ export function paintShape(el, item, doc) {
 
 const PREVIEW_SHAPE_TAGS = new Set([
   'svg', 'path', 'g', 'defs', 'clippath', 'lineargradient', 'radialgradient', 'stop', 'circle',
-  'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon',
+  'image', 'use', 'rect', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'desc', 'style',
 ]);
+const TEXT_PARENTS = new Set(['text', 'desc', 'style']);
+
+/** zint --embedfont writes one @font-face. Other style blocks are presentation. */
+function fontFaceStyleOk(value) {
+  const text = String(value || '').trim().replace(/\s+/g, '');
+  return /^@font-face\{font-family:"[A-Za-z0-9][A-Za-z0-9,._-]*";src:url\(data:font\/woff2;base64,[A-Za-z0-9+/=]+\);?\}$/.test(text);
+}
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 const PATH_D = /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+\-]+$/;
 const SAFE_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
@@ -623,7 +649,7 @@ function previewShapeAttrOk(name, value) {
   const text = String(value);
   if (attr.startsWith('on')) return false;
   const href = attr === 'href' || attr === 'xlink:href';
-  if (text.length > (attr === 'd' ? 200000 : href ? 8000000 : 4000)) return false;
+  if (text.length > (attr === 'd' ? 2000000 : href ? 8000000 : 4000)) return false;
   if (/[<>]/.test(text) || /javascript\s*:/i.test(text)) return false;
   if (href) {
     if (text.startsWith('#')) return SAFE_ID.test(text.slice(1));
@@ -633,16 +659,23 @@ function previewShapeAttrOk(name, value) {
   if (attr === 'width' || attr === 'height') return text === '100%' || text === '0' || /^-?\d+(?:\.\d+)?$/.test(text);
   if (attr === 'overflow') return text === 'visible';
   if (attr === 'viewbox') return /^-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?){3}$/.test(text.trim());
-  if (attr === 'preserveaspectratio') return text === 'none';
+  if (attr === 'preserveaspectratio') {
+    return text === 'none' || /^x(?:Min|Mid|Max)Y(?:Min|Mid|Max) (?:meet|slice)$/.test(text);
+  }
   if (attr === 'id') return SAFE_ID.test(text);
   if (attr === 'fill' || attr === 'stroke') return PAINT_REF.test(text);
   if (attr === 'opacity' || attr === 'fill-opacity' || attr === 'stroke-opacity') return OPACITY_ATTR.test(text.trim());
   if (attr === 'fill-rule' || attr === 'clip-rule') return /^(?:evenodd|nonzero)$/i.test(text.trim());
   if (attr === 'clip-path') return /^url\(#[A-Za-z][A-Za-z0-9_-]*\)$/.test(text);
   if (attr === 'gradientunits') return text === 'userSpaceOnUse';
-  if (attr === 'offset' || attr === 'x1' || attr === 'y1' || attr === 'x2' || attr === 'y2' || attr === 'cx' || attr === 'cy' || attr === 'r') {
+  if (attr === 'offset' || attr === 'x' || attr === 'y' || attr === 'x1' || attr === 'y1' || attr === 'x2' || attr === 'y2' || attr === 'cx' || attr === 'cy' || attr === 'r') {
     return UNIT_NUM.test(text);
   }
+  if (attr === 'font-family') return /^[A-Za-z0-9][A-Za-z0-9 ,._-]*$/.test(text);
+  if (attr === 'font-size') return /^(?:\d+(?:\.\d+)?|\d+(?:\.\d+)?pt)$/.test(text);
+  if (attr === 'font-weight') return text === 'normal' || text === 'bold' || /^\d{1,3}$/.test(text);
+  if (attr === 'text-anchor') return text === 'start' || text === 'middle' || text === 'end';
+  if (attr === 'style') return /^transform:\s*rotate\(-?\d+(?:\.\d+)?deg\)$/.test(text.trim());
   if (attr === 'stop-color') return HEX_COLOR.test(text);
   if (attr === 'stroke-width') return /^\d+(?:\.\d+)?$/.test(text);
   if (attr === 'stroke-dasharray') return /^\d+(?:\.\d+)?(?:\s+\d+(?:\.\d+)?)+$/.test(text);
@@ -654,9 +687,13 @@ function previewShapeAttrOk(name, value) {
 }
 
 function prunePreviewShape(el) {
+  const parent = String(el.localName || '').toLowerCase();
   for (const child of [...el.childNodes]) {
     if (child.nodeType !== 1) {
-      child.remove();
+      const value = child.nodeValue || '';
+      const keep = child.nodeType === 3 && TEXT_PARENTS.has(parent)
+        && !/[<>]/.test(value) && !/javascript\s*:/i.test(value);
+      if (!keep) child.remove();
       continue;
     }
     const name = String(child.localName || '').toLowerCase();
@@ -665,6 +702,8 @@ function prunePreviewShape(el) {
       continue;
     }
     prunePreviewShape(child);
+    if (name === 'style' && !fontFaceStyleOk(child.textContent || '')) child.remove();
+    if (name === 'text' && !child.getAttribute('font-family')) child.remove();
   }
   for (const attr of [...el.attributes]) {
     if (!previewShapeAttrOk(attr.name, attr.value)) el.removeAttribute(attr.name);

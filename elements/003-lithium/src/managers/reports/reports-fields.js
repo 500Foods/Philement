@@ -11,9 +11,10 @@ import { dropItem } from './reports-drop.js';
 import { toast } from '../../shared/toast.js';
 import { addBandInOrder, addItem, removeBand, reorderItem, stepItem } from './model/document.js';
 import { SHAPE_TYPE, defaultShapeFields, setShapeCatalog } from './reports-shape.js';
+import { bindBarcodeHost } from './reports-barcode.js';
 import { STATIC_GHOST, STATIC_IMAGE, imageSourcePath, placeImportedImage, staticItemSpec } from './reports-static.js';
 import {
-  FIELD_TYPES, PARAM_TYPE, SYSTEM_TYPES, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
+  PARAM_TYPE, SYSTEM_TYPES, bandDatasource, datasourceColumns, parseSample, setDatasourceRows, unboundFields,
 } from './reports-sample.js';
 import { loadReportingQueries, runQueryDatasources } from './reports-query.js';
 
@@ -47,7 +48,12 @@ export function saveCategory(name, settings) {
 
 export const REPORT_CATEGORIES = Object.freeze(['static', 'field', 'aggregate', 'bands', 'system']);
 
-const TYPE_NAMES = Object.freeze({ 5: 'date', 6: 'user', 20: 'text field', 21: 'number field', 24: 'datetime field', 35: 'aggregate', 61: 'page number', 62: 'page count', 64: 'page label' });
+const TYPE_NAMES = Object.freeze({
+  5: 'date', 6: 'user', 20: 'text field', 21: 'number field', 22: 'image field', 23: 'memo field',
+  24: 'datetime field', 26: 'shape field', 35: 'aggregate', 45: 'barcode', 61: 'page number',
+  62: 'page count', 64: 'page label',
+});
+const FIELD_ADD = new Set([20, 21, 22, 23, 24, 26, 45]);
 
 export const reportFieldMethods = {
   _fieldElements() {
@@ -70,7 +76,7 @@ export const reportFieldMethods = {
       shapeBtn: root.querySelector('#reports-shape-btn'),
       raiseBtn: root.querySelector('#reports-raise-btn'),
       lowerBtn: root.querySelector('#reports-lower-btn'),
-      staticBtns: [...root.querySelectorAll('#reports-static-number-btn, #reports-static-date-btn, #reports-static-image-btn, #reports-static-memo-btn')],
+      staticBtns: [...root.querySelectorAll('#reports-static-number-btn, #reports-static-date-btn, #reports-static-image-btn, #reports-static-memo-btn, #reports-static-barcode-btn')],
       imageInput: root.querySelector('#reports-image-file'),
     };
   },
@@ -81,7 +87,9 @@ export const reportFieldMethods = {
     this._onFieldCategory = () => this.selectCategory('field');
     this._onAggregateCategory = () => this.selectCategory('aggregate');
     this._onAggregateItem = () => this._addAggregate();
-    this._onFieldItem = (event) => this._addField(Number(event.currentTarget.dataset.typeKey));
+    this._onFieldItem = (event) => {
+      this._addField(Number(event.currentTarget.dataset.typeKey));
+    };
     this._onBandsCategory = () => this.selectCategory('bands');
     this._onBandAdd = (event) => this._addBandType(Number(event.currentTarget.dataset.bandType));
     this._onSampleClick = () => els.sampleInput?.click();
@@ -146,6 +154,7 @@ export const reportFieldMethods = {
       if (file) placeImportedImage(this, file);
     };
     this.container?.addEventListener('paste', this._onImagePaste);
+    bindBarcodeHost(this);
   },
 
   _unbindFields() {
@@ -171,6 +180,7 @@ export const reportFieldMethods = {
     (els.staticBtns || []).forEach((btn) => btn.removeEventListener('click', this._onStaticAdd));
     els.imageInput?.removeEventListener('change', this._onImageFile);
     this.container?.removeEventListener('paste', this._onImagePaste);
+    bindBarcodeHost(null);
     this._fieldEls = null;
   },
 
@@ -324,7 +334,7 @@ export const reportFieldMethods = {
   },
 
   _addField(typeKey) {
-    if (!FIELD_TYPES.includes(typeKey)) return;
+    if (!FIELD_ADD.has(typeKey)) return;
     if (!this._recordEditing || this._drag || this._closed || !this.doc || !this._selectedBandId) return;
     let next;
     try {

@@ -29,13 +29,13 @@
         <fa fa-layer-group></fa>
         <span>Compose</span>
       </button>
-      <button type="button" class="lithium-toolbar-tab" id="reports-html-tab" data-page="html" title="Preview HTML" aria-label="Preview HTML" data-collapsible-text>
-        <fa fa-globe></fa>
-        <span>Preview HTML</span>
-      </button>
       <button type="button" class="lithium-toolbar-tab" id="reports-log-tab" data-page="log" title="Log: the last Reports.Render generation" aria-label="Log" data-collapsible-text>
         <fa fa-list></fa>
         <span>Log</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" id="reports-html-tab" data-page="html" title="Preview HTML" aria-label="Preview HTML" data-collapsible-text>
+        <fa fa-globe></fa>
+        <span>Preview HTML</span>
       </button>
       <button type="button" class="lithium-toolbar-tab" id="reports-pdf-tab" data-page="pdf" title="Preview PDF" aria-label="Preview PDF" data-collapsible-text>
         <fa fa-file-pdf></fa>
@@ -145,22 +145,42 @@
         <fa fa-shapes></fa>
         <span>Shape</span>
       </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-static-barcode-btn" title="Add a barcode to the selected band" draggable="true" data-reports-category="static" data-type-key="43">
+        <fa fa-barcode></fa>
+        <span>Barcode</span>
+      </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-static-image-btn" title="Add a static image to the selected band" draggable="true" data-reports-category="static" data-type-key="2">
         <fa fa-image></fa>
         <span>Image</span>
       </button>
       <input type="file" id="reports-image-file" accept="image/*,.svg,.ico,.bmp,.tif,.tiff,.webp,.gif" hidden>
-      <button type="button" class="lithium-toolbar-btn" id="reports-field-text-btn" title="Add a text field to the selected band" draggable="true" data-reports-category="field" data-type-key="20" hidden>
-        <fa fa-font></fa>
-        <span>Text</span>
-      </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-field-number-btn" title="Add a number field to the selected band" draggable="true" data-reports-category="field" data-type-key="21" hidden>
         <fa fa-hashtag></fa>
         <span>Number</span>
       </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-field-datetime-btn" title="Add a date and time field to the selected band" draggable="true" data-reports-category="field" data-type-key="24" hidden>
-        <fa fa-calendar-days></fa>
+        <fa fa-calendar-clock></fa>
         <span>Datetime</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-text-btn" title="Add a text field to the selected band" draggable="true" data-reports-category="field" data-type-key="20" hidden>
+        <fa fa-font-case></fa>
+        <span>Text</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-memo-btn" title="Add a memo field to the selected band" draggable="true" data-reports-category="field" data-type-key="23" hidden>
+        <fa fa-memo></fa>
+        <span>Memo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-shape-btn" title="Add a shape field to the selected band" draggable="true" data-reports-category="field" data-type-key="26" hidden>
+        <fa fa-shapes></fa>
+        <span>Shape</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-barcode-btn" title="Add a field barcode to the selected band" draggable="true" data-reports-category="field" data-type-key="45" hidden>
+        <fa fa-barcode></fa>
+        <span>Barcode</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-field-image-btn" title="Add an image field to the selected band" draggable="true" data-reports-category="field" data-type-key="22" hidden>
+        <fa fa-image></fa>
+        <span>Image</span>
       </button>
       <button type="button" class="lithium-toolbar-btn" id="reports-aggregate-number-btn" title="Add a total of one field: count, filled, unique, sum, avg, mean, weighted, median, mode, min, max, first, or last. Group, page, and report headers and footers." draggable="true" data-reports-category="aggregate" data-type-key="35" hidden>
         <fa fa-sigma></fa>
@@ -265,6 +285,98 @@
         <span>Delete</span>
       </button>
     </div>
+    <div class="lithium-toolbar reports-pdf-toolbar" id="reports-pdf-toolbar" data-reports-page="pdf" hidden>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-thumbs-btn" title="Thumbnails" aria-label="Thumbnails" aria-pressed="true">
+        <fa fa-table-cells></fa>
+      </button>
+      <div class="reports-toolbar-gap" aria-hidden="true"></div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-first" title="First page" aria-label="First page">
+        <fa fa-angles-left></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-prev" title="Previous page" aria-label="Previous page">
+        <fa fa-angle-left></fa>
+      </button>
+      <input class="reports-pdf-page-input" id="reports-pdf-page-input" type="text" inputmode="numeric" aria-label="Page number" autocomplete="off">
+      <span class="reports-zoom-label" id="reports-pdf-page-count">of 0</span>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-next" title="Next page" aria-label="Next page">
+        <fa fa-angle-right></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-last" title="Last page" aria-label="Last page">
+        <fa fa-angles-right></fa>
+      </button>
+      <div class="reports-toolbar-gap" aria-hidden="true"></div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-zoom-out" title="Zoom out" aria-label="Zoom out">
+        <fa fa-minus></fa>
+      </button>
+      <span class="reports-zoom-label" id="reports-pdf-scale">100%</span>
+      <button type="button" class="lithium-toolbar-btn" id="reports-pdf-fit-page" title="Fit page" aria-pressed="true">
+        <span>Fit</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-zoom-in" title="Zoom in" aria-label="Zoom in">
+        <fa fa-plus></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-pdf-fit-width" title="Fit width" aria-pressed="false">
+        <span>Fit width</span>
+      </button>
+      <div class="reports-toolbar-gap" aria-hidden="true"></div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-rotate-left" title="Rotate left" aria-label="Rotate left">
+        <fa fa-rotate-left></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-rotate-right" title="Rotate right" aria-label="Rotate right">
+        <fa fa-rotate-right></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-flip-h" title="Flip horizontal" aria-label="Flip horizontal" aria-pressed="false">
+        <fa fa-arrows-left-right></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-flip-v" title="Flip vertical" aria-label="Flip vertical" aria-pressed="false">
+        <fa fa-arrows-up-down></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-flip-both" title="Flip both" aria-label="Flip both">
+        <fa fa-up-down-left-right></fa>
+      </button>
+      <div class="reports-toolbar-gap" aria-hidden="true"></div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-find-btn" title="Find" aria-label="Find" aria-pressed="false">
+        <fa fa-magnifying-glass></fa>
+      </button>
+      <div class="reports-pdf-find" id="reports-pdf-find" hidden>
+        <input class="reports-pdf-find-input" id="reports-pdf-find-input" type="search" placeholder="Find" aria-label="Find" autocomplete="off" spellcheck="false">
+        <span class="reports-zoom-label" id="reports-pdf-find-count">0 of 0</span>
+        <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-find-prev" title="Previous hit" aria-label="Previous hit">
+          <fa fa-angle-up></fa>
+        </button>
+        <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-find-next" title="Next hit" aria-label="Next hit">
+          <fa fa-angle-down></fa>
+        </button>
+      </div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-outline-btn" title="Outline" aria-label="Outline" aria-pressed="false">
+        <fa fa-list></fa>
+      </button>
+      <div class="lithium-toolbar-placeholder"></div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-download" title="Download" aria-label="Download">
+        <fa fa-download></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-print" title="Print" aria-label="Print">
+        <fa fa-print></fa>
+      </button>
+      <div class="reports-toolbar-gap" aria-hidden="true"></div>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-pointer-text" title="Text selection" aria-label="Text selection" aria-pressed="true">
+        <fa fa-i-cursor></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-pointer-hand" title="Pan" aria-label="Pan" aria-pressed="false">
+        <fa fa-hand></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn icon-only" id="reports-pdf-pointer-marquee" title="Copy a rectangle as a PNG" aria-label="Marquee" aria-pressed="false">
+        <fa fa-crop></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-pdf-extract-btn" title="PDF to text belongs to Documents" disabled>
+        <fa fa-file-lines></fa>
+        <span>PDF to text</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="reports-pdf-ocr-btn" title="OCR belongs to Documents" disabled>
+        <fa fa-eye></fa>
+        <span>OCR</span>
+      </button>
+    </div>
     <div class="reports-pages">
       <div class="reports-page-pane" id="reports-page-report" data-reports-page="report" hidden>
         <form class="reports-meta" id="reports-meta">
@@ -337,7 +449,41 @@
         </div>
       </div>
       <div class="reports-page-pane" id="reports-page-pdf" data-reports-page="pdf" hidden>
-        <p class="reports-revisions-note">Preview PDF is not wired yet.</p>
+        <div class="reports-pdf" id="reports-pdf" data-pointer="text">
+          <aside class="reports-pdf-thumbs lithium-properties" id="reports-pdf-thumbs" aria-label="Pages">
+            <div class="lithium-toolbar lithium-properties-bar lithium-properties-bar-top reports-pdf-thumb-bar">
+              <button type="button" class="lithium-toolbar-btn lithium-properties-btn icon-only" id="reports-pdf-thumb-smaller" title="Smaller thumbnails" aria-label="Smaller thumbnails">
+                <fa fa-minus></fa>
+              </button>
+              <span class="reports-zoom-label" id="reports-pdf-thumb-scale">100%</span>
+              <button type="button" class="lithium-toolbar-btn lithium-properties-btn icon-only" id="reports-pdf-thumb-larger" title="Larger thumbnails" aria-label="Larger thumbnails">
+                <fa fa-plus></fa>
+              </button>
+            </div>
+            <div class="lithium-properties-body reports-pdf-thumb-body" id="reports-pdf-thumb-body">
+              <div class="reports-pdf-thumb-grid" id="reports-pdf-thumb-grid"></div>
+            </div>
+            <div class="lithium-toolbar lithium-properties-bar lithium-properties-bar-bottom reports-pdf-thumb-bar">
+              <button type="button" class="lithium-toolbar-btn lithium-properties-btn icon-only" id="reports-pdf-cols-less" title="Fewer thumbnail columns" aria-label="Fewer thumbnail columns">
+                <fa fa-minus></fa>
+              </button>
+              <span class="reports-zoom-label" id="reports-pdf-cols">1</span>
+              <button type="button" class="lithium-toolbar-btn lithium-properties-btn icon-only" id="reports-pdf-cols-more" title="More thumbnail columns" aria-label="More thumbnail columns">
+                <fa fa-plus></fa>
+              </button>
+            </div>
+          </aside>
+          <div class="reports-pdf-main">
+            <div class="reports-pdf-stack" id="reports-pdf-stack" tabindex="0">
+              <p class="reports-pdf-note" id="reports-pdf-note" hidden></p>
+              <div class="reports-pdf-track" id="reports-pdf-track"></div>
+            </div>
+          </div>
+          <aside class="reports-pdf-outline" id="reports-pdf-outline" aria-label="PDF outline" hidden>
+            <p class="reports-pdf-outline-empty" id="reports-pdf-outline-empty" hidden>This PDF has no outline.</p>
+            <div id="reports-pdf-outline-list"></div>
+          </aside>
+        </div>
       </div>
     </div>
     <input type="file" class="reports-file-input" id="reports-import-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">

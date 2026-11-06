@@ -4,13 +4,14 @@
  * Phase 11g and Phase 21 of the LUA_PLAN. Validates the DB-backed `require`
  * package.searchers hook without requiring a live database:
  *
- *   - The searcher is installed iff AllowDBModuleLoad is true.
+ *   - The payload searcher is always installed. The DB searcher is
+ *     installed iff AllowDBModuleLoad is true.
  *   - require("group.script") resolves a cache hit to a compiled chunk.
  *   - require("Missing.Script") with an empty cache and no DB returns
  *     a clear "module not found" error.
  *   - require("NoDot") returns a clear "invalid name" error.
- *   - package.searchers length changes by exactly one when the hook
- *     is installed.
+ *   - package.searchers grows by one for the payload searcher, and by
+ *     one more when the DB hook is installed.
  *
  * Phase 21: Bytecode Caching tests:
  *   - When bytecode is cached, it is used (mode "b") instead of source.
@@ -89,7 +90,7 @@ void test_searcher_installed_when_allowed(void) {
     TEST_ASSERT_EQUAL(LUA_OK, rc);
     TEST_ASSERT_TRUE(lua_isinteger(L, -1));
     lua_Integer count = lua_tointeger(L, -1);
-    TEST_ASSERT_EQUAL(5, count); // 4 default + our DB-backed searcher
+    TEST_ASSERT_EQUAL(6, count); // 4 default + payload + DB searcher
 
     H_lua_destroy_context(L);
 }
@@ -102,7 +103,7 @@ void test_searcher_not_installed_when_denied(void) {
     TEST_ASSERT_EQUAL(LUA_OK, rc);
     TEST_ASSERT_TRUE(lua_isinteger(L, -1));
     lua_Integer count = lua_tointeger(L, -1);
-    TEST_ASSERT_EQUAL(4, count); // default searchers only
+    TEST_ASSERT_EQUAL(5, count); // 4 default + payload searcher
 
     H_lua_destroy_context(L);
 }

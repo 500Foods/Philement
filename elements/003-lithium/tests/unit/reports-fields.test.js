@@ -94,9 +94,13 @@ describe('Report Manager field items', () => {
     expect(q('#reports-static-btn').getAttribute('aria-pressed')).toBe('false');
     expect(q('#reports-text-btn').hidden).toBe(true);
     expect(q('#reports-shape-btn').hidden).toBe(true);
-    for (const id of ['field-text', 'field-number', 'field-datetime', 'sample', 'sample-paste']) {
+    for (const id of ['field-number', 'field-datetime', 'field-text', 'field-memo', 'field-shape', 'field-barcode', 'field-image', 'sample', 'sample-paste']) {
       expect(q(`#reports-${id}-btn`).hidden).toBe(false);
     }
+    const order = [...manager.container.querySelectorAll('#reports-items-toolbar [data-reports-category="field"][data-type-key]')]
+      .filter((btn) => !btn.hidden)
+      .map((btn) => btn.dataset.typeKey);
+    expect(order).toEqual(['21', '24', '20', '23', '26', '45', '22']);
     q('#reports-static-btn').click();
     expect(q('#reports-text-btn').hidden).toBe(false);
     expect(q('#reports-shape-btn').hidden).toBe(false);

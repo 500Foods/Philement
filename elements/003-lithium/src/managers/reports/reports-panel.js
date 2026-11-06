@@ -15,10 +15,16 @@ import { LithiumProperties } from '../../properties/lithium-properties.js';
 import { resolveLabel } from '../../properties/sections.js';
 import { applyProperty, CLIENT_SECTIONS, parseCollection, propertyRows } from './report-properties.js';
 import { reorderItem } from './model/document.js';
-import { SHAPE_TYPE, setShapeCatalog, shapeOutlineLabel, withShapeSections } from './reports-shape.js';
+import { withBarcodeSections } from './reports-barcode.js';
+import { FIELD_SHAPE, SHAPE_TYPE, setShapeCatalog, shapeOutlineLabel, withShapeSections } from './reports-shape.js';
 
 function locales() {
   return typeof navigator !== 'undefined' && navigator.languages ? [...navigator.languages] : [];
+}
+
+/** Shape and barcode headers sit with the lookup sections. */
+function editorSections(list) {
+  return withBarcodeSections(withShapeSections(list));
 }
 
 /** Outline label for the End of Report marker. */
@@ -38,7 +44,8 @@ export function outlineEntries(doc) {
     out.push({ depth: 1, label: withId(band.id, band.name), bandId: band.id, itemId: '' });
     for (const item of Array.isArray(band.items) ? band.items : []) {
       const named = item.name || (typeof item.text === 'string' && item.text !== '' ? item.text : '');
-      const text = item.typeKey === SHAPE_TYPE ? shapeOutlineLabel(item) : named;
+      const shape = item.typeKey === SHAPE_TYPE || item.typeKey === FIELD_SHAPE;
+      const text = shape ? shapeOutlineLabel(item) : named;
       out.push({ depth: 2, label: withId(item.id, text), bandId: band.id, itemId: item.id });
     }
   }
@@ -166,7 +173,7 @@ export const reportPanelMethods = {
     this._onOutlineDragStart = (event) => this._outlineDragStart(event);
     this._onOutlineDragOver = (event) => this._outlineDragOver(event);
     this._onOutlineDrop = (event) => this._outlineDrop(event);
-    this._props.setSections(withShapeSections(CLIENT_SECTIONS));
+    this._props.setSections(editorSections(CLIENT_SECTIONS));
     this._outlineHost?.addEventListener('click', this._onOutlineClick);
     if (this._outlineHost) {
       this._outlineHost.tabIndex = 0;
@@ -180,7 +187,7 @@ export const reportPanelMethods = {
       loadPanelLookups(this.app.api).then((lookups) => {
         if (this._closed) return;
         this._lookups = lookups;
-        this._props?.setSections(withShapeSections([
+        this._props?.setSections(editorSections([
           ...(lookups.sections || []).map((row) => ({
             id: Number(row.key_idx),
             label: resolveLabel({ label: row.value_txt, collection: parseCollection(row.collection) }, locales()),

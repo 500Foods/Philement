@@ -211,13 +211,23 @@ void H_lua_install_scoreboard(lua_State* L);
  * config->scripting.DefaultDatabase. The fetched source is cached for
  * the process lifetime so repeated requires do not hit the DB.
  *
- * Gated by app_config->scripting.AllowDBModuleLoad (default false).
- * When disabled, this function is a no-op and `require` retains its
- * default behavior (preload + file-based searchers only).
+ * A payload searcher is installed first, at searcher index 2, and is
+ * not gated. require("zint") loads lua/zint/init.lua from the payload
+ * cache, and require("zint.common") loads lua/zint/common.lua.
+ * require("pdfkit") loads lua/pdfkit/init.lua, and a dotted name
+ * keeps the nested folders: require("pdfkit.font.standard") loads
+ * lua/pdfkit/font/standard.lua. A scripts-table row does not shadow
+ * a payload file.
+ *
+ * The scripts-table searcher is appended after that. It is gated by
+ * app_config->scripting.AllowDBModuleLoad (default false). When
+ * disabled, require still sees preload, the payload, and the file
+ * searchers.
  *
  * The searcher honors Lua's package.searchers contract: on success it
- * returns the compiled chunk function; on failure it returns an error
- * string so Lua continues with the next searcher.
+ * returns the compiled chunk and the payload path as loader data; on
+ * failure it returns an error string so Lua continues with the next
+ * searcher.
  */
 void H_lua_install_package(lua_State* L);
 

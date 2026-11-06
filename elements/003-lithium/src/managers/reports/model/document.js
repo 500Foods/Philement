@@ -10,6 +10,7 @@
 import {
   AGGREGATE_DATETIME_TYPE, AGGREGATE_TEXT_TYPE, aggregateBandAllows, isAggregateType,
 } from '../reports-aggregate.js';
+import { barcodeSample } from './barcode.js';
 import {
   CSS_PX_PER_INCH,
   contentBox,
@@ -50,8 +51,11 @@ const ITEM_PREFIX = {
   6: 'user',
   20: 'textfield',
   21: 'number',
+  22: 'imagefield',
+  23: 'memofield',
   24: 'datetime',
   25: 'shape',
+  26: 'shapefield',
   28: 'calctext',
   29: 'calcnum',
   32: 'calctime',
@@ -74,7 +78,7 @@ const BAND_RANK = {
 };
 
 const ITEM_TYPES = new Set([
-  0, 1, 2, 3, 4, 5, 6, 20, 21, 24, 25, 28, 29, 32, 34, 35, 38, 42, 43, 44, 45, 61, 62, 63, 64,
+  0, 1, 2, 3, 4, 5, 6, 20, 21, 22, 23, 24, 25, 26, 28, 29, 32, 34, 35, 38, 42, 43, 44, 45, 61, 62, 63, 64,
 ]);
 
 const MASK_TYPES = new Set([1, 4, 5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
@@ -86,7 +90,14 @@ const ITEM_HEIGHT = '0.2 in';
 const ITEM_BOX = {
   2: ['1 in', '0.75 in'],
   3: ['1.5 in', '0.6 in'],
+  22: ['1 in', '0.75 in'],
+  23: ['1.5 in', '0.6 in'],
+  43: ['1.75 in', '0.7 in'],
+  45: ['1.75 in', '0.7 in'],
 };
+
+/** Query value: datasource plus field. 20, 21, and 24 keep a missing datasource as the current row. */
+const QUERY_VALUE_TYPES = new Set([20, 21, 22, 23, 24, 26, 45]);
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -360,7 +371,7 @@ function centeredBox(doc, band, width = ITEM_WIDTH, height = ITEM_HEIGHT) {
   };
 }
 
-/** Defaults for static number, image, memo, and datetime. Text stays bare. */
+/** Defaults for static number, image, memo, datetime, and barcode. Text stays bare. */
 function staticDefaults(item, typeKey) {
   if (typeKey === 1 || typeKey === 4) {
     if (!Object.hasOwn(item, 'value')) item.value = typeKey === 1 ? 0 : '2026-01-01';
@@ -368,13 +379,14 @@ function staticDefaults(item, typeKey) {
     if (!Object.hasOwn(item, 'fitHeight')) item.fitHeight = 'clip';
     if (!Object.hasOwn(item, 'valign')) item.valign = 'top';
   }
-  if (typeKey === 3) {
-    if (!Object.hasOwn(item, 'text')) item.text = 'Memo';
+  if (typeKey === 3 || typeKey === 23) {
+    if (typeKey === 3 && !Object.hasOwn(item, 'text')) item.text = 'Memo';
+    if (typeKey === 23 && !Object.hasOwn(item, 'field')) item.field = '';
     if (!Object.hasOwn(item, 'wrap')) item.wrap = 'pre-wrap';
     if (!Object.hasOwn(item, 'fitHeight')) item.fitHeight = 'both';
     if (!Object.hasOwn(item, 'valign')) item.valign = 'top';
   }
-  if (typeKey === 2) {
+  if (typeKey === 2 || typeKey === 22) {
     if (!Object.hasOwn(item, 'dpi')) item.dpi = 72;
     if (!Object.hasOwn(item, 'fit')) item.fit = 'contain';
     if (!Object.hasOwn(item, 'fitAlign')) item.fitAlign = 'Center';
@@ -384,6 +396,26 @@ function staticDefaults(item, typeKey) {
     if (!Object.hasOwn(item, 'grayscale')) item.grayscale = false;
     if (!Object.hasOwn(item, 'invert')) item.invert = false;
   }
+  if (typeKey === 43 || typeKey === 45) {
+    if (!Object.hasOwn(item, 'dpi')) item.dpi = 300;
+    if (!Object.hasOwn(item, 'fit')) item.fit = 'contain';
+    if (!Object.hasOwn(item, 'fitAlign')) item.fitAlign = 'Center';
+    if (!Object.hasOwn(item, 'fitValign')) item.fitValign = 'Middle';
+    if (!item.barcode || typeof item.barcode !== 'object' || Array.isArray(item.barcode)) item.barcode = {};
+    if (!Object.hasOwn(item.barcode, 'symbology')) item.barcode.symbology = 'upca';
+    if (typeKey === 43 && !Object.hasOwn(item.barcode, 'data')) item.barcode.data = barcodeSample('upca');
+    if (typeKey === 45 && !Object.hasOwn(item, 'field')) item.field = '';
+  }
+  if ((typeKey === 22 || typeKey === 26) && !Object.hasOwn(item, 'field')) item.field = '';
+}
+
+/** Datasource a new field barcode reads. The band's name, else the first. */
+function defaultItemDatasource(doc, band) {
+  const fromBand = band && typeof band.datasource === 'string' ? band.datasource.trim() : '';
+  if (fromBand) return fromBand;
+  const list = Array.isArray(doc && doc.datasources) ? doc.datasources : [];
+  const hit = list.find((entry) => entry && typeof entry.name === 'string' && entry.name.trim() !== '');
+  return hit ? hit.name : '';
 }
 
 function storedBox(box, unit) {
@@ -685,14 +717,28 @@ export function addItem(doc, bandId, spec) {
   delete item.index;
   item.id = id;
   item.typeKey = typeKey;
-  if (typeKey !== 25 && !Object.hasOwn(item, 'align')) item.align = 'Left';
+  if (typeKey !== 25 && typeKey !== 26 && !Object.hasOwn(item, 'align')) item.align = 'Left';
   const sized = ITEM_BOX[typeKey];
   item.box = item.box === undefined
     ? centeredBox(next, band, sized ? sized[0] : ITEM_WIDTH, sized ? sized[1] : ITEM_HEIGHT)
     : storedBox(item.box, unit);
   if (typeKey === 0 && !Object.hasOwn(item, 'text')) item.text = 'Text';
   staticDefaults(item, typeKey);
+  if (QUERY_VALUE_TYPES.has(typeKey) && !Object.hasOwn(item, 'field')) item.field = '';
+  if (QUERY_VALUE_TYPES.has(typeKey) && !Object.hasOwn(item, 'datasource')) {
+    const named = defaultItemDatasource(next, band);
+    if (named) item.datasource = named;
+  }
   if (typeKey === 25 && !Object.hasOwn(item, 'kind')) item.kind = 'rectangle';
+  if (typeKey === 26 && !Object.hasOwn(item, 'kind')) {
+    item.kind = 'rectangle';
+    if (!Object.hasOwn(item, 'strokeWidth')) item.strokeWidth = '1 pt';
+    if (!Object.hasOwn(item, 'strokeStyle')) item.strokeStyle = 'solid';
+    if (!Object.hasOwn(item, 'strokeColor')) item.strokeColor = '#000000';
+    if (!Object.hasOwn(item, 'fillStyle')) item.fillStyle = 'solid';
+    if (!Object.hasOwn(item, 'fillPaint')) item.fillPaint = { kind: 'solid', color: '#d3d3d3' };
+    if (!Object.hasOwn(item, 'rotation')) item.rotation = 0;
+  }
   if (isAggregateType(typeKey)) {
     if (!Object.hasOwn(item, 'op')) {
       if (typeKey === AGGREGATE_TEXT_TYPE) item.op = 'mode';

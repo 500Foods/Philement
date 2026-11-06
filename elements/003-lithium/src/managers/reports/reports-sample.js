@@ -7,7 +7,19 @@
 /** Field item types: lookup 053 keys 20 text, 21 number, 24 datetime. */
 export const FIELD_TYPES = Object.freeze([20, 21, 24]);
 
-const CAPTIONS = Object.freeze({ 20: 'Field text', 21: 'Field number', 24: 'Field datetime' });
+/**
+ * Items whose printed value comes from a datasource and a field.
+ * Text, number, and datetime still print from the current row when
+ * datasource is omitted, so an older file keeps working.
+ */
+export const QUERY_VALUE_TYPES = Object.freeze([20, 21, 22, 23, 24, 26, 45]);
+
+/** These refuse export until both datasource and field are set. */
+export const SOURCED_VALUE_TYPES = Object.freeze([22, 23, 26, 45]);
+
+const CAPTIONS = Object.freeze({
+  20: 'Field text', 21: 'Field number', 22: 'Field image', 23: 'Field memo', 24: 'Field datetime', 26: 'Field shape',
+});
 
 /**
  * @param {unknown} typeKey
@@ -120,7 +132,15 @@ export function unboundFields(doc) {
   for (const band of bands) {
     const items = Array.isArray(band && band.items) ? band.items : [];
     for (const item of items) {
-      if (!item || !isFieldType(item.typeKey)) continue;
+      if (!item) continue;
+      if (SOURCED_VALUE_TYPES.includes(item.typeKey)) {
+        const fieldOk = typeof item.field === 'string' && item.field.trim() !== '';
+        const sourceOk = typeof item.datasource === 'string' && item.datasource.trim() !== '';
+        if (fieldOk && sourceOk) continue;
+        out.push({ bandId: band.id, itemId: item.id, typeKey: item.typeKey });
+        continue;
+      }
+      if (!isFieldType(item.typeKey)) continue;
       if (typeof item.field === 'string' && item.field.trim() !== '') continue;
       out.push({ bandId: band.id, itemId: item.id, typeKey: item.typeKey });
     }
@@ -186,6 +206,46 @@ export function bandDatasource(doc, band) {
 export function datasourceRows(doc, name) {
   const ds = findDatasource(doc, name);
   return ds && Array.isArray(ds.rows) ? ds.rows : [];
+}
+
+/**
+ * Put Datasource (8) before Field (7). Inserts either key when the
+ * lookup list does not have it yet.
+ * @param {number[]} keys
+ * @returns {number[]}
+ */
+export function orderBindingKeys(keys) {
+  const next = Array.isArray(keys) ? keys.slice() : [];
+  for (const key of [8, 7]) {
+    if (next.includes(key)) continue;
+    const at = next.indexOf(14);
+    if (at >= 0) next.splice(at, 0, key);
+    else next.push(key);
+  }
+  const source = next.indexOf(8);
+  const field = next.indexOf(7);
+  if (source > field && field >= 0) {
+    next.splice(source, 1);
+    next.splice(field, 0, 8);
+  }
+  return next;
+}
+
+/**
+ * First sample row of the item's datasource. Empty when the
+ * datasource or the field is missing, or the cell is blank.
+ * @param {object} doc
+ * @param {object} item
+ * @returns {string}
+ */
+export function boundFieldText(doc, item) {
+  const name = item && typeof item.datasource === 'string' ? item.datasource.trim() : '';
+  const field = item && typeof item.field === 'string' ? item.field.trim() : '';
+  if (name === '' || field === '') return '';
+  const rows = datasourceRows(doc, name);
+  const row = rows.find((entry) => entry && typeof entry === 'object' && !Array.isArray(entry));
+  if (!row || row[field] == null || row[field] === '') return '';
+  return String(row[field]);
 }
 
 /** Union of row keys, in first-seen order; then query metadata fields. */

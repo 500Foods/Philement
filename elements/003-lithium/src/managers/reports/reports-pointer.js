@@ -293,11 +293,8 @@ export const reportPointerMethods = {
       this._clearSnapPreview();
       return;
     }
-    this._showItemSnap(
-      body,
-      preview,
-      snapItemBox(preview, spacing, drag.bounds, drag.kind === 'resize'),
-    );
+    const snapped = snapItemBox(preview, spacing, drag.bounds, drag.kind === 'resize');
+    this._showItemSnap(body, preview, snapped);
   },
 
   _endItemDrag() {

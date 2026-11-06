@@ -376,6 +376,21 @@ bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size) {
     return (file_count > 0);
 }
 
+/*
+ * One cached file by its tar name, or NULL. The pointer stays valid
+ * until the cache is replaced or cleaned up. Compressed .br entries
+ * are returned as stored; callers that need Lua source skip them.
+ */
+const PayloadFile *payload_cache_find(const char *name) {
+    if (!name || !global_payload_cache.files || global_payload_cache.num_files == 0) {
+        return NULL;
+    }
+    PayloadFile key = {0};
+    key.name = (char *)name;
+    return bsearch(&key, global_payload_cache.files, global_payload_cache.num_files,
+                   sizeof(PayloadFile), compare_files);
+}
+
 /**
  * Clean up the global payload cache
  */

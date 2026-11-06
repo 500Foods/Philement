@@ -28,6 +28,7 @@
 #include "orchestrator.h"
 #include "worker_pool.h"
 #include "scripting_api_scoreboard.h"
+#include <src/payload/payload_cache.h>
 
 // H.scoreboard.* implementations //////////////////////////////////////////
 
@@ -320,6 +321,85 @@ bool split_module_name(const char* name,
     return true;
 }
 
+/*
+ * Build lua/<module>.lua or lua/<module>/init.lua. Dots become
+ * slashes. Anything other than an identifier path is rejected so a
+ * module name cannot escape the lua/ prefix.
+ */
+bool payload_lua_path(const char* module, char* out, size_t out_len, bool as_init) {
+    if (!module || !out || out_len < 8) {
+        return false;
+    }
+    size_t n = strlen(module);
+    if (n == 0 || n > 180) {
+        return false;
+    }
+    bool segment_start = true;
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)module[i];
+        if (c == '.') {
+            if (segment_start) {
+                return false;
+            }
+            segment_start = true;
+            continue;
+        }
+        bool letter = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+        bool digit = (c >= '0' && c <= '9');
+        if (segment_start ? !letter : !(letter || digit)) {
+            return false;
+        }
+        segment_start = false;
+    }
+    if (segment_start) {
+        return false;
+    }
+
+    char slashed[192];
+    for (size_t i = 0; i < n; i++) {
+        slashed[i] = (module[i] == '.') ? '/' : module[i];
+    }
+    slashed[n] = '\0';
+
+    int wrote = as_init
+        ? snprintf(out, out_len, "lua/%s/init.lua", slashed)
+        : snprintf(out, out_len, "lua/%s.lua", slashed);
+    return wrote > 0 && (size_t)wrote < out_len;
+}
+
+const PayloadFile* payload_lua_open(const char* path) {
+    const PayloadFile* file = payload_cache_find(path);
+    if (!file || file->is_compressed || !file->data || file->size == 0) {
+        return NULL;
+    }
+    return file;
+}
+
+int H_lua_payload_searcher(lua_State* L) {
+    const char* module_name = luaL_checkstring(L, 1);
+    char path[256];
+    const PayloadFile* file = NULL;
+
+    if (payload_lua_path(module_name, path, sizeof(path), false)) {
+        file = payload_lua_open(path);
+    }
+    if (!file && payload_lua_path(module_name, path, sizeof(path), true)) {
+        file = payload_lua_open(path);
+    }
+    if (!file) {
+        lua_pushfstring(L, "\n\tno module '%s' in payload", module_name);
+        return 1;
+    }
+
+    int rc = luaL_loadbufferx(L, (const char*)file->data, file->size, module_name, "t");
+    if (rc != LUA_OK) {
+        return lua_error(L);
+    }
+    /* Loader data is the payload path, the same role as a file searcher's path. */
+    lua_pushstring(L, path);
+    return 2;
+}
+
 int H_lua_package_searcher(lua_State* L) {
     const char* module_name = luaL_checkstring(L, 1);
 
@@ -451,9 +531,6 @@ void H_lua_install_package(lua_State* L) {
     if (!L) {
         return;
     }
-    if (!app_config || !app_config->scripting.AllowDBModuleLoad) {
-        return;
-    }
 
     lua_getglobal(L, "package");
     if (!lua_istable(L, -1)) {
@@ -470,8 +547,20 @@ void H_lua_install_package(lua_State* L) {
         return;
     }
 
-    lua_pushcfunction(L, H_lua_package_searcher);
-    lua_seti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
+    /* Insert the payload searcher at index 2, after preload and before
+     * the filesystem searcher, then append the scripts-table searcher. */
+    lua_Integer len = (lua_Integer)lua_rawlen(L, -1);
+    for (lua_Integer i = len; i >= 2; i--) {
+        lua_geti(L, -1, i);
+        lua_seti(L, -2, i + 1);
+    }
+    lua_pushcfunction(L, H_lua_payload_searcher);
+    lua_seti(L, -2, 2);
+
+    if (app_config && app_config->scripting.AllowDBModuleLoad) {
+        lua_pushcfunction(L, H_lua_package_searcher);
+        lua_seti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
+    }
 
     lua_pop(L, 2);
 }

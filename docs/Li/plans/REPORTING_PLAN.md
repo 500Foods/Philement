@@ -25,7 +25,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1467**. QueryRef **175** stays unused. Lookup **078** is Report Shape Kinds. The next free lookup id is **079**. The next free lookup 054 key is **52**. **Phase 44a (Static shapes)** is complete (2026-11-04). Andrew said everything else looks good and asked to wrap the phase. He did not quote the fixture colours. Andrew says 1466 is the last migration he sees and it is applied. **Phase 44b (Shape fill and gradient)** is complete (2026-11-04). Andrew said the gradients render on Preview HTML, everything tested passes, and 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c (Static number, datetime, image, and memo)** is complete (2026-11-05). Andrew said the new version renders a Font Awesome duotone icon and asked to close the phase. He did not name `acuranzo_1468.lua`, and he did not quote `1,234.50` or `2026-Mar-05 14:07`. The packet is `acuranzo_1468.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. The next free Acuranzo file is **1469**. Do not write it until a later `Reports.Render` change. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Phase 45 has not started. Its written gate is met, and its fixture needs the Phase 33 compiler, which has not started. Naming Phase 45 starts it. Phases 33–37, 46–48, PDFs, barcodes, and charts stay on the temporary skip. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1467**. QueryRef **175** stays unused. Lookup **078** is Report Shape Kinds. The next free lookup id is **079**. The next free lookup 054 key is **52**. **Phase 44a (Static shapes)** is complete (2026-11-04). Andrew said everything else looks good and asked to wrap the phase. He did not quote the fixture colours. Andrew says 1466 is the last migration he sees and it is applied. **Phase 44b (Shape fill and gradient)** is complete (2026-11-04). Andrew said the gradients render on Preview HTML, everything tested passes, and 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c (Static number, datetime, image, and memo)** is complete (2026-11-05). Andrew said the new version renders a Font Awesome duotone icon and asked to close the phase. He did not name `acuranzo_1468.lua`, and he did not quote `1,234.50` or `2026-Mar-05 14:07`. The packet is `acuranzo_1468.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. Phases 53 and 54 are in progress (2026-11-05). lua-zint and luatz are packed in the Hydrogen payload, not seeded into `scripts`. Andrew said all outstanding migrations have been applied, so `acuranzo_1469.lua` through `acuranzo_1474.lua` are applied. Leave `acuranzo_1455.lua` through `acuranzo_1474.lua` as written. `acuranzo_1475.lua` lists Datasource before Field on lookup 053 keys 20, 21, 22, 23, 24, and 26. `acuranzo_1476.lua` amends Reports.Render so a field memo, image, and shape read that pair, and so a text, number, or datetime field uses the datasource when it is set. `acuranzo_1477.lua` adds lookup 075 keys 13–16: Barcode Placement, Barcode Text, Barcode Colors, and Barcode Symbology. 1475, 1476, and 1477 are written and not applied. The next free Acuranzo file is **1478**. QueryRef **175** stays unused. Next free lookup id **080**. Next free lookup 054 key **53**. Phase 45 has not started. Naming Phase 45 starts it. Phases 33–37, 46–48, Phase 55, PDFs, and charts stay on the temporary skip. Barcodes 53–54 are in progress. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -97,6 +97,7 @@ Andrew reports the apply.
 | 29 | Query execution | Helium amendment | Medium | Complete |
 | 30 | Seed lua-pdfkit | Helium library pack | Easy | Not started |
 | 31 | PDF text | Helium amendment | Medium | Not started |
+| 31-UI | Preview PDF viewer | Lithium UI | Medium | In progress |
 | 32 | Result cap | Helium amendment | Easy | Not started |
 | 33 | Text formula | Helium amendment | Medium | Not started |
 | 34 | Formula editor | Lithium UI | Medium | Not started |
@@ -121,8 +122,8 @@ Andrew reports the apply.
 | 50 | Embedded image | Lithium UI + Lua | Medium | Not started |
 | 51 | Reference and URL images | Helium amendment | Medium | Not started |
 | 52 | PDF image stored once | Helium amendment | Easy | Not started |
-| 53 | Seed lua-zint | Helium library pack | Easy | Not started |
-| 54 | Barcode SVG | Lithium UI + Lua | Medium | Not started |
+| 53 | Seed lua-zint | Helium library pack | Easy | In progress |
+| 54 | Barcode SVG | Lithium UI + Lua | Medium | In progress |
 | 55 | Barcode PDF raster | Lithium UI | Easy | Not started |
 | 56 | Seed d3.lua | Helium library pack | Easy | Not started |
 | 57 | Chart design lock | Decision | Easy | Not started |
@@ -150,7 +151,8 @@ sidequest between 10 and 11. Phases 13b and 14b are labeled
 phases added 2026-11-02 for the property panel. Phases 44a and
 44b are labeled phases added 2026-11-04 for static shapes.
 Phase 44c is complete (2026-11-05). The packet is
-`acuranzo_1468.lua`.
+`acuranzo_1468.lua`. Phase 31-UI is a labeled sidequest for the
+Preview PDF page, in progress (2026-11-05).
 None of these is an extra number in that count.
 
 A phase that hands a packet to a human is one sitting of agent work
@@ -167,6 +169,7 @@ They do not replace it.
 | 26 | Read the generation log and its three counts. |
 | 29 | Run a QueryRef from a stored report with no sources array. |
 | 31 | Download a text PDF. |
+| 31-UI | Open Preview PDF and page through a sample file. |
 | 35 | See a syntax error in the formula editor. |
 | 36 | See a pack-date code and a masked number. |
 | 44 | Put the built-in totals on a footer. |
@@ -188,7 +191,7 @@ milestone file that holds the current phase.
 | [`01-designer.md`](/docs/Li/plans/reporting/01-designer.md) | 1–10, and 10-UI | Place static text and export the definition file. Phase 10-UI is the manager chrome (complete). |
 | [`02-save.md`](/docs/Li/plans/reporting/02-save.md) | 11–18 | Save a revision and open it again. |
 | [`03-preview.md`](/docs/Li/plans/reporting/03-preview.md) | 19–27 | Preview the HTML export and read the generation log. |
-| [`04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md) | 28–32 | Run a QueryRef and download a text PDF. |
+| [`04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md) | 28–32, and 31-UI | Run a QueryRef and download a text PDF. Phase 31-UI is the Preview PDF viewer (in progress). |
 | [`05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md) | 33–49 | Use formulas, totals, and breaks, and download CSV. |
 | [`06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) | 50–67 | Place images, barcodes, and charts, and export SVG and PNG. |
 | [`07-native-pdf.md`](/docs/Li/plans/reporting/07-native-pdf.md) | 68–71 | Get charts and barcodes as vectors in the PDF. |
@@ -213,7 +216,7 @@ Andrew reported QueryRefs 165–169 applied. Phase 18 is
 complete (2026-10-31). Andrew said the changes are
 working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
 Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1467**. QueryRef **175** stays unused. Lookup **078** is Report Shape Kinds. The next free lookup id is **079**. The next free lookup 054 key is **52**. **Phase 44a (Static shapes)** is complete (2026-11-04). Andrew said everything else looks good and asked to wrap the phase. He did not quote the fixture colours. Andrew says 1466 is the last migration he sees and it is applied. **Phase 44b (Shape fill and gradient)** is complete (2026-11-04). Andrew said the gradients render on Preview HTML, everything tested passes, and 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c (Static number, datetime, image, and memo)** is complete (2026-11-05). Andrew said the new version renders a Font Awesome duotone icon and asked to close the phase. He did not name `acuranzo_1468.lua`, and he did not quote `1,234.50` or `2026-Mar-05 14:07`. The packet is `acuranzo_1468.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. The next free Acuranzo file is **1469**. Do not write it until a later `Reports.Render` change. QueryRef **175** stays unused. Next free lookup id **079**. Next free lookup 054 key **52**. Phase 45 has not started. Its written gate is met, and its fixture needs the Phase 33 compiler, which has not started. Naming Phase 45 starts it. Phases 33–37, 46–48, PDFs, barcodes, and charts stay on the temporary skip. Phase 18's body is in
+Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1467**. QueryRef **175** stays unused. Lookup **078** is Report Shape Kinds. The next free lookup id is **079**. The next free lookup 054 key is **52**. **Phase 44a (Static shapes)** is complete (2026-11-04). Andrew said everything else looks good and asked to wrap the phase. He did not quote the fixture colours. Andrew says 1466 is the last migration he sees and it is applied. **Phase 44b (Shape fill and gradient)** is complete (2026-11-04). Andrew said the gradients render on Preview HTML, everything tested passes, and 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c (Static number, datetime, image, and memo)** is complete (2026-11-05). Andrew said the new version renders a Font Awesome duotone icon and asked to close the phase. He did not name `acuranzo_1468.lua`, and he did not quote `1,234.50` or `2026-Mar-05 14:07`. The packet is `acuranzo_1468.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as written. Phases 53 and 54 are in progress (2026-11-05). lua-zint and luatz are packed in the Hydrogen payload, not seeded into `scripts`. Andrew said all outstanding migrations have been applied, so `acuranzo_1469.lua` through `acuranzo_1474.lua` are applied. Leave `acuranzo_1455.lua` through `acuranzo_1474.lua` as written. `acuranzo_1475.lua` lists Datasource before Field on lookup 053 keys 20, 21, 22, 23, 24, and 26. `acuranzo_1476.lua` amends Reports.Render so a field memo, image, and shape read that pair, and so a text, number, or datetime field uses the datasource when it is set. `acuranzo_1477.lua` adds lookup 075 keys 13–16: Barcode Placement, Barcode Text, Barcode Colors, and Barcode Symbology. 1475, 1476, and 1477 are written and not applied. The next free Acuranzo file is **1478**. QueryRef **175** stays unused. Next free lookup id **080**. Next free lookup 054 key **53**. Phase 45 has not started. Naming Phase 45 starts it. Phases 33–37, 46–48, Phase 55, PDFs, and charts stay on the temporary skip. Barcodes 53–54 are in progress. Phase 18's body is in
 [`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
 Phase 10-UI's body stays in
 [`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
@@ -505,7 +508,7 @@ third toolbar. Manager chrome, below, is that shell.
 - A native XLS writer. CSV is the spreadsheet stand-in.
 - A SQL catalog inside the designer. A datasource is a JSON sample
   or a named QueryRef. The designer does not edit SQL.
-- Browser PDF generation (`jsPDF`) and a PDF thumbnail viewer.
+- Browser PDF generation (`jsPDF`). The Preview PDF viewer is Phase 31-UI. It uses `pdfjs-dist` and does not generate a PDF. Crop stays out.
 - Mailing a report. Mail Relay already exists for mail.
 - A new Hydrogen subsystem, config letter, or C route. PDF, barcodes,
   and charts stay in Lua. Lithium calls the Reporting endpoint that
@@ -720,8 +723,10 @@ What that build actually did:
   `src/shared/lookups.js` in the phase that binds the panel.
 - Undo stored a string diff of the JSON and reapplied it.
 - A PDF viewer (pdf.js) with thumbnails, zoom, rotate, crop, and
-  column layouts. `jsPDF` was loaded on the page. This plan does not
-  bring either library back.
+  column layouts. `jsPDF` was loaded on the page. The 2026-10-10
+  write-up left both libraries out. Phase 31-UI (2026-11-05) brings
+  `pdfjs-dist` back for viewing only. It does not bring `jsPDF`
+  back, and it does not bring crop back.
 - This pass did not find a write of the `reports` row. `report_id`
   appears as a hidden list column. Upload and download were the
   portable path that is visible in the compiled program. Treat the
@@ -1520,29 +1525,46 @@ written to run inside a host that has no native modules and no `io`.
 | Library | Where it lives today | What Reports.Render calls |
 | --- | --- | --- |
 | lua-pdfkit | `/home/asimard/DA/triton4/triton-toolkit-5b12870/tasks/lua-pdfkit/solution/lua-pdfkit/` (pure Lua; its own repo planned) | `PDFDocument.new`, then `doc:finish()`, then `doc:output()` for the bytes. Port of PDFKit 0.19.1. JPEG and PNG from raw bytes or a `data:` URI. |
-| lua-zint | `/home/asimard/DA/triton3/triton-toolkit-e8fb24a/tasks/lua-zint/solution/` (pure Lua; its own repo planned) | `zint.barcode(opts)` returns an SVG string. Symbologies in the port: QR, Code 39, Code 128, UPC-A, GS1-128. |
+| lua-zint | Hydrogen `payloads/lua/zint/` (lua-zint-svg 0.1.0 commit `89a8231386682109312c29d8b84dc525c271eea3`). The earlier port home was `/home/asimard/DA/triton3/triton-toolkit-e8fb24a/tasks/lua-zint/solution/`. | `zint.barcode(opts)` returns an SVG string. Symbologies in the port: QR, Code 39, Code 128, UPC-A, GS1-128. |
 | d3.lua | Poseidon job artifact `/home/asimard/DA/poseidon1/jobs/lua-run10/` (pure Lua; its own repo planned). Validated byte-identical to D3.js on the reference pair `d3_chart.js` / `lua_chart.lua` | `d3.create_root`, `d3.scaleBand`, `d3.scaleLinear`, `d3.axisLeft` / `d3.axisRight` / `d3.axisBottom`, `d3.stack`, `d3.curveBasis`, `d3.line`, `d3.range`. Entry point pinned at the Phase 56 probe. |
 
 luatz (Phase 22a) is a fourth pack: pure Lua, group `luatz`, seeded
 as `luatz.*` rows. It reads zoneinfo from host tzdata
 (`/usr/share/zoneinfo`) with read-only `io.open`; no zoneinfo is
 bundled. Data refreshes with the host image's `tzdata` package; code
-refreshes by a later migration that bumps the pinned version (see
-22a Update / refresh).
+refreshes by replacing `payloads/lua/luatz/`. The `scripts` rows stay
+and are unused, because the payload file wins (see Payload require
+below). `io` stays off, so zoneinfo still falls back to UTC.
 
-**Status:** None of the three libraries is in this repository. They are
+**Status:** lua-pdfkit and d3.lua are not in this repository.
+lua-zint and luatz are packed under Hydrogen `payloads/lua/`
+(2026-11-05). They are
 pure-Lua ports Andrew owns, each moving to its own repository: the zint
 and pdfkit ports ship `tests/test.sh` plus `PORTING-NOTES.md` /
 `AUTHOR-NOTES.md`, and the D3 port's validation is byte-equivalence
 against D3.js itself. Each library gets its own seed phase and probe
 (Phases 30, 53, and 56), and the packet records the repo commit or
-version it was generated from. The path in the table is the fallback
-when that repository does not exist yet. The seed phase stops and
+version it was generated from. For lua-pdfkit and d3.lua, the path
+in the table is the fallback when that repository does not exist yet. The seed phase stops and
 asks when neither the repository nor the path is there. If a port
 reaches LuaRocks, that helps
 only if Hydrogen's sandbox can read `package.path`; the seeded
 `group.script` module is the path this plan builds on, and the probe
 confirms which one is live.
+
+**Payload require (2026-11-05).** Andrew rejected seeding lua-zint
+into `scripts` and rejected raising DB2's CLOB limit. Hydrogen
+installs a payload searcher at `package.searchers` index 2, always,
+before the file searcher. `require("zint.barcode")` loads
+`lua/zint/barcode.lua` from the in-memory payload.
+`require("luatz.tzcache")` loads `lua/luatz/tzcache.lua` the same
+way. A payload file wins over a scripts row of the same name.
+`AllowDBModuleLoad` stays off for those two libraries. The editor
+still calls invokable `zint.Svg`, because invoke is not `require`.
+lua-pdfkit and d3.lua are not packed. Their seed phases stay as
+written. The existing luatz `scripts` rows stay. The payload file
+wins, so those rows are unused. `io` stays off, so zoneinfo still
+falls back to UTC.
 
 All three are producers. HTML, preview, and SVG use the SVG those
 ports return. PNG is Lithium rasterizing that SVG. PDF embeds the
@@ -4611,3 +4633,298 @@ caller-facing QueryRef 175.
   pack-code month letter, and that compiler is Phase 33.
   Naming Phase 45 starts it. Phases 33–37, 46–48, PDFs,
   barcodes, and charts stay on the temporary skip.
+
+### 2026-11-05 — Phases 53 and 54 in progress
+
+- lua-zint and luatz are packed under Hydrogen `payloads/lua/`,
+  not seeded into `scripts`. The payload searcher sits at
+  `package.searchers` index 2, always, before the file searcher.
+  `require("zint.barcode")` loads `lua/zint/barcode.lua`.
+  `require("luatz.tzcache")` loads `lua/luatz/tzcache.lua`. A
+  payload file wins over a scripts row. `AllowDBModuleLoad` stays
+  off for those two. `io` stays off, so zoneinfo still falls back
+  to UTC. `payload-generate.sh` is 4.6.0. `mkt` does not refresh
+  the archive.
+- `acuranzo_1469.lua` is invokable `zint.Svg`.
+  `acuranzo_1470.lua` is lookup 079 and the symbology attribute.
+  `acuranzo_1471.lua` amends Reports.Render. None is applied.
+  Leave `acuranzo_1455.lua` through `acuranzo_1468.lua` as
+  written. `acuranzo_1472.lua` is the free-rectangle barcode
+  fit and is not applied. The next free Acuranzo file is
+  **1473**. QueryRef
+  **175** stays unused. Next free lookup id **080**. Next free
+  lookup 054 key **53**.
+- Static/Barcode sits immediately left of Image. The design
+  canvas calls `zint.Svg`. Preview HTML calls
+  `require("zint.barcode")`. The box keeps its aspect. Bar height
+  is the zint `height` option. PDF Form XObject is a ready call
+  and is not `stage=pdf`.
+- `zsh -ic 'mkt'` exited 0: Unity build, shutdown test, 3244
+  functions, 349 dead. The new payload functions are not on the
+  dead list. `zsh -ic 'mkp'` exited 0: cppcheck, 2,262 files, no
+  issues. `npm test` was 97 files, 1534 passed, 12 skipped.
+  `npm run lint` and `npm run lint:css` exited 0.
+  `npm run templates:copy` copied 142 templates. The Lua 5.5.1
+  probe, luacheck of 1469–1471, and shellcheck of
+  `payload-generate.sh` exited 0.
+- Phases 53 and 54 stay in progress until the payload is
+  rebuilt, Hydrogen is restarted, the three packets are applied,
+  and the 500 Courses check shows a UPC on the canvas and in
+  Preview HTML. Do not start Phase 55, Phase 30, or Phase 45.
+  Do not deploy. Do not apply. Do not restart the pintura
+  Hydrogen.
+
+### 2026-11-05 — Barcode rectangle is free
+
+- Andrew said the barcode works. The rectangle is no longer
+  locked to the symbol ratio. Fit is contain, cover, none, or
+  scale-down. The symbol keeps its aspect inside the box.
+  Stretch is not a fit. `acuranzo_1472.lua` teaches Preview
+  HTML the same fit and is not applied. The next free Acuranzo
+  file is **1473**. QueryRef **175** stays unused.
+- The payload generator does not watch lua-zint-svg. It packs
+  `payloads/lua/zint`. That snapshot is still lua-zint-svg
+  0.1.0 commit `89a8231`, plus `barcode.lua`. The library repo
+  is at 0.2.0, and the TrueType handoff is uncommitted
+  (`fonts_ttf.lua`, `pdf.lua`). A rebuild does not pick it up
+  until that tree is copied in. GS1-128 data is square-bracket
+  Application Identifiers, for example
+  `[01]09501101020917[10]AB-123`. Phases 53 and 54 stay in
+  progress. Do not start Phase 55.
+
+### 2026-11-05 — Barcode samples and a field barcode
+
+- Each symbology has an example Data value. Changing symbology
+  writes that example only when Data is empty or still an
+  example. A typed value stays. QR is `https://500courses.com`.
+  Code 39 is `CODE-39`. Code 128 is `Ab-129`. UPC-A is
+  `12345678901`. GS1-128 is `[01]09501101020917[10]AB-123`.
+- Field Barcode is on the Field row. It uses the same symbol
+  properties. Data comes from Datasource and Field. A new one
+  takes the band's datasource, or the first datasource, and
+  leaves Field empty. The design canvas encodes the first
+  sample row of that datasource. Export is refused until both
+  are set. Changing symbology does not write an example onto
+  a field barcode.
+- `acuranzo_1473.lua` adds attribute 8 to lookup 053 key 45.
+  `acuranzo_1474.lua` reads `item.datasource` and `item.field`.
+  The iterating datasource uses the current row. Any other
+  datasource uses its first row. 1474 also copies `item.fit`
+  onto the symbol. 1472 did not, so Preview HTML fit waits
+  on 1474. Neither file is applied. The next free Acuranzo
+  file is **1475**. QueryRef **175** stays unused. Next free
+  lookup id **080**. Next free lookup 054 key **53**. Phases
+  53 and 54 stay in progress. Do not start Phase 55.
+
+### 2026-11-05 — Field memo, image, and shape
+
+- The Field row matches the static row: Number 21, Datetime 24,
+  Text 20, Memo 23, Shape 26, Barcode 45, Image 22. Each new
+  item takes the band's datasource, or the first datasource, and
+  leaves Field empty. Datasource and Field use the barcode row
+  rule. The iterating datasource uses the current row. Any other
+  datasource uses its first row. A text, number, or datetime
+  field with no datasource still uses the current row. Export
+  of 22, 23, 26, and 45 requires both. Export of 20, 21, and 24
+  still requires only Field.
+- A field image cell is `data:image/png;base64,...` or
+  `data:image/svg+xml;base64,...`. The picture is that URI.
+  The design canvas paints it. Preview HTML feeds it to
+  `emit_image`. An invalid URI warns once and the picture is
+  skipped. A field memo prints the cell as plain text, wraps,
+  and can grow. A field shape cell replaces the designed kind
+  when the value is a known kind code, including a lookup 078
+  code `shape_source` accepts. Any other string keeps the
+  designed kind, with no extra warning. A missing binding draws
+  the designed kind and warns once.
+- `acuranzo_1475.lua` is the lookup packet. `acuranzo_1476.lua`
+  amends Reports.Render. `sql_old` is the 1474 body. Andrew
+  applies 1475, then 1476. The next free Acuranzo file is
+  **1477**. QueryRef **175** stays unused. Next free lookup id
+  **080**. Next free lookup 054 key **53**. Phases 53 and 54
+  stay in progress. Phase 50 stays not started. Do not start
+  Phase 55. The designer was not opened in a browser.
+- `npm test` was 98 files, 1539 passed, 12 skipped. `npm run
+  lint` and `npm run lint:css` exited 0. luacheck on 1475 and
+  1476 reported 0 warnings. Lua 5.5.1 `loadfile` of both
+  migrations exited 0. The 500 Courses check is Andrew's.
+
+### 2026-11-05 — Barcode property sections
+
+- A barcode's zint options leave the shared Formatting section.
+  Between Object and Position the headers are Barcode Placement,
+  Barcode Text, Barcode Colors, and Barcode Symbology. The
+  Symbology picker, Data, Reader init, and Escape stay in Object.
+  Check digit sits with the other symbology options. Code 39 and
+  GS1-128 hide Barcode Symbology. The names show before the
+  lookup is applied.
+- `acuranzo_1477.lua` adds lookup 075 keys 13–16. Apply it after
+  1475 and 1476. The next free Acuranzo file is **1478**.
+  QueryRef **175** stays unused. Next free lookup id **080**.
+  Next free lookup 054 key **53**. Phases 53 and 54 stay in
+  progress. Do not start Phase 55. The designer was not opened
+  in a browser.
+- `npm test` was 98 files, 1540 passed, 12 skipped. `npm run
+  lint` and `npm run lint:css` exited 0. luacheck on 1477
+  reported 0 warnings. Lua 5.5.1 `loadfile` exited 0.
+
+### 2026-11-05 — Static barcode Data is multiline
+
+- Static barcode Data uses the Notes editor. Enter inserts a
+  newline. Ctrl or Cmd+Enter commits. Arrow keys, Home, End,
+  Page Up, and Page Down stay in the field. A field barcode has
+  no Data row. No migration. The designer was not opened in a
+  browser. `npm test` was 98 files, 1540 passed, 12 skipped.
+  `npm run lint` and `npm run lint:css` exited 0.
+
+### 2026-11-05 — Barcode symbology list
+
+- The picker lists the lua-zint-svg set plus PDF417, Aztec,
+  MaxiCode, and USPS Intelligent Mail. USPS is `uspsimail`.
+  POSTNET, PLANET, Compact PDF417, and Aztec Rune stay out.
+  A symbology change still writes the sample only when Data is
+  empty or still a sample. UPC-E check digit `supplied` calls
+  `upcechk`. Guard descent also covers UPC-E, EAN-8, EAN-13,
+  and ISBN. GS1 parentheses shows on GS1-128 and both DataBar
+  Expanded symbols. Data Matrix has version, fast, square,
+  DMRE, ISO 144, GS separator, GS1, dotty, and dot size.
+  Expanded Stacked has columns and rows. Interleaved 2 of 5
+  has a check-digit list. PDF417 has columns, rows, error
+  correction, and fast. Aztec has size, error correction,
+  fast, full range, GS1, and extra escape. MaxiCode has mode,
+  SCM version, and primary. The local tree encodes the
+  twenty-three. PDF417, Aztec, MaxiCode, and USPS return
+  Error 206. `options.lua` does not read secure, mode,
+  primary, scmvv, or azfull, and it stores rows only for
+  DataBar Expanded Stacked. The panel still sends those keys.
+  `acuranzo_1478.lua` adds lookup 079 keys 6-25.
+  `acuranzo_1479.lua` amends Reports.Render. sql_old is the
+  1476 body. Apply 1475, then 1476, then 1477, then 1478,
+  then 1479. Do not apply 1476 after 1479. The next free
+  file is 1480. The payload is still lua-zint-svg 0.1.0.
+  The designer was not opened in a browser. `npm test` was
+  98 files, 1541 passed, 12 skipped. `npm run lint` exited 0.
+  luacheck on 1478 and 1479 reported 0 warnings. Lua 5.5.1
+  `load` of both render bodies exited 0. The implemented
+  samples encoded. Phases 53 and 54 stay in progress.
+
+### 2026-11-05 — Symbology list sorted
+
+- The picker lists the lua-zint-svg 1.0.0 rockspec set, sorted by
+  name with digits as numbers. Compact PDF417 is `pdf417comp`.
+  `pdf417trunc` is that same symbol. UPC-A and UPC-E with the
+  check digit supplied stay the Check digit row (`upcachk`,
+  `upcechk`). Code 128 (suppress C) stays its own row. EAN-2
+  add-on, EAN-5 add-on, and NVE-18 (SSCC) use the rockspec names.
+  Compact PDF417 shares columns, rows, error correction, and fast
+  with PDF417. The sample is `Hello`. Aztec also shows Dotty and
+  Dot size. `options.lua` reads secure, mode, primary, scmvv, and
+  PDF417 rows, including Compact PDF417. It does not read
+  `azfull`. Aztec does not read `--fast`. `acuranzo_1478.lua`
+  adds lookup 079 keys 6-26 and sets `sort_seq`. Keys 1, 4, and
+  5 keep their codes. `acuranzo_1479.lua` adds `pdf417comp` to
+  Reports.Render. sql_old is still the 1476 body. Apply 1475,
+  then 1476, then 1477, then 1478, then 1479. Do not apply 1476
+  after 1479. The next free file is 1480. The payload source
+  matches lua-zint-svg `97ded32`. The pintura binary from 14:55
+  does not contain `pdf417comp`. The designer was not opened in
+  a browser. `npm test` was 98 files, 1541 passed, 12 skipped.
+  `npm run lint` exited 0. luacheck on 1478 and 1479 reported 0
+  warnings. Lua 5.5.1 `load` of both render bodies exited 0. The
+  samples encoded, including Compact PDF417. Phases 53 and 54
+  stay in progress.
+
+### 2026-11-05 — Phase 31-UI written
+
+- A PDF page dictionary may set `/Rotate` to 0, 90, 180, or 270.
+  That is which side is up. The content stream is written upright.
+  An open action and `/ViewerPreferences` are not orientation. A
+  scan stored already upside down, with `/Rotate` 0, does not
+  announce that. Phase 31-UI honors `/Rotate`, then applies the
+  remembered quarter-turns and flips on top. Those are view
+  transforms. The file is not rewritten.
+- Andrew asked for the Preview PDF viewer phase. Phases 44a, 44b,
+  and 44c already name the shape and static-item work, so this
+  one is Phase 31-UI in
+  [`/docs/Li/plans/reporting/04-pdf.md`](/docs/Li/plans/reporting/04-pdf.md).
+  It is not started. It does not change the count of 72. The page
+  loads a fixture that lives with the report fixtures. The library
+  is bundled `pdfjs-dist`. `jsPDF` stays out. The page does not
+  call `Reports.Render` and does not emit `stage=pdf`. No
+  migration. Naming Phase 31-UI in a new chat starts it.
+- Phases 53 and 54 stay in progress. Do not start Phase 30, Phase
+  31, Phase 45, Phase 50, or Phase 55. The next free Acuranzo file
+  is 1480. QueryRef 175 stays unused.
+
+### 2026-11-05 — Phase 31-UI in progress
+
+- Preview PDF is built and the phase stays in progress.
+  31-UI.12 stays unchecked. Andrew checks
+  `https://lithium.500courses.com`: fit a page, zoom out, move
+  through the thumbs, open the outline and jump, search, select
+  text, and copy a marquee. PDF to text and OCR stay disabled.
+- The fixture is
+  `elements/003-lithium/public/assets/documents/test.pdf`,
+  served at `/assets/documents/test.pdf`. It is untracked.
+  pdf.js 6.5.438 reads 7 pages and 23 nested outline entries.
+  Every destination is `/Fit`, so a click opens that page. A
+  destination that names a point still scrolls to that point.
+  Page 7 `/Rotate` is 90. Page 4's sideways line is content on
+  an upright Legal page.
+- The library is bundled `pdfjs-dist` 6.5.438. Lithium draws
+  the chrome. The worker is bundled. `vite.config.js` isolates
+  it as `vendor-pdfjs`. The page does not call
+  `Reports.Render` and does not emit `stage=pdf`. No migration.
+- Numeric 100% is 96 CSS pixels per inch (`96/72` on the pdf.js
+  viewport scale). Fit page is the control that fills the pane,
+  and that scale stays unclamped. The designer's 100% stays on
+  Editor.
+- From `elements/003-lithium`, `npm test` was 99 files, 1552
+  passed, 12 skipped. `npm run lint` and `npm run lint:css`
+  exited 0. `npm run templates:copy` copied the report HTML and
+  CSS. The viewer was not opened in a browser. One earlier full
+  run saw the JSON fold count stay 0. The chrome file alone and
+  the second full run both passed. The assertion was left as
+  written.
+- Phases 53 and 54 stay in progress. Do not start Phase 30,
+  Phase 31, Phase 45, Phase 50, or Phase 55. The next free
+  Acuranzo file is 1480. QueryRef 175 stays unused. Lookup 080
+  and lookup 054 key 53 stay free.
+
+### 2026-11-05 — Preview PDF worker path
+
+- The fixture was already `/assets/documents/test.pdf`. Deploy
+  copies `public/assets/documents/test.pdf`. Vite does not hash
+  that file. The failure was the pdf.js worker. Vite had emitted
+  `/assets/pdf.worker.min-CIqJB0yW.mjs`. Hydrogen serves the
+  file and does not label `.mjs` as JavaScript, so the browser
+  refused the module.
+- `scripts/copy-pdf-worker.js` copies the worker to
+  `assets/pdf.worker.min.js`. `deploy:local`, `deploy`, and
+  `deploy:500courses` run it. `npm run dev` runs it into
+  `public/` first. The viewer sets `workerSrc` to that path.
+- Log sits before Preview HTML and Preview PDF.
+- The running copy at `~/pintura/web` was patched in place.
+  Its service worker cache is 3498 so the old worker URL is
+  dropped. A refresh loads the stable worker. The phase stays
+  in progress. 31-UI.12 stays unchecked.
+
+### 2026-11-05 — Preview PDF thumbnail frame
+
+- The thumbnail strip uses the property panel's padding, header,
+  and footer. Zoom, in 5 percent steps, is in the header. Column
+  count is in the footer. The upper toolbar keeps one thumbnails
+  toggle.
+- Every page uses one cell. The page is contained and centered.
+  The page number sits on the bottom row. At 100% one row fills
+  the frame's body, so that row has no gap around it. A larger
+  percent scrolls.
+- A saved column count of 0 closes the strip and keeps one
+  column. A saved thumb size of 64, 96, 128, or 176 pixels
+  becomes 100%.
+- From `elements/003-lithium`, `npm test` was 99 files, 1553
+  passed, 12 skipped. `npm run lint` and `npm run lint:css`
+  exited 0. `npm run templates:copy` copied 143 templates.
+  The viewer was not opened in a browser. The phase stays in
+  progress. 31-UI.12 stays unchecked. A refresh of the running
+  copy at `~/pintura/web` does not show this until he deploys.

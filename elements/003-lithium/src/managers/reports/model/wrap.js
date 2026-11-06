@@ -250,7 +250,7 @@ export function wrapText(text, widthPt, fontSizePt, style = 'Normal', mode = 'pr
  * @returns {'clip'|'both'}
  */
 export function defaultFitHeight(typeKey) {
-  return typeKey === 3 ? 'both' : 'clip';
+  return typeKey === 3 || typeKey === 23 ? 'both' : 'clip';
 }
 
 /**
@@ -258,7 +258,7 @@ export function defaultFitHeight(typeKey) {
  * @returns {string}
  */
 export function defaultWrap(typeKey) {
-  if (typeKey === 3) return 'pre-wrap';
+  if (typeKey === 3 || typeKey === 23) return 'pre-wrap';
   if (typeKey === 1 || typeKey === 4) return 'nowrap';
   return 'pre-line';
 }
@@ -305,7 +305,7 @@ function warnOnce(seen, key, warn, message) {
  */
 export function paintsLines(item, fit) {
   const typeKey = Number(item && item.typeKey);
-  if (typeKey === 1 || typeKey === 3 || typeKey === 4) return true;
+  if (typeKey === 1 || typeKey === 3 || typeKey === 4 || typeKey === 23) return true;
   if ((typeKey === 0 || typeKey === 20) && fit !== 'clip') return true;
   return false;
 }

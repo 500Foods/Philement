@@ -25,12 +25,17 @@ import {
   addDatasource, datasourceColumns, datasourceKinds, datasourceList, datasourceNames,
   LIVE_DS_CODES, removeDatasource, renameDatasource, setDatasourceKind,
   PAGE_LABEL_DEFAULT, PAGE_LABEL_TYPE, PARAM_TYPE, parameterNames,
+  QUERY_VALUE_TYPES, boundFieldText, orderBindingKeys,
 } from './reports-sample.js';
 import {
   findReportingQuery, queryLabel, setDatasourceParam, setDatasourceParams, setDatasourceQuery,
 } from './reports-query.js';
 import {
-  applyShapeFill, fillStyleChoices, shapeAttrMeta, shapeAttributeKeys, shapeFillRows, shapeItemFields, shapeKindOptions,
+  applyBarcodeProperty, barcodeAttrMeta, barcodeAttributeKeys, barcodeItemFields, barcodeRows, symbologyList,
+} from './reports-barcode.js';
+import {
+  applyShapeFill, fillStyleChoices, shapeAttrMeta, shapeAttributeKeys, shapeFillRows,
+  shapeItemFields, shapeKindFromValue, shapeKindOptions,
 } from './reports-shape.js';
 import {
   LAYOUT_TYPES, STATIC_DATE, STATIC_IMAGE, STATIC_MEMO, STATIC_NUMBER,
@@ -255,7 +260,7 @@ const ITEM_FIELDS = {
   29: itemField('link', ''),
 };
 
-Object.assign(ITEM_FIELDS, shapeItemFields);
+Object.assign(ITEM_FIELDS, shapeItemFields, barcodeItemFields);
 
 /**
  * Client-only sections (no 075 row, no migration). Ids sit far above
@@ -582,7 +587,31 @@ export function attributeKeys(doc, sel, lookups) {
     const row = types.find((entry) => Number(entry.key_idx) === Number(item.typeKey));
     const list = attrList(row) || [0, 1, 2, 3, 4, 14, 29];
     const keys = list.map(toKey).filter(Number.isInteger);
-    if (Number(item.typeKey) === 25) return shapeAttributeKeys(item, keys);
+    const typeKey = Number(item.typeKey);
+    if (typeKey === 25 || typeKey === 26) {
+      let view = item;
+      if (typeKey === 26) {
+        const code = shapeKindFromValue(boundFieldText(doc, item));
+        if (code) view = { ...item, kind: code };
+      }
+      const shaped = shapeAttributeKeys(view, keys);
+      return typeKey === 26 ? orderBindingKeys(shaped) : shaped;
+    }
+    if (typeKey === 43 || typeKey === 45) {
+      return barcodeAttributeKeys(typeKey, keys);
+    }
+    if (QUERY_VALUE_TYPES.includes(typeKey)) {
+      const next = orderBindingKeys(keys);
+      if (typeKey === 22 || typeKey === 23) {
+        for (const key of [5, 15, 16, 17]) {
+          if (next.includes(key)) continue;
+          const at = next.indexOf(14);
+          if (at >= 0) next.splice(at, 0, key);
+          else next.push(key);
+        }
+      }
+      return next;
+    }
     return keys;
   }
   const top = types.find((entry) => Number(entry.key_idx) === REPORT_TYPE_KEY);
@@ -731,7 +760,7 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
   for (const key of attributeKeys(doc, sel, lookups)) {
     if (isItem && key === 14 && (itemType === STATIC_NUMBER || itemType === STATIC_DATE)) continue;
     const found = attrs.find((entry) => Number(entry.key_idx) === key);
-    const meta = shapeAttrMeta(key);
+    const meta = shapeAttrMeta(key) || ((itemType === 43 || itemType === 45) ? barcodeAttrMeta(key) : null);
     const row = found || { key_idx: key, value_txt: meta ? meta.Label : `Key ${key}` };
     const parsed = found ? parseCollection(found.collection) : {};
     const collection = meta
@@ -744,14 +773,24 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
       unknown.push({ key, editor });
       continue;
     }
-    const choices = bindingChoices(editor, doc, lookups, read.value);
+    let choices = bindingChoices(editor, doc, lookups, read.value);
+    if (QUERY_VALUE_TYPES.includes(itemType) && key === 7) {
+      const bound = findSelected(doc, sel).item;
+      const source = typeof bound.datasource === 'string' ? bound.datasource.trim() : '';
+      if (source) {
+        const names = datasourceColumns(doc, source);
+        if (typeof read.value === 'string' && read.value !== '' && !names.includes(read.value)) names.unshift(read.value);
+        choices = names;
+      }
+    }
     let list = choices || (editor === 'List' && Array.isArray(collection.List) ? collection.List : null);
-    if (key === 5 && itemType === STATIC_IMAGE) list = [...IMAGE_FITS];
+    if (key === 5 && (itemType === STATIC_IMAGE || itemType === 22)) list = [...IMAGE_FITS];
     if (key === 41) {
       list = shapeKindOptions(lookups && lookups.shapeKinds).map((entry) => ({
         value: entry.code, label: entry.label,
       }));
     }
+    if (key === 52) list = symbologyList(lookups);
     if (key === 46) list = fillStyleChoices();
     rows.push({
       id: String(key),
@@ -771,10 +810,12 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     const { item } = findSelected(doc, sel);
     const typeKey = Number(item.typeKey);
     if (LAYOUT_TYPES.has(typeKey)) rows.push(...layoutRows(item));
-    if (typeKey === STATIC_IMAGE) {
+    if (typeKey === STATIC_IMAGE || typeKey === 22) {
       if (!rows.some((entry) => entry.id === '5')) rows.push(imageFitRow(item));
-      rows.push(...imageRows(item));
+      const placement = imageRows(item);
+      rows.push(...(typeKey === 22 ? placement.filter((entry) => entry.id !== 'static-file') : placement));
     }
+    if (typeKey === 43 || typeKey === 45) rows.push(...barcodeRows(item));
     if (MASK_ITEM_TYPES.has(typeKey)) {
       const empty = !own(item, 'mask');
       rows.push({
@@ -819,6 +860,8 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
 export function applyProperty(doc, sel, rowId, value, ctx) {
   const staticDoc = applyStaticProperty(doc, sel, rowId, value);
   if (staticDoc) return staticDoc;
+  const barcodeDoc = applyBarcodeProperty(doc, sel, rowId, value);
+  if (barcodeDoc) return barcodeDoc;
   const isItem = Boolean(sel && sel.itemId && findSelected(doc, sel).item);
   if (rowId === TEXT_ROW_ID) {
     if (!isItem) throw new Error('Text needs a selected item.');
@@ -847,6 +890,17 @@ export function applyProperty(doc, sel, rowId, value, ctx) {
   }
   if (rowId === '7' && isItem && isAggregateType(Number(findSelected(doc, sel).item.typeKey))) {
     return editItem(doc, sel, (item) => setAggregateField(item, value));
+  }
+  if (rowId === '8' && isItem && QUERY_VALUE_TYPES.includes(Number(findSelected(doc, sel).item.typeKey))) {
+    const name = String(value ?? '').trim();
+    return editItem(doc, sel, (item, next) => {
+      if (name) item.datasource = name;
+      else delete item.datasource;
+      const columns = datasourceColumns(next, name);
+      if (columns.length && typeof item.field === 'string' && item.field !== '' && !columns.includes(item.field)) {
+        delete item.field;
+      }
+    });
   }
   if (rowId === MASK_ROW_ID) {
     if (!isItem) throw new Error('Mask needs a selected item.');

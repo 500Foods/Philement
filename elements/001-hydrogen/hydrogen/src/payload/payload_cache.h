@@ -22,6 +22,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
 bool parse_tar_into_cache(const uint8_t *tar_data, size_t tar_size);
 // Forward declarations for internal functions
 int compare_files(const void *a, const void *b);
+const PayloadFile *payload_cache_find(const char *name);
 void cleanup_payload_cache(void);
 
 #endif /* PAYLOAD_CACHE_H */

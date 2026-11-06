@@ -3,7 +3,7 @@
  *
  * Tests H_lua_install_package:
  *   - NULL state is a no-op
- *   - AllowDBModuleLoad false is a no-op
+ *   - AllowDBModuleLoad false still installs the payload searcher
  *   - package table missing logs error
  *   - package.searchers not a table logs error
  *   - Normal case installs searcher
@@ -53,12 +53,10 @@ void test_install_package_disabled_is_noop(void) {
     lua_State* L = H_lua_create_context();
     TEST_ASSERT_NOT_NULL(L);
 
-    H_lua_install_package(L);
-
     int rc = luaL_dostring(L, "return #package.searchers");
     TEST_ASSERT_EQUAL(LUA_OK, rc);
     lua_Integer count = lua_tointeger(L, -1);
-    TEST_ASSERT_EQUAL(4, count);
+    TEST_ASSERT_EQUAL(5, count);
     lua_pop(L, 1);
 
     H_lua_destroy_context(L);
@@ -107,7 +105,7 @@ void test_install_package_normal_installs_searcher(void) {
     int rc = luaL_dostring(L, "return #package.searchers");
     TEST_ASSERT_EQUAL(LUA_OK, rc);
     lua_Integer count = lua_tointeger(L, -1);
-    TEST_ASSERT_EQUAL(5, count);
+    TEST_ASSERT_EQUAL(6, count);
     lua_pop(L, 1);
 
     H_lua_destroy_context(L);

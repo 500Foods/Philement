@@ -16,6 +16,8 @@ export const PANEL_LOOKUPS = {
   datetimePresets: 77,
   /** 078 shape kinds (Phase 44a). Empty until 1465 applies; the palette uses the built-in list. */
   shapeKinds: 78,
+  /** 079 barcode symbologies (Phase 54). Empty until 1470 applies; the panel uses the built-in five. */
+  symbologies: 79,
 };
 
 /**

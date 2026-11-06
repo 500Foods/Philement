@@ -68,6 +68,16 @@ The script update applied, lint, and the browser check.
 
 **not started**
 
+### Note (2026-11-05)
+
+Field Image (lookup 053 key 22) is already on the Field toolbar.
+The cell is a base64 data URI, `data:image/png;base64,...` or
+`data:image/svg+xml;base64,...`. Preview HTML uses that URI.
+`acuranzo_1476.lua` carries the render path and is not applied.
+The file browser, the `doc.images` hash, and the shared display
+PNG in this phase stay unstarted. Do not mark this phase in
+progress. Do not start it by writing its import pipeline.
+
 ---
 
 ## Phase 51 — Reference and URL images
@@ -154,45 +164,98 @@ Andrew's apply report and the fixture call.
 
 ### Goal
 
-Put the pure-Lua zint port into `scripts` so `require` loads it. No
-report output yet.
+Make lua-zint-svg available to the Hydrogen Lua runtime with no
+runtime LuaRocks dependency. Andrew rejected a `scripts` seed and
+rejected raising DB2's CLOB limit. The library is packed in the
+payload. luatz is packed the same way.
 
 ### Entry gate
 
 Phase 0 Status complete. Re-check the next Acuranzo file number the
-day this is written. Phases 1–52 may still be open. Phases 54 and 69
-wait for the apply.
+day this is written. Phases 1–52 may still be open. This sitting
+also wrote Phase 54 because Andrew asked for the library and the
+barcode together.
 
 ### Work items
 
-- [ ] 53.1 Copy the tree named in the library lock into one migration.
-       One migration seeds every `zint.*` module (`init`, `barcode`,
-       `common`, …). `invokable = 0`, `mcp_access = 0`. Group name
-       `zint`. The script name is the require path after the first
-       dot. One library per file. Reverse deletes only those rows.
-       The packet records the commit. If neither the port repository
-       nor the task-tree path is present, stop and ask.
-- [ ] 53.2 The port writes a file when `opts.output` is set, and the
+- [x] 53.1 Pack `lua/zint` and `lua/luatz` under
+       `elements/001-hydrogen/hydrogen/payloads/lua/`. The payload
+       searcher is always installed at `package.searchers` index 2,
+       before the file searcher. A payload file wins over a scripts
+       row of the same name. `AllowDBModuleLoad` does not gate it.
+       `require("zint")` loads `lua/zint/init.lua`.
+       `require("zint.barcode")` loads `lua/zint/barcode.lua`, a
+       one-line wrapper. `require("luatz.tzcache")` loads
+       `lua/luatz/tzcache.lua`. Do not seed the library into
+       `scripts`. Do not modify the lua-zint-svg repository.
+       Pin: lua-zint-svg 0.1.0 commit
+       `89a8231386682109312c29d8b84dc525c271eea3`. luatz is the
+       patched tree already in `acuranzo_1452.lua`, including
+       `tzcache.set_base_path`.
+- [x] 53.2 The port writes a file when `opts.output` is set, and the
        sandbox leaves `io` nil. The probe leaves that field unset and
-       uses the returned SVG string.
-- [ ] 53.3 Hand the packet over. After apply, Andrew runs a probe:
-       `require("zint.barcode")` for a Code 128 and a QR code. Each
-       probe returns an SVG that contains the data string.
-       `AllowDBModuleLoad` is on for that call.
+       uses the returned SVG string. A desktop Lua 5.5.1 probe did
+       that for UPC-A, Code 128 `Ab-129`, and QR.
+- [ ] 53.3 Rebuild the payload so `lua/zint` and `lua/luatz` are in
+       the binary, then restart Hydrogen. `mkt` does not refresh the
+       archive. Probe `require("zint.barcode")` and
+       `require("luatz.tzcache")` with `AllowDBModuleLoad` off.
+       Code 128 SVG contains the data. QR SVG is a path and need
+       not contain the data characters. `io` stays off.
 
 ### Done means
 
 Andrew reports a Code 128 SVG and a QR SVG from inside Hydrogen, with
-`io` left off.
+`io` left off, after a binary that contains the payload libraries.
 
 ### Exit gate
 
-Andrew's apply report and the probe. Test 98 on the new migration
-if he ran it.
+Andrew's restart and the probe. The library does not need a
+migration apply.
 
 ### Status
 
-**not started**
+**in progress**
+
+### Accomplished
+
+- The payload searcher, the vendored trees, and
+  `payload-generate.sh` 4.6.0 are written. Unity covers a dotted
+  require with the database searcher off, a payload file winning
+  over a scripts row, a compile error that is not swallowed, and a
+  `.br` entry that is not compiled.
+- luatz is the only other runtime library `Reports.Render`
+  requires. Optional `syscall`, `unix`, `socket`, and `ngx` loads
+  inside luatz stay unresolved. SchemaTool's `terminal` rock is a
+  developer TUI and is not packed.
+- Zoneinfo still falls back to UTC while `io` is off. Packing
+  luatz does not fix that.
+
+### Lessons learned
+
+- A brotli pack of the zint sources does not fit DB2
+  `queries.code` CLOB(100K). The payload cache is the place for
+  the files.
+- `require` returns the loader path as a second value. A test that
+  reads the top of the stack after `return require(...)` sees nil.
+  Capture the first result.
+- The payload searcher has to sit at index 2. Appending it lets a
+  system luatz shadow the packed one.
+
+### Handoff
+
+Rebuild the payload (`payload-generate.sh` or `mka`) and restart a
+binary that contains `lua/zint/` and `lua/luatz/`. `mkt` does not
+refresh the archive. Probe `require("zint.barcode")` and
+`require("luatz.tzcache")` with `AllowDBModuleLoad` off. Leave
+`opts.output` unset. `io` stays off. Do not restart the pintura
+Hydrogen. Do not apply a migration for the library itself. Phase 54
+in this file is the barcode UI and is also in progress. Do not start
+Phase 55, Phase 30, or Phase 45. Andrew applied
+`acuranzo_1469.lua` through `acuranzo_1474.lua`.
+`acuranzo_1475.lua`, `acuranzo_1476.lua`, and `acuranzo_1477.lua`
+are written and not applied. The next free Acuranzo file is
+**1478**.
 
 ---
 
@@ -204,23 +267,35 @@ Static and field barcodes render as SVG in the HTML preview.
 
 ### Entry gate
 
-Phase 53 and Phase 25 Status complete.
+Phase 25 Status complete. Phase 53 is in progress in this same
+sitting. Andrew asked for the library and the barcode together.
 
 ### Work items
 
-- [ ] 54.1 Palette shows lookup 053 keys 43 (Static Barcode) and 45
-       (Field Barcode). A new barcode writes raster `dpi` `300`.
-       The item stores `symbology` as one of `qr`, `code39`,
-       `code128`, `upca`, `gs1-128`, plus the data string or the
-       field name. Other symbologies are refused with a warning.
-- [ ] 54.2 Compose calls `zint.barcode` with no `output` path. The
-       SVG inlines into the item box in the HTML preview and the
-       HTML export.
-- [ ] 54.3 DOMPurify is configured so this SVG survives the preview
-       sandbox. A stripped SVG is a failed gate.
-- [ ] 54.4 Browser: a Code 128 of a known string and a QR of a known
-       string appear in the preview. A field barcode follows the
-       sample row.
+- [x] 54.1 Palette shows lookup 053 keys 43 (Static Barcode) and 45
+       (Field Barcode). Static/Barcode sits immediately left of
+       Image. A new barcode writes `dpi` `300`, symbology `upca`,
+       and data `12345678901`. A field barcode stores `field` and
+       symbology `upca`, with no static data. The stored symbology
+       is one of `qr`, `code39`, `code128`, `upca`, `gs1-128`.
+       Lookup 079 lists those five. Check digit `supplied` on UPC-A
+       calls library id `upcachk`. Other stored names warn and skip
+       the symbol.
+- [x] 54.2 `Reports.Render` calls `require("zint.barcode")` with no
+       `output` path and `filetype` SVG. The rectangle is free.
+       The symbol keeps its aspect inside it: contain meets,
+       cover slices, and none or a fitting scale-down uses the
+       symbol's own pixel size. Stretch is not a fit. Bar height is the
+       zint `height` option. Item rotation is CSS on the wrapper.
+       The design canvas calls invokable `zint.Svg` for the same
+       options. `stage=pdf` is not wired.
+- [x] 54.3 Preview keeps barcode `<text>` that has `font-family`,
+       an `@font-face` style, and a meet aspect. A bare `<text>`
+       and a duotone `<style>` are still dropped.
+- [ ] 54.4 Browser: drop a UPC, set properties, and see the symbol
+       on the design canvas and in Preview HTML. Also a Code 128
+       of `Ab-129`, a QR, and a field barcode. QR SVG need not
+       contain the data characters. Code 128 does.
 
 ### Done means
 
@@ -233,7 +308,89 @@ Applied script update, lint, and the browser check.
 
 ### Status
 
-**not started**
+**in progress**
+
+### Accomplished
+
+- Static/Barcode is immediately left of Image. Field Barcode is on
+  the field row. The box starts at 1.75 in by 0.7 in. The
+  rectangle then takes any width and height. Fit is contain,
+  cover, none, or scale-down. The symbol is not stretched.
+  `acuranzo_1472.lua` teaches Preview HTML the same fit. Andrew
+  applied it. `acuranzo_1474.lua` copies `item.fit` onto the
+  symbol, and he applied that too.
+- Each symbology has an example. A symbology change writes that
+  example only when Data is empty or still an example. QR is
+  `https://500courses.com`. Code 39 is `CODE-39`. Code 128 is
+  `Ab-129`. UPC-A is `12345678901`. GS1-128 is
+  `[01]09501101020917[10]AB-123`.
+- A field barcode has no typed Data. Datasource and Field supply
+  it. A new one takes the band's datasource, or the first
+  datasource, and leaves Field empty. The canvas encodes the
+  first sample row. `acuranzo_1473.lua` lists attribute 8 on
+  lookup 053 key 45. `acuranzo_1474.lua` reads that pair. The
+  iterating datasource uses the current row. Any other
+  datasource uses its first row. He applied both files.
+- Properties cover the library options the plan allows. Symbology
+  is lookup 079. Numerics, colours, and flags are client rows.
+  Check digit is `compute` or `supplied`. PDF Form XObject is a
+  ready `filetype = "PDF"` result from `zint.Svg` and from
+  `zint.barcode`. It is not a `stage=pdf` path.
+- `acuranzo_1469.lua` inserts invokable `zint.Svg`.
+  `acuranzo_1470.lua` adds lookup 079, lookup 054 key 52, and
+  the attribute lists on lookup 053 keys 43 and 45.
+  `acuranzo_1471.lua` amends Reports.Render. Andrew applied
+  1469 through 1474. `acuranzo_1455.lua` through
+  `acuranzo_1474.lua` were not edited in this sitting.
+- Field Memo (23), Field Shape (26), and Field Image (22) sit on
+  the Field row with Text, Number, Datetime, and Barcode. Each
+  reads Datasource and Field the same way a field barcode reads
+  Data. A field image cell is a PNG or SVG base64 data URI. A
+  field shape cell replaces the designed kind when the value is
+  a known kind code. `acuranzo_1475.lua` lists Datasource before
+  Field. `acuranzo_1476.lua` amends Reports.Render. Neither file
+  is applied.
+
+### Lessons learned
+
+- The detail band is 0.25 in. `resizeItem` clamps each side to the
+  band. The rectangle stays free, and the symbol fits inside it.
+- Preview `<text>` is kept only when it has `font-family`. That
+  keeps zint digits and still drops a bare `<text>12</text>` on an
+  image. A `<style>` element is kept only for one `@font-face`.
+
+### Handoff
+
+Andrew applied `acuranzo_1469.lua` through `acuranzo_1474.lua`.
+Apply `acuranzo_1475.lua`, then `acuranzo_1476.lua`, then
+`acuranzo_1477.lua`. 1477 adds lookup 075 keys 13–16. A barcode
+shows Barcode Placement, Barcode Text, Barcode Colors, and
+Barcode Symbology between Object and Position. The Symbology
+picker stays in Object. Check digit is in Barcode Symbology.
+Code 39 and GS1-128 hide that section. The headers show before
+1477 is applied. 1475 lists Datasource before Field on lookup
+053 keys 20, 21, 22, 23, 24, and 26. 1476 reads that pair for a field memo, image, and shape.
+A text, number, or datetime field uses the datasource when it is
+set, and uses the current row when it is absent. The iterating
+datasource uses the current row. Any other datasource uses its
+first row. A field image cell is `data:image/png;base64,...` or
+`data:image/svg+xml;base64,...`. An invalid URI warns once and
+the picture is skipped. A field shape cell replaces the designed
+kind when the value is a known kind code (`line`, `rectangle`,
+`roundrect`, `ellipse`, `x`, `trapezoid`, `star`, `pentagon`,
+`hexagon`, or a lookup 078 code `shape_source` accepts). Any
+other string keeps the designed kind, with no extra warning. A
+missing binding draws the designed kind and warns once. On
+`https://lithium.500courses.com`, the Field row is Number,
+Datetime, Text, Memo, Shape, Barcode, Image. Bind each one. A
+memo prints the cell. An image paints the data URI. A shape
+whose cell is `ellipse` draws an ellipse. A shape whose cell is
+any other string keeps the designed rectangle. The barcode
+rectangle stays free. Leave `opts.output` unset. Do not deploy.
+Do not apply from this session. Do not restart the pintura
+Hydrogen. Do not start Phase 55 or Phase 50. The next free
+Acuranzo file is **1478**. QueryRef **175** stays unused. Next
+free lookup id **080**. Next free lookup 054 key **53**.
 
 ---
 

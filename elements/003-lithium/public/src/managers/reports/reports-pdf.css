@@ -1,0 +1,319 @@
+/**
+ * Preview PDF. Fit page is the viewer's own scale. Numeric 100%
+ * is 96 CSS pixels per inch. Flips are a scale on the sheet so
+ * the text layer moves with the paint.
+ */
+
+@layer managers {
+.reports-pdf-toolbar.lithium-toolbar {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.reports-pdf-toolbar > .lithium-toolbar-btn,
+.reports-pdf-toolbar > .reports-zoom-label,
+.reports-pdf-toolbar > .reports-pdf-page-input,
+.reports-pdf-toolbar > .reports-pdf-find {
+  flex-shrink: 0;
+}
+
+.reports-pdf-page-input,
+.reports-pdf-find-input {
+  height: 20px;
+  margin: 0;
+  padding: 0 var(--space-1);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.reports-pdf-page-input {
+  width: 3rem;
+  text-align: center;
+}
+
+.reports-pdf-find:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  height: 24px;
+}
+
+.reports-pdf-find-input {
+  width: 8rem;
+}
+
+.reports-pdf {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  user-select: none;
+}
+
+/* Same gutter as the property panel: padding, not margin, so the
+   gap around the frame is --bg-secondary. 100% is one row of cells
+   as tall as the body. The page number row is 16px (THUMB_NUMBER_PX). */
+.reports-pdf-thumbs:not([hidden]) {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 280px;
+  min-width: 180px;
+  max-width: 600px;
+  min-height: 0;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-secondary);
+}
+
+.reports-pdf-thumb-body {
+  min-width: 0;
+  overflow: auto;
+}
+
+.reports-pdf-thumbs .reports-pdf-thumb-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 0;
+}
+
+.reports-pdf-thumbs .reports-pdf-thumb-bar > :last-child {
+  justify-self: end;
+}
+
+.reports-pdf-thumb-grid {
+  display: grid;
+  width: calc(100% * var(--pdf-thumb-scale, 1));
+  min-width: 0;
+  grid-template-columns: repeat(var(--pdf-cols, 1), minmax(0, 1fr));
+  grid-auto-rows: var(--pdf-thumb-h, 0);
+}
+
+.reports-pdf-thumb {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 16px;
+  width: 100%;
+  height: var(--pdf-thumb-h, 0);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.reports-pdf-thumb.is-current {
+  outline: 2px solid var(--accent-info);
+  outline-offset: -2px;
+}
+
+.reports-pdf-thumb-sheet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transform: scale(var(--pdf-flip-x, 1), var(--pdf-flip-y, 1));
+}
+
+.reports-pdf-thumb canvas {
+  display: block;
+  flex: 0 0 auto;
+  width: var(--pdf-page-w, 0);
+  height: var(--pdf-page-h, 0);
+  background-color: transparent;
+}
+
+.reports-pdf-thumb-num {
+  height: 16px;
+  font-size: var(--font-size-sm);
+  line-height: 16px;
+  text-align: center;
+}
+
+.reports-pdf-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.reports-pdf-stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background-color: var(--bg-secondary);
+}
+
+.reports-pdf-track {
+  position: relative;
+  min-width: 100%;
+  height: var(--pdf-depth, 0);
+}
+
+.reports-pdf-page {
+  position: absolute;
+  top: var(--pdf-top, 0);
+  left: var(--pdf-left, 0);
+  width: var(--pdf-width, 0);
+  height: var(--pdf-height, 0);
+}
+
+.reports-pdf-sheet {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: transparent;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  transform: scale(var(--pdf-flip-x, 1), var(--pdf-flip-y, 1));
+}
+
+.reports-pdf[data-pointer="text"] .reports-pdf-canvas {
+  pointer-events: none;
+}
+
+.reports-pdf[data-pointer="marquee"] .reports-pdf-text,
+.reports-pdf[data-pointer="hand"] .reports-pdf-text {
+  pointer-events: none;
+}
+
+.reports-pdf[data-pointer="hand"] .reports-pdf-sheet {
+  cursor: grab;
+}
+
+.reports-pdf[data-pointer="marquee"] .reports-pdf-sheet {
+  cursor: crosshair;
+}
+
+.reports-pdf-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.reports-pdf-marquee:not([hidden]) {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid var(--accent-info);
+  background-color: rgb(80 160 255 / 20%);
+  pointer-events: none;
+}
+
+.reports-pdf-note:not([hidden]) {
+  position: absolute;
+  z-index: 2;
+  margin: var(--space-4);
+  color: var(--text-primary);
+}
+
+.reports-pdf-outline:not([hidden]) {
+  display: flex;
+  flex: 0 0 14rem;
+  flex-direction: column;
+  width: 14rem;
+  min-height: 0;
+  overflow: auto;
+  background-color: var(--bg-primary);
+}
+
+.reports-pdf-outline-empty {
+  margin: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.reports-pdf-outline-item {
+  display: block;
+  width: 100%;
+  padding: 2px var(--space-2) 2px calc(var(--space-2) + (var(--pdf-indent, 0) * var(--space-3)));
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.reports-pdf-outline-item.is-current {
+  background-color: var(--accent-alt-primary);
+}
+
+.reports-pdf-outline-item.is-external {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.reports-pdf-text {
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: clip;
+  line-height: 1;
+  color-scheme: only light;
+  text-align: initial;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  opacity: 1;
+}
+
+.reports-pdf-text span,
+.reports-pdf-text br {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+
+.reports-pdf-text > span {
+  --font-height: 0;
+  --scale-x: 1;
+  --rotate: 0deg;
+
+  z-index: 1;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.reports-pdf-text span.is-hit {
+  background-color: rgb(180 0 170 / 25%);
+  border-radius: 2px;
+}
+
+.reports-pdf-text span.is-hit-current {
+  background-color: rgb(0 100 0 / 35%);
+}
+
+.reports-pdf-text ::selection {
+  color: transparent;
+  background-color: rgb(0 0 255 / 25%);
+}
+
+.reports-pdf-print {
+  position: fixed;
+  width: 0;
+  height: 0;
+  border: 0;
+  opacity: 0;
+}
+}

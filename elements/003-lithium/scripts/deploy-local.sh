@@ -23,7 +23,9 @@ npm run validate:tabulator
 npm run templates:copy
 rm -rf "$LOCAL_DEPLOY_DIR"; mkdir -p "$LOCAL_DEPLOY_DIR"
 LITHIUM_DEPLOY="$LOCAL_DEPLOY_DIR" npm run build:deploy-only
+# The fixture PDF and the pdf.js worker are static files. Vite does not hash them.
 [ -d public/assets ] && rsync -a --safe-links public/assets/ "$LOCAL_DEPLOY_DIR/assets/" || true
+node scripts/copy-pdf-worker.js "$LOCAL_DEPLOY_DIR"
 LITHIUM_DEPLOY="$LOCAL_DEPLOY_DIR" npm run style:registry
 LITHIUM_DEPLOY="$LOCAL_DEPLOY_DIR" npm run icon:registry
 mkdir -p "$LOCAL_DEPLOY_DIR/config"

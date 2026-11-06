@@ -91,7 +91,7 @@ echo "[8.5/8] Preserving timestamps for static assets..."
 # Copy static assets with preserved timestamps to avoid unnecessary rsync transfers
 if [ -d "$PROJECT_ROOT/public/assets" ]; then
   echo "  Copying static assets (fonts, videos, images) with preserved timestamps..."
-  find "$PROJECT_ROOT/public/assets" -type f \( -name "*.woff*" -o -name "*.ttf" -o -name "*.mp4" -o -name "*.webm" -o -name "*.png" -o -name "*.jpg" -o -name "*.svg" -o -name "*.ico" \) \
+  find "$PROJECT_ROOT/public/assets" -type f \( -name "*.woff*" -o -name "*.ttf" -o -name "*.mp4" -o -name "*.webm" -o -name "*.png" -o -name "*.jpg" -o -name "*.svg" -o -name "*.ico" -o -name "*.pdf" \) \
     -exec bash -c '
       src="$1"
       dst="$2/${src#'"$PROJECT_ROOT/public/"'}"
@@ -100,6 +100,7 @@ if [ -d "$PROJECT_ROOT/public/assets" ]; then
     ' _ {} "$LOCAL_DEPLOY_DIR" \;
   echo "  ✓ Static assets copied with timestamps preserved"
 fi
+node scripts/copy-pdf-worker.js "$LOCAL_DEPLOY_DIR"
 
 echo ""
 echo "=== Post-build steps (running in parallel) ==="

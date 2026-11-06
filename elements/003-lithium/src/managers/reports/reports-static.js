@@ -22,14 +22,18 @@ export const STATIC_NUMBER = 1;
 export const STATIC_IMAGE = 2;
 export const STATIC_MEMO = 3;
 export const STATIC_DATE = 4;
-export const LAYOUT_TYPES = new Set([0, 1, 3, 4, 20]);
+export const LAYOUT_TYPES = new Set([0, 1, 3, 4, 20, 23]);
 export const NUMBER_MASKS = Object.freeze(['#,##0.00', '$#,##0.00', '(#,##0.00)', '0%']);
 export const STATIC_BOX = Object.freeze({
   2: { width: '1 in', height: '0.75 in' },
   3: { width: '1.5 in', height: '0.6 in' },
+  22: { width: '1 in', height: '0.75 in' },
+  23: { width: '1.5 in', height: '0.6 in' },
+  43: { width: '1.75 in', height: '0.7 in' },
+  45: { width: '1.75 in', height: '0.7 in' },
 });
 export const STATIC_GHOST = Object.freeze({
-  1: 'Number', 2: 'Image', 3: 'Memo', 4: 'Datetime',
+  1: 'Number', 2: 'Image', 3: 'Memo', 4: 'Datetime', 43: 'Barcode', 45: 'Barcode',
 });
 
 const ROW = Object.freeze({
@@ -204,7 +208,7 @@ export function applyStaticProperty(doc, sel, rowId, value) {
   const item = selectedItem(doc, sel);
   if (!item) return null;
   const typeKey = Number(item.typeKey);
-  if (rowId === '5' && typeKey === STATIC_IMAGE) {
+  if (rowId === '5' && (typeKey === STATIC_IMAGE || typeKey === 22)) {
     const fit = String(value ?? '').trim();
     if (!IMAGE_FITS.includes(fit)) throw new Error(`Fit must be one of ${IMAGE_FITS.join(', ')}.`);
     return edit(doc, sel, (target) => { target.fit = fit; });
@@ -254,7 +258,7 @@ export function applyStaticProperty(doc, sel, rowId, value) {
     if (!NUMBER_MASKS.includes(mask)) throw new Error('Unknown number mask.');
     return edit(doc, sel, (target) => { target.mask = mask; });
   }
-  if (typeKey !== STATIC_IMAGE) return null;
+  if (typeKey !== STATIC_IMAGE && typeKey !== 22) return null;
   if (rowId === ROW.dpi) {
     const number = finiteNumber(value);
     if (number === null || number <= 0) throw new Error('Dpi must be a positive number.');
@@ -405,7 +409,8 @@ function fontOf(doc, item, helvetica) {
  */
 export function paintsMeasured(item) {
   const typeKey = Number(item && item.typeKey);
-  if (typeKey === STATIC_NUMBER || typeKey === STATIC_IMAGE || typeKey === STATIC_MEMO || typeKey === STATIC_DATE) {
+  if (typeKey === STATIC_NUMBER || typeKey === STATIC_IMAGE || typeKey === STATIC_MEMO || typeKey === STATIC_DATE
+    || typeKey === 22 || typeKey === 23) {
     return true;
   }
   if (typeKey === 0) {
@@ -425,10 +430,12 @@ const OBJECT_FIT = {
   stretch: 'fill', contain: 'contain', cover: 'cover', none: 'none', 'scale-down': 'scale-down',
 };
 
-function paintImage(el, item, doc) {
+function paintImage(el, item, doc, srcOverride) {
   el.classList.add('reports-item-image-item');
   const images = doc && doc.images && typeof doc.images === 'object' ? doc.images : {};
-  const src = typeof item.image === 'string' ? images[item.image] : '';
+  const src = srcOverride != null
+    ? srcOverride
+    : (typeof item.image === 'string' ? images[item.image] : '');
   if (!src) {
     const label = document.createElement('span');
     label.className = 'reports-item-text';
@@ -468,15 +475,16 @@ function paintImage(el, item, doc) {
  * @param {object} item
  * @param {object} doc
  */
-export function paintMeasuredItem(body, item, doc) {
+export function paintMeasuredItem(body, item, doc, options = {}) {
   const el = document.createElement('div');
   el.className = 'reports-item';
   el.dataset.itemId = item.id;
+  if (options.unbound != null) el.dataset.unbound = String(Boolean(options.unbound));
   const align = item.align === 'Center' || item.align === 'Right' ? item.align : 'Left';
   el.dataset.align = align;
   const typeKey = Number(item.typeKey);
   const fit = typeof item.fitHeight === 'string' && item.fitHeight !== '' ? item.fitHeight : defaultFitHeight(typeKey);
-  const helvetica = typeKey !== STATIC_IMAGE && fit !== 'clip';
+  const helvetica = typeKey !== STATIC_IMAGE && typeKey !== 22 && fit !== 'clip';
   const font = fontOf(doc, item, helvetica);
   el.dataset.fontStyle = font.style;
   el.style.setProperty('--reports-item-font-family', `'${font.family.replace(/'/g, '')}'`);
@@ -486,12 +494,13 @@ export function paintMeasuredItem(body, item, doc) {
   el.style.top = `${toCssPx(box.top)}px`;
   el.style.width = `${toCssPx(box.width)}px`;
   el.style.height = `${toCssPx(box.height)}px`;
-  if (typeKey === STATIC_IMAGE) paintImage(el, item, doc);
+  if (typeKey === STATIC_IMAGE || typeKey === 22) paintImage(el, item, doc, options.src);
   else {
     el.classList.add('reports-item-wrapped');
     const mode = WRAP_MODES.includes(item.wrap) ? item.wrap : defaultWrap(typeKey);
     const widthPt = lengthPt(box.width) || 0;
-    const lines = wrapText(sourceText(item), widthPt, font.sizePt, font.style, mode);
+    const shown = options.text != null ? options.text : sourceText(item);
+    const lines = wrapText(shown, widthPt, font.sizePt, font.style, mode);
     const multiple = Number(item.lineHeight);
     const leading = Number.isFinite(multiple) && multiple > 0 ? multiple : 1.2;
     const valign = VALIGNS.includes(item.valign) ? item.valign : 'top';

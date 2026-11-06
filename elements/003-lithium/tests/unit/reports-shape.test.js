@@ -245,9 +245,11 @@ describe('shape items', () => {
   });
 
   it('does not put the hidden shape types on the toolbar', () => {
-    for (const key of [26, 33, 39, 53]) {
+    for (const key of [33, 39, 53]) {
       expect(html).not.toContain(`data-type-key="${key}"`);
     }
+    expect(html).toContain('id="reports-field-shape-btn"');
+    expect(html).toContain('data-reports-category="field" data-type-key="26"');
     expect(html).not.toContain('reports-shape-kind');
     const shapeLine = html.split('\n').find((line) => line.includes('id="reports-shape-btn"'));
     expect(shapeLine).toContain('draggable="true"');

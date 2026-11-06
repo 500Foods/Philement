@@ -426,4 +426,15 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1466](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render static shapes (Reporting Phase 44a) |
 | [1467](/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua) | scripts | 1.0.0 | 2026-11-04 | 6 | ✗ | Reports.Render shape fill and gradient (Reporting Phase 44b) |
 | [1468](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua) | scripts | 1.0.0 | 2026-11-04 | 12 | ✗ | Reports.Render static number, datetime, image, and memo (Reporting Phase 44c) |
-| **393** | | | | **2272** | **393** | |
+| [1469](/elements/002-helium/acuranzo/migrations/acuranzo_1469.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | zint.Svg invokable wrapper (Reporting Phase 54) |
+| [1470](/elements/002-helium/acuranzo/migrations/acuranzo_1470.lua) | lookups | 1.0.0 | 2026-11-05 | 16 | ✗ | Lookup 079 (Report Barcode Symbologies) (Reporting Phase 54) |
+| [1471](/elements/002-helium/acuranzo/migrations/acuranzo_1471.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render barcode SVG (Reporting Phase 54) |
+| [1472](/elements/002-helium/acuranzo/migrations/acuranzo_1472.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render barcode fit (Reporting Phase 54) |
+| [1473](/elements/002-helium/acuranzo/migrations/acuranzo_1473.lua) | lookups | 1.0.0 | 2026-11-05 | 4 | ✗ | Field Barcode datasource (Reporting Phase 54) |
+| [1474](/elements/002-helium/acuranzo/migrations/acuranzo_1474.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render field barcode (Reporting Phase 54) |
+| [1475](/elements/002-helium/acuranzo/migrations/acuranzo_1475.lua) | lookups | 1.0.0 | 2026-11-05 | 14 | ✗ | Field item datasource lists (Reporting) |
+| [1476](/elements/002-helium/acuranzo/migrations/acuranzo_1476.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render field values (text, number, datetime, memo, image, shape, barcode) |
+| [1477](/elements/002-helium/acuranzo/migrations/acuranzo_1477.lua) | lookups | 1.0.0 | 2026-11-05 | 7 | ✗ | Barcode property sections (Reporting) |
+| [1478](/elements/002-helium/acuranzo/migrations/acuranzo_1478.lua) | lookups | 1.0.1 | 2026-11-05 | 28 | ✗ | Report barcode symbologies (Reporting) |
+| [1479](/elements/002-helium/acuranzo/migrations/acuranzo_1479.lua) | scripts | 1.0.1 | 2026-11-05 | 4 | ✗ | Reports.Render barcode symbologies (Reporting) |
+| **404** | | | | **2365** | **404** | |

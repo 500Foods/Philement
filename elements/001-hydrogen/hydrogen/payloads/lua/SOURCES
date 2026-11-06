@@ -1,0 +1,20 @@
+lua/zint
+  lua-zint-svg 0.1.0
+  commit 89a8231386682109312c29d8b84dc525c271eea3
+  src/zint/*.lua plus barcode.lua (return require("zint").barcode)
+  eci_sb.lua and sjis.lua are included; bin/lua-zint is not
+
+lua/luatz
+  luatz v0.4-4-ga7c0310
+  commit a7c031006fad5511858b3bb70e7661a0aad5fc54
+  bytes copied from acuranzo_1452.lua, including tzcache.set_base_path
+  modules: init gettime parse strftime timetable tzcache tzfile tzinfo version
+
+lua/pdfkit
+  lua-pdfkit 1.0.0, Lua module name pdfkit
+  copied from /mnt/extra/Projects/lua-pdfkit/src/pdfkit
+  base commit 058a55a (v1.0.0-1-g058a55a) plus the require rename
+  require("pdfkit") loads init.lua
+  nested folders stay: font, fontkit, image, linebreak, mixins, table, zlib
+  require("pdfkit.font.standard") loads font/standard.lua
+  require("pdfkit.fontkit") loads fontkit/init.lua

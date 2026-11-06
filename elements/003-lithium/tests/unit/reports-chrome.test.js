@@ -510,7 +510,7 @@ describe('Report Manager chrome', () => {
     const ids = [...container.querySelectorAll('.lithium-toolbar-tab')].map((tab) => tab.id);
     expect(ids).toEqual([
       'reports-report-tab', 'reports-editor-tab', 'reports-json-tab', 'reports-revisions-tab',
-      'reports-compose-tab', 'reports-html-tab', 'reports-log-tab', 'reports-pdf-tab',
+      'reports-compose-tab', 'reports-log-tab', 'reports-html-tab', 'reports-pdf-tab',
     ]);
     expect(manager.elements.jsonTab.textContent.trim()).toBe('Definition');
     expect(manager.elements.jsonTab.getAttribute('aria-label')).toBe('Definition');

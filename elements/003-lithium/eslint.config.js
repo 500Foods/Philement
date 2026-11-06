@@ -10,6 +10,7 @@ export default [
         // Browser globals
         window: 'readonly',
         document: 'readonly',
+        DOMParser: 'readonly',
         navigator: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',

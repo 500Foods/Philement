@@ -58,6 +58,19 @@ export function isSvgData(dataUri) {
   return typeof dataUri === 'string' && /^data:image\/svg\+xml/i.test(dataUri.trim());
 }
 
+/** A field image cell: base64 PNG or base64 SVG data URI. Anything else is blank. */
+const FIELD_IMAGE_URI = /^data:image\/(?:png|svg\+xml);base64,[A-Za-z0-9+/]+=*$/i;
+
+/**
+ * @param {unknown} value
+ * @returns {string} The URI, or `''` when it is not a PNG or SVG data URI.
+ */
+export function imageDataUriValue(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.trim();
+  return FIELD_IMAGE_URI.test(text) ? text : '';
+}
+
 /**
  * Display pixels: inches times dpi, at least 1 on a side.
  * @param {string} length

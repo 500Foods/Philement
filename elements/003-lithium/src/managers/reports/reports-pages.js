@@ -47,6 +47,7 @@ export const reportPageMethods = {
     if ((next === 'json' || next === 'compose' || next === 'log') && typeof this._applyReportFont === 'function') this._applyReportFont(next);
     if (next === 'html' && typeof this._sizePreviewFrame === 'function') this._sizePreviewFrame();
     if (next === 'revisions' && typeof this.openRevisions === 'function') return this.openRevisions();
+    if (next === 'pdf' && typeof this.openPdf === 'function') return this.openPdf();
     return undefined;
   },
 };

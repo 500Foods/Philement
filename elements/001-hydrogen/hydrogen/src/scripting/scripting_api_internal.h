@@ -20,6 +20,7 @@
 
 // Project headers
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/payload/payload.h>
 #include <src/api/auth/oidc_rp/oidc_rp_http.h>
 #include <src/mailrelay/mailrelay_repository.h>
 #include "scoreboard.h"
@@ -76,6 +77,9 @@ int H_lua_scoreboard_cancel(lua_State* L);
 int H_lua_scoreboard_prune_terminal(lua_State* L);
 
 bool split_module_name(const char* name, char** group_out, char** script_out);
+bool payload_lua_path(const char* module, char* out, size_t out_len, bool as_init);
+const PayloadFile* payload_lua_open(const char* path);
+int H_lua_payload_searcher(lua_State* L);
 int H_lua_package_searcher(lua_State* L);
 
 // ----------------------------------------------------------------------------

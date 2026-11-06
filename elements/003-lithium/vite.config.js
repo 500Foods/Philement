@@ -60,6 +60,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes('marked')) return 'vendor-marked';
               if (id.includes('shepherd')) return 'vendor-shepherd';
               if (id.includes('suneditor')) return 'vendor-suneditor';
+              if (id.includes('pdfjs-dist')) return 'vendor-pdfjs';
 
               // Group smaller utilities together
               return 'vendor-utils';

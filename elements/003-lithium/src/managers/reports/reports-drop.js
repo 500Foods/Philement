@@ -18,10 +18,14 @@ export const SHAPE_DROP_KIND = 'reports-shape';
 
 /** Drag kind for a field button: `reports-field:<typeKey>`. */
 export const FIELD_DROP_PREFIX = 'reports-field:';
-const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 24, 35, 61, 62, 63, 64]);
-const STATIC_DROP_TYPES = new Set([1, 2, 3, 4]);
+const FIELD_DROP_TYPES = new Set([5, 6, 20, 21, 22, 23, 24, 26, 35, 45, 61, 62, 63, 64]);
+const STATIC_DROP_TYPES = new Set([1, 2, 3, 4, 43]);
 const STATIC_DROP_PREFIX = 'reports-static:';
-const FIELD_GHOST = { 5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field', 24: 'Datetime field', 35: 'Aggregate', 61: 'Page number', 62: 'Page count', 63: 'Parameter', 64: 'Page label' };
+const FIELD_GHOST = {
+  5: 'System date', 6: 'System user', 20: 'Text field', 21: 'Number field',
+  22: 'Image field', 23: 'Memo field', 24: 'Datetime field', 26: 'Shape field',
+  35: 'Aggregate', 45: 'Barcode', 61: 'Page number', 62: 'Page count', 63: 'Parameter', 64: 'Page label',
+};
 /**
  * Item a palette drop creates: fields bind `field`, Parameter (63) binds `param`.
  * System Date (5) and new datetime fields (24) start with timezone User and
@@ -36,6 +40,7 @@ export const dropItem = (typeKey) => {
   if (typeKey === PAGE_LABEL_TYPE) return { typeKey, template: PAGE_LABEL_DEFAULT };
   if (typeKey === 24) return { typeKey, field: '', timezone: 'User' };
   if (typeKey === AGGREGATE_NUMBER_TYPE) return { typeKey, op: 'count', field: '' };
+  if (typeKey === 26) return { typeKey, ...defaultShapeFields('rectangle'), field: '' };
   return { typeKey, field: '' };
 };
 
@@ -75,7 +80,7 @@ export const reportDropMethods = {
     this._shapeDragBtn = this.container.querySelector('#reports-shape-btn');
     this._shapeDragBtn?.addEventListener('dragstart', this._onTextDragStart);
     this._shapeDragBtn?.addEventListener('dragend', this._onTextDragEnd);
-    this._staticDragBtns = [...this.container.querySelectorAll('#reports-static-number-btn, #reports-static-date-btn, #reports-static-image-btn, #reports-static-memo-btn')];
+    this._staticDragBtns = [...this.container.querySelectorAll('#reports-static-number-btn, #reports-static-date-btn, #reports-static-image-btn, #reports-static-memo-btn, #reports-static-barcode-btn')];
     this._staticDragBtns.forEach((btn) => {
       btn.addEventListener('dragstart', this._onTextDragStart);
       btn.addEventListener('dragend', this._onTextDragEnd);
@@ -181,7 +186,7 @@ export const reportDropMethods = {
       event.clientX,
       event.clientY,
       readViewScale(body),
-      isStatic ? STATIC_BOX[staticType] : null,
+      isStatic ? STATIC_BOX[staticType] : STATIC_BOX[fieldType],
     );
     let next;
     let addedId;
