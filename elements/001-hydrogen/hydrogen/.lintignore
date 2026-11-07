@@ -63,3 +63,7 @@ images/acuranzo
 # This is the node stuff from hbm_browser that we don't want to pull in
 extras/hbm_browser/node_modules/
 
+# These are from other projects or repositories and are included here to be part of
+# the payload, so we're not trccking them for our project.
+**payloads/lua/**
+
