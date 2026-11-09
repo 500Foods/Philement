@@ -19,6 +19,7 @@ import {
   parseLength,
 } from './units.js';
 import { normalizeDefinitionColours } from '../reports-colours.js';
+import { migrateFitHeight } from './overflow.js';
 
 const BAND_HEIGHT = {
   12: '0.4 in',
@@ -172,7 +173,13 @@ function copyDefinition(input) {
  * @returns {object}
  */
 export function importDefinition(input) {
-  return normalizeDefinitionColours(copyDefinition(input));
+  const doc = normalizeDefinitionColours(copyDefinition(input));
+  const bands = Array.isArray(doc.bands) ? doc.bands : [];
+  for (const band of bands) {
+    const items = Array.isArray(band.items) ? band.items : [];
+    for (const item of items) migrateFitHeight(item);
+  }
+  return doc;
 }
 
 /**
@@ -377,14 +384,16 @@ function staticDefaults(item, typeKey) {
   if (typeKey === 1 || typeKey === 4) {
     if (!Object.hasOwn(item, 'value')) item.value = typeKey === 1 ? 0 : '2026-01-01';
     if (!Object.hasOwn(item, 'wrap')) item.wrap = 'nowrap';
-    if (!Object.hasOwn(item, 'fitHeight')) item.fitHeight = 'clip';
+    if (!Object.hasOwn(item, 'overflow')) item.overflow = 'Clip';
+    if (Object.hasOwn(item, 'fitHeight')) delete item.fitHeight;
     if (!Object.hasOwn(item, 'valign')) item.valign = 'top';
   }
   if (typeKey === 3 || typeKey === 23) {
     if (typeKey === 3 && !Object.hasOwn(item, 'text')) item.text = 'Memo';
     if (typeKey === 23 && !Object.hasOwn(item, 'field')) item.field = '';
     if (!Object.hasOwn(item, 'wrap')) item.wrap = 'pre-wrap';
-    if (!Object.hasOwn(item, 'fitHeight')) item.fitHeight = 'both';
+    if (!Object.hasOwn(item, 'overflow')) item.overflow = 'Grow';
+    if (Object.hasOwn(item, 'fitHeight')) delete item.fitHeight;
     if (!Object.hasOwn(item, 'valign')) item.valign = 'top';
   }
   if (typeKey === 2 || typeKey === 22) {

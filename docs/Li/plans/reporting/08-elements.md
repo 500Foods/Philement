@@ -720,8 +720,8 @@ Packets applied, checks green, Andrew confirms.
 
 ### Status
 
-**In progress** — packets `1501`–`1503` **applied** (Andrew);
-awaiting his final browser confirm on 9-position + font.
+**Complete (2026-11-09)** — Andrew applied `1501`–`1503` and moved on
+(wrapping close enough).
 
 ### Accomplished
 
@@ -741,9 +741,7 @@ awaiting his final browser confirm on 9-position + font.
 
 ### Handoff
 
-Andrew browser-confirms 9-position Clip + wrapped text
-(Back/Background) and non-Clip font. Phase 79 packets `1504`–`1506`
-written (unapplied).
+Phase 79 next. Packets `1504`–`1506` followed.
 
 ---
 
@@ -890,32 +888,30 @@ Andrew's browser check.
 
 ### Status
 
-**In progress** — packets `1504`–`1506` written (unapplied);
-designer + Metrics ready. Awaiting Andrew apply + browser check.
+**Complete (2026-11-09)** — Andrew applied through `1511` (Metrics +
+`scripts.options` + `Reports.Render` sandbox.io); wrapping close
+enough.
 
 ### Accomplished
 
-- Benchmark gate: full SemiExtended TTFs open ~40–90 ms; Mail Regular
-  matches advances; Mail Medium does not. Andrew chose option B.
+- Benchmark gate: full SemiExtended TTFs; Andrew chose option B.
 - `Render.Metrics` insert; Layout/Paging amend; designer canvas
-  measure; `wrap-vanadium` fixture (DIFF vs Helvetica AFM).
-- Mapping table data-driven for a future Mail SemiExtended swap.
+  measure; `wrap-vanadium` fixture.
+- `scripts.options` (1507–1511); Hydrogen `create_context_ex`;
+  harness `options.json` for sandbox.io.
 
 ### Lessons learned
 
-- `font:layout` fails on Vanadium GSUB ("Not a fixed size"); use
-  cmap + `advanceWidth` only (no ligatures/kerning).
-- Harness `MODS` must list every lazy module file or
-  `need_module` reports "not installed".
-- Designer Bold uses CSS weight 700 on SemiExtended Regular woff2
-  (synthetic); Render Bold uses SemiExtendedMedium TTF — widths
-  may differ slightly until a Bold woff2 ships.
+- `font:layout` fails on Vanadium GSUB; use cmap + `advanceWidth`.
+- Production sandbox nils `io` unless `scripts.options.sandbox.io`
+  (or global AllowIo). Fontkit `openSync` needs `io`. Harness must
+  mirror that (not "keep io when Metrics is present").
+- Orchestrator does not source per-script limits; options.limits
+  feeds ScoreboardJobLimits.
 
 ### Handoff
 
-Andrew applies `1504`–`1506`, confirms grow keeps Vanadium, and
-spot-checks Preview HTML wraps. Phase 80 next (next free **1507**).
-Record font-root env and SemiExtended faces under it.
+Phase 80 Overflow. Next free Acuranzo **1512**.
 
 ---
 
@@ -998,21 +994,29 @@ Lookup + Render packets applied, checks green, Andrew confirms.
 
 ### Status
 
-**not started** — behaviours and mapping locked 2026-11-09;
-implementation waits on Phase 79.
+**In progress** — packets `1512`–`1514` written (unapplied).
 
 ### Accomplished
 
-_(empty until the phase closes)_
+- Lookup Fit + Min/Max Font Size; `ITEM_FIELDS` 58/59/60 (Overflow
+  was blank because key 58 had no binder).
+- Fit Height removed; fitHeight→overflow load map; wrap Shrink/Fit
+  /Ellipsis/Grow/Clip.
+- Layout 1513 returns resolved font; Paging 1514 copies it (Grow
+  keeps family — no Helvetica force).
+- Fixtures overflow-*; vitest + ESLint clean.
 
 ### Lessons learned
 
-_(empty until the phase closes)_
+- Lookup attribute without `ITEM_FIELDS[key]` shows a blank List
+  value and cannot persist.
+- Grow = max(stored, content); short content keeps the stored box.
+- Shrink floors to Min Font Size when the string never fits.
 
 ### Handoff
 
-Phase 81 (Justified). Record which Wrap label captions shipped, if
-any.
+Andrew applies `1512`–`1514`, browser-checks Overflow × Wrap, Preview
+HTML vs designer. Next free **1515**. Phase 81 Justified next.
 
 ---
 

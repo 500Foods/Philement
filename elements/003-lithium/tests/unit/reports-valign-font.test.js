@@ -11,7 +11,7 @@ describe('Phase 78 V. Align + font on canvas', () => {
       typeKey: 0, id: 't1', text: 'Hi',
       font: { family: 'Vanadium Sans', size: '12 pt', style: 'Normal' },
       valign: 'middle', align: 'Center',
-      fitHeight: 'clip',
+      overflow: 'Clip',
       backgroundColor: '#ddeeff', backColor: '#ffff00',
     });
     const body = document.createElement('div');
@@ -29,7 +29,7 @@ describe('Phase 78 V. Align + font on canvas', () => {
       typeKey: 0, id: 't1', text: 'Hello world that wraps',
       font: { family: 'Vanadium Sans', size: '12 pt', style: 'Bold' },
       valign: 'bottom', align: 'Right',
-      fitHeight: 'grow',
+      overflow: 'Grow',
     });
     const body = document.createElement('div');
     const band = doc.bands.find((b) => b.id === 'd1');

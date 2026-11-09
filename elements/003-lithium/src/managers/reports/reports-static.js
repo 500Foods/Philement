@@ -1,6 +1,6 @@
 /**
  * Static number, datetime, memo, and image.
- * Layout rows (wrap, fitHeight, valign, lineHeight) are client-only.
+ * Layout rows (wrap, valign, lineHeight) are client-only. Overflow is lookup 054.
  * Image bytes live in doc.images. The item stores the hash.
  */
 
@@ -14,7 +14,7 @@ import {
 import { toCssPx } from './model/units.js';
 import { appendResizeHandles } from './items.js';
 import {
-  FIT_HEIGHTS, VALIGNS, WRAP_MODES, defaultFitHeight, defaultWrap, lengthPt, wrapText,
+  VALIGNS, WRAP_MODES, defaultWrap, layoutBand, lengthPt, wrapText,
 } from './model/wrap.js';
 export { VALIGNS } from './model/wrap.js';
 import { formatStaticDate, formatStaticNumber } from './reports-format.js';
@@ -42,7 +42,6 @@ export const STATIC_GHOST = Object.freeze({
 const ROW = Object.freeze({
   value: 'static-value',
   wrap: 'static-wrap',
-  fitHeight: 'static-fit-height',
   valign: 'static-valign',
   lineHeight: 'static-line-height',
   dpi: 'static-dpi',
@@ -109,12 +108,10 @@ export function staticValueRows(item) {
 export function layoutRows(item) {
   const typeKey = Number(item.typeKey);
   const wrap = own(item, 'wrap') ? item.wrap : '';
-  const fit = own(item, 'fitHeight') ? item.fitHeight : '';
   const valign = own(item, 'valign') ? item.valign : '';
   const leading = own(item, 'lineHeight') ? item.lineHeight : '';
   return [
     row(ROW.wrap, 'Wrap', wrap || defaultWrap(typeKey), wrap === '', 'List', [...WRAP_MODES], SECTION, 'Formatting'),
-    row(ROW.fitHeight, 'Fit height', fit || defaultFitHeight(typeKey), fit === '', 'List', [...FIT_HEIGHTS], SECTION, 'Formatting'),
     row(ROW.valign, 'V. Align', valign || 'top', valign === '', 'List', [...VALIGNS], SECTION, 'Formatting'),
     row(ROW.lineHeight, 'Line height', leading === '' ? '1.2' : String(leading), leading === '', 'Number', null, SECTION, 'Formatting'),
   ];
@@ -236,12 +233,6 @@ export function applyStaticProperty(doc, sel, rowId, value) {
     if (mode === '') return edit(doc, sel, (target) => { delete target.wrap; });
     if (!WRAP_MODES.includes(mode)) throw new Error(`Wrap must be one of ${WRAP_MODES.join(', ')}.`);
     return edit(doc, sel, (target) => { target.wrap = mode; });
-  }
-  if (rowId === ROW.fitHeight && LAYOUT_TYPES.has(typeKey)) {
-    const fit = String(value ?? '').trim();
-    if (fit === '') return edit(doc, sel, (target) => { delete target.fitHeight; });
-    if (!FIT_HEIGHTS.includes(fit)) throw new Error('Fit height must be clip, grow, shrink, or both.');
-    return edit(doc, sel, (target) => { target.fitHeight = fit; });
   }
   if (rowId === ROW.valign && LAYOUT_TYPES.has(typeKey)) {
     const valign = String(value ?? '').trim();
@@ -417,6 +408,8 @@ export function paintsMeasured(item) {
     return true;
   }
   if (typeKey === 0) {
+    const overflow = item.overflow;
+    if (typeof overflow === 'string' && overflow !== '' && overflow !== 'Clip') return true;
     const fit = item.fitHeight;
     return typeof fit === 'string' && fit !== '' && fit !== 'clip';
   }
@@ -503,15 +496,24 @@ export function paintMeasuredItem(body, item, doc, options = {}) {
   if (typeKey === STATIC_IMAGE || typeKey === 22) paintImage(el, item, doc, options.src);
   else {
     el.classList.add('reports-item-wrapped');
-    const mode = WRAP_MODES.includes(item.wrap) ? item.wrap : defaultWrap(typeKey);
-    const widthPt = lengthPt(box.width) || 0;
     const shown = options.text != null ? options.text : sourceText(item);
-    const lines = wrapText(shown, widthPt, font.sizePt, font.style, mode, font.family);
-    const multiple = Number(item.lineHeight);
-    const leading = Number.isFinite(multiple) && multiple > 0 ? multiple : 1.2;
+    const laid = layoutBand(doc, { height: box.height || '0.2 in' }, [{ item, text: shown }]);
+    const row = laid.items && laid.items[0];
+    const sizePt = row && row.font ? (lengthPt(row.font.size) || font.sizePt) : font.sizePt;
+    el.style.setProperty('--reports-item-font-size', `${sizePt * CSS_PX_PER_PT}px`);
+    if (row && row.heightPt > 0) {
+      el.style.height = `${row.heightPt * CSS_PX_PER_PT}px`;
+    }
+    const lines = row && Array.isArray(row.lines)
+      ? row.lines
+      : wrapText(shown, lengthPt(box.width) || 0, sizePt, font.style,
+        WRAP_MODES.includes(item.wrap) ? item.wrap : defaultWrap(typeKey), font.family);
+    const leading = row && row.lineHeightPt
+      ? row.lineHeightPt / sizePt
+      : (Number.isFinite(Number(item.lineHeight)) && Number(item.lineHeight) > 0 ? Number(item.lineHeight) : 1.2);
     const valign = VALIGNS.includes(item.valign) ? item.valign : 'top';
     el.dataset.valign = valign;
-    el.style.setProperty('--reports-item-line-height', `${leading * font.sizePt * CSS_PX_PER_PT}px`);
+    el.style.setProperty('--reports-item-line-height', `${leading * sizePt * CSS_PX_PER_PT}px`);
     el.append(makeItemTextLabel(lines.join('\n')));
   }
   applyItemColours(el, item);

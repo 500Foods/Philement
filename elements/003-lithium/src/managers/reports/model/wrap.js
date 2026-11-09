@@ -1,5 +1,5 @@
 /**
- * Line breaks and fitHeight for a band instance.
+ * Line breaks and Overflow for a band instance (Phase 80).
  * Widths use canvas.measureText for the item's family when a canvas
  * is available (Phase 79). Helvetica AFM is the test / no-canvas
  * fallback. Reports.Render.Metrics mirrors the same break rules with
@@ -7,10 +7,15 @@
  */
 
 import { AFM_BOLD, AFM_MISSING, AFM_ROMAN } from './afm-helvetica.js';
+import {
+  defaultOverflow, isWidthOnlyWrap, OVERFLOW_MODES, resolveOverflow,
+} from './overflow.js';
 import { parseLength } from './units.js';
 
 export const WRAP_MODES = Object.freeze(['normal', 'pre', 'pre-line', 'pre-wrap', 'nowrap']);
+/** @deprecated Phase 80 — use OVERFLOW_MODES / item.overflow */
 export const FIT_HEIGHTS = Object.freeze(['clip', 'grow', 'shrink', 'both']);
+export { OVERFLOW_MODES, defaultOverflow };
 export const VALIGNS = Object.freeze(['top', 'middle', 'bottom']);
 export const MIN_BAND_PT = 0.15 * 72;
 const PT_PER_INCH = 72;
@@ -310,6 +315,7 @@ export function wrapText(text, widthPt, fontSizePt, style = 'Normal', mode = 'pr
 }
 
 /**
+ * @deprecated Phase 80 — use defaultOverflow
  * @param {number} typeKey
  * @returns {'clip'|'both'}
  */
@@ -361,16 +367,19 @@ function warnOnce(seen, key, warn, message) {
 }
 
 /**
- * Static text and field text keep one clipped run until fitHeight
- * changes. Number, datetime, and memo always break lines.
+ * Static text and field text keep one clipped run for Clip.
+ * Ellipsis / Grow / Shrink / Fit measure lines. Number, datetime,
+ * and memo always break lines.
  * @param {object} item
- * @param {string} fit
+ * @param {string} overflow Title-case Overflow value
  * @returns {boolean}
  */
-export function paintsLines(item, fit) {
+export function paintsLines(item, overflow) {
   const typeKey = Number(item && item.typeKey);
   if (typeKey === 1 || typeKey === 3 || typeKey === 4 || typeKey === 23) return true;
-  if ((typeKey === 0 || typeKey === 20) && fit !== 'clip') return true;
+  // Legacy lowercase fitHeight still accepted by callers.
+  const mode = overflow === 'clip' ? 'Clip' : overflow;
+  if ((typeKey === 0 || typeKey === 20) && mode !== 'Clip') return true;
   return false;
 }
 
@@ -383,13 +392,60 @@ function resolveMode(item, seen, warn) {
   return defaultWrap(typeKey);
 }
 
-function resolveFit(item, seen, warn) {
-  const fallback = defaultFitHeight(Number(item.typeKey));
-  const fit = item.fitHeight;
-  if (fit === undefined || fit === '') return fallback;
-  if (FIT_HEIGHTS.includes(fit)) return fit;
-  warnOnce(seen, `fit:${item.id}`, warn, `item ${item.id} fitHeight ${fit} is not clip, grow, shrink, or both; used ${fallback}`);
-  return fallback;
+
+function resolveMinFontPt(item, setPt) {
+  const raw = item && item.minFontSize;
+  const pt = lengthPt(typeof raw === 'number' ? `${raw} pt` : raw);
+  if (pt && pt > 0) return Math.min(pt, setPt);
+  return Math.min(6, setPt);
+}
+
+function resolveMaxFontPt(item, setPt) {
+  const raw = item && item.maxFontSize;
+  const pt = lengthPt(typeof raw === 'number' ? `${raw} pt` : raw);
+  if (pt && pt > 0) return Math.max(pt, setPt);
+  return Math.max(72, setPt);
+}
+
+
+/**
+ * Truncate text with an ellipsis so measurePt(text) <= widthPt.
+ * @returns {string}
+ */
+export function ellipsisLine(text, widthPt, fontSizePt, style, family) {
+  const source = text == null ? '' : String(text);
+  const ellipsis = '…';
+  if (!(widthPt > EPS)) return ellipsis;
+  if (measurePt(source, fontSizePt, style, family) <= widthPt + EPS) return source;
+  const ellW = measurePt(ellipsis, fontSizePt, style, family);
+  if (ellW > widthPt + EPS) return ellipsis;
+  let lo = 0;
+  let hi = [...source].length;
+  let best = ellipsis;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const candidate = [...source].slice(0, mid).join('') + ellipsis;
+    if (measurePt(candidate, fontSizePt, style, family) <= widthPt + EPS) {
+      best = candidate;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return best;
+}
+
+function applyEllipsis(lines, widthPt, heightPt, leading, fontSizePt, style, family, widthOnly) {
+  if (!lines || lines.length === 0) return lines;
+  if (widthOnly) {
+    return [ellipsisLine(lines[0] || '', widthPt, fontSizePt, style, family)];
+  }
+  const maxLines = Math.max(1, Math.floor((heightPt + EPS) / leading));
+  const kept = lines.slice(0, maxLines);
+  if (kept.length === 0) return [ellipsisLine('', widthPt, fontSizePt, style, family)];
+  const last = kept.length - 1;
+  kept[last] = ellipsisLine(kept[last], widthPt, fontSizePt, style, family);
+  return kept;
 }
 
 function resolveValign(item, seen, warn) {
@@ -423,10 +479,11 @@ export function valignOffset(valign, boxPt, blockPt) {
   return 0;
 }
 
-function fittedHeight(fit, storedPt, contentPt) {
-  if (fit === 'grow') return Math.max(storedPt, contentPt);
-  if (fit === 'shrink') return Math.min(storedPt, contentPt);
-  if (fit === 'both') return contentPt;
+function fittedHeight(overflow, storedPt, contentPt) {
+  // Only Grow changes the box height. Shrink/Fit change font size.
+  if (overflow === 'Grow' || overflow === 'grow' || overflow === 'both') {
+    return Math.max(storedPt, contentPt);
+  }
   return storedPt;
 }
 
@@ -448,40 +505,122 @@ export function layoutBand(doc, band, entries, warn) {
   let reflow = false;
   for (const entry of entries) {
     const item = entry.item || {};
-    const fit = entry.defer ? 'clip' : resolveFit(item, seen, warn);
-    if (fit !== 'clip') reflow = true;
+    const overflow = entry.defer ? 'Clip' : resolveOverflow(item, seen, warn);
+    if (overflow === 'Grow') reflow = true;
     const box = item.box && typeof item.box === 'object' ? item.box : {};
     const top = lengthPt(box.top);
     const height = lengthPt(box.height);
     const width = lengthPt(box.width);
     const font = fontOf(doc, item);
     const size = lengthPt(font.size);
-    const fontSize = size && size > 0 ? size : 10;
+    let fontSize = size && size > 0 ? size : 10;
     if (size === null && font.size) {
       warnOnce(seen, `size:${item.id}`, warn, `item ${item.id} font size ${font.size} does not parse; used 10 pt`);
     }
     const multiple = resolveMultiple(item, seen, warn);
-    const leading = lineHeightPt(fontSize, multiple);
     const mode = resolveMode(item, seen, warn);
     const valign = resolveValign(item, seen, warn);
-    const lines = paintsLines(item, fit) && !entry.defer
-      ? wrapText(entry.text || '', width || 0, fontSize, font.style, mode, font.family)
-      : null;
+    const widthOnly = isWidthOnlyWrap(mode);
     const storedH = height && height > 0 ? height : 0;
+    const widthPt = width || 0;
+
+    const measureAt = (pt) => {
+      const lead = lineHeightPt(pt, multiple);
+      let lines = paintsLines(item, overflow) && !entry.defer
+        ? wrapText(entry.text || '', widthPt, pt, font.style, mode, font.family)
+        : null;
+      if (lines && overflow === 'Ellipsis') {
+        lines = applyEllipsis(lines, widthPt, storedH, lead, pt, font.style, font.family, widthOnly);
+      }
+      return { lines, leading: lead };
+    };
+
+    if (!entry.defer && (overflow === 'Shrink' || overflow === 'Fit')) {
+      const minPt = resolveMinFontPt(item, fontSize);
+      const maxPt = overflow === 'Fit' ? resolveMaxFontPt(item, fontSize) : fontSize;
+      const lo = Math.min(minPt, maxPt);
+      const hi = Math.max(minPt, maxPt);
+      const setPt = fontSize;
+      if (overflow === 'Shrink') {
+        // Reduce only when too big; never above set size.
+        let best = lo; // floor when nothing in range fits
+        let low = lo;
+        let high = setPt;
+        for (let i = 0; i < 16; i += 1) {
+          const mid = (low + high) / 2;
+          const { lines, leading } = measureAt(mid);
+          const contentH = Math.max(1, lines ? lines.length : 1) * leading;
+          const fits = lines
+            ? (widthOnly
+              ? measurePt(lines[0] || '', mid, font.style, font.family) <= widthPt + EPS
+              : contentH <= storedH + EPS)
+            : true;
+          if (fits) {
+            best = mid;
+            low = mid;
+          } else {
+            high = mid;
+          }
+        }
+        // If set size already fits, keep it.
+        {
+          const atSet = measureAt(setPt);
+          const contentH = Math.max(1, atSet.lines ? atSet.lines.length : 1) * atSet.leading;
+          const fitsSet = atSet.lines
+            ? (widthOnly
+              ? measurePt(atSet.lines[0] || '', setPt, font.style, font.family) <= widthPt + EPS
+              : contentH <= storedH + EPS)
+            : true;
+          fontSize = fitsSet ? setPt : Math.max(lo, best);
+        }
+      } else {
+        // Fit: largest size in [lo, hi] that fits the box.
+        let best = lo; // floor when nothing fits
+        let low = lo;
+        let high = hi;
+        for (let i = 0; i < 16; i += 1) {
+          const mid = (low + high) / 2;
+          const { lines, leading } = measureAt(mid);
+          const contentH = Math.max(1, lines ? lines.length : 1) * leading;
+          const fits = lines
+            ? (widthOnly
+              ? measurePt(lines[0] || '', mid, font.style, font.family) <= widthPt + EPS
+              : contentH <= storedH + EPS)
+            : true;
+          if (fits) {
+            best = mid;
+            low = mid;
+          } else {
+            high = mid;
+          }
+        }
+        fontSize = Math.max(lo, Math.min(hi, best));
+      }
+    }
+
+    const leading = lineHeightPt(fontSize, multiple);
+    let lines = paintsLines(item, overflow) && !entry.defer
+      ? wrapText(entry.text || '', widthPt, fontSize, font.style, mode, font.family)
+      : null;
+    if (lines && overflow === 'Ellipsis') {
+      lines = applyEllipsis(lines, widthPt, storedH, leading, fontSize, font.style, font.family, widthOnly);
+    }
     const contentH = Math.max(1, lines ? lines.length : 1) * leading;
-    const usedH = entry.defer || !lines ? storedH : fittedHeight(fit, storedH, contentH);
+    const usedH = entry.defer || !lines ? storedH : fittedHeight(overflow, storedH, contentH);
     const visible = lines
       ? lines.filter((_, index) => (index + 1) * leading <= usedH + EPS || index === 0 && usedH > EPS)
       : null;
     const painted = visible
       ? visible.filter((_, index) => (index + 1) * leading <= usedH + EPS)
       : null;
+    const outFont = { ...font, size: `${Number(fontSize.toFixed(4))} pt` };
     placed.push({
       item,
       text: entry.text || '',
-      fit,
+      fit: overflow === 'Grow' ? 'grow' : 'clip',
+      overflow,
       lines: painted,
-      font,
+      font: outFont,
       fontSize,
       leading,
       valign,
@@ -490,7 +629,7 @@ export function layoutBand(doc, band, entries, warn) {
       storedH,
       usedH,
       delta: usedH - storedH,
-      width: width || 0,
+      width: widthPt,
     });
   }
   for (const row of placed) {

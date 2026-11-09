@@ -20,7 +20,7 @@ describe('Phase 79 wrap metrics', () => {
       id: 't1',
       text: 'Hello world that wraps across several lines for grow',
       font: { family: 'Vanadium Sans', size: '12 pt', style: 'Bold' },
-      fitHeight: 'grow',
+      overflow: 'Grow',
       wrap: 'pre-line',
       box: { left: '0 in', top: '0 in', width: '1 in', height: '0.2 in' },
     });

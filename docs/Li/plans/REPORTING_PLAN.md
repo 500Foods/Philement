@@ -143,9 +143,9 @@ Andrew reports the apply.
 | 75 | Lookup Units, Background, Overflow | Helium, human apply | Easy | Complete (2026-11-09) |
 | 76 | Units defaults and font dropdown previews | Lithium UI | Medium | Complete (2026-11-09) |
 | 77 | Fore, Back, and Background colours | Lithium UI + Helium | Medium | Complete |
-| 78 | V. Align for un-measured text | Lithium UI + Helium | Easy | In progress |
-| 79 | Runtime font metrics (no width tables) | Lithium UI + Helium | Hard | In progress |
-| 80 | Overflow replaces Fit Height | Lithium UI + Helium | Medium | Not started |
+| 78 | V. Align for un-measured text | Lithium UI + Helium | Easy | Complete (2026-11-09) |
+| 79 | Runtime font metrics (no width tables) | Lithium UI + Helium | Hard | Complete (2026-11-09) |
+| 80 | Overflow replaces Fit Height | Lithium UI + Helium | Medium | In progress |
 | 81 | Justified alignment | Lithium UI + Helium | Medium | Not started |
 | 82 | Element Link as URI anchor | Lithium UI + Helium | Medium | Not started |
 | 83 | Subreport designer element | Lithium UI | Medium | Not started |
@@ -5166,6 +5166,16 @@ caller-facing QueryRef 175.
   Acuranzo **1501**. See `08-elements.md` Phase 78.
 
 
+
+### 2026-11-09 — Phase 78 Complete (V. Align)
+
+- **Work:** Items `item_out` always carries `valign` (1501); Html
+  flexbox V. Align for non-lines text (1502); Align label → H. Align
+  (1503). Designer canvas + property panel.
+- **Lessons:** Un-measured Clip text still needs CSS/flex V. Align;
+  measured grow paths already positioned lines in Layout.
+- **Prep:** Phase 79 Metrics next. Next free was **1504**.
+
 ### 2026-11-09 — Phase 78 in progress (V. Align + H. Align + font)
 
 - **Lessons:** Clip `item_out` omitted `valign` (Paging merges
@@ -5199,6 +5209,22 @@ caller-facing QueryRef 175.
 - **Prep:** rebuild Hydrogen, apply 1507–1511, restart, retest Vanadium Bold wrap.
 - **Follow-up:** Lithium Scripts UI does not yet edit `scripts.options` (SQL/migration only for now).
 
+
+### 2026-11-09 — Phase 79 Complete (runtime Metrics)
+
+- **Work:** Metrics insert (1504), Layout measure_family (1505),
+  Paging drop grown→Helvetica (1506); `scripts.options` (1507–1511)
+  with `Reports.Render` `sandbox.io`; Hydrogen create_context_ex;
+  harness options.json.
+- **Lessons:** Production sandbox leaves `io` nil unless
+  `scripts.options.sandbox.io` (or global AllowIo). Fontkit
+  `openSync` needs `io`. The render harness initially kept `io`
+  when Metrics was present — wrong; it must mirror production and
+  nil `io` unless options say `sandbox.io`. Orchestrator does not
+  source per-script limits (global ScoreboardJobLimits / config only);
+  `options.limits` feeds that path.
+- **Prep:** Phase 80 Overflow. Next free Acuranzo **1512**.
+
 ### 2026-11-09 — Phase 79 in progress (runtime Metrics, option B)
 
 - **Gate:** lua-pdfkit open/measure on Vanadium TTFs; Mail Regular
@@ -5214,6 +5240,24 @@ caller-facing QueryRef 175.
   Andrew's final browser confirm.
 - **Prep:** Andrew applies 1504–1506; browser-checks Vanadium grow.
   Phase 80 next free **1507**.
+
+
+### 2026-11-09 — Phase 80 in progress (Overflow)
+
+- **Lookup 1512:** Overflow List + Fit; Min/Max Font Size (054 59/60);
+  wired onto every 053 kind that already had Overflow (58).
+- **Blank Overflow cause:** lookup 054 key 58 was on Static Text, but
+  `ITEM_FIELDS` had no `58` binder — panel showed empty value and
+  could not save. Wired `overflow` / `minFontSize` / `maxFontSize`.
+- **Lithium:** removed Fit Height row; load-map fitHeight→overflow;
+  `model/overflow.js` + wrap/layout Shrink/Fit/Ellipsis.
+- **Render:** Layout 1513 (Overflow behaviours + returns resolved
+  font); Paging 1514 copies `lay.font` (Shrink/Fit size); no
+  Helvetica force on Grow.
+- **Harness:** `options.json` sandbox.io (Phase 79 close).
+- **Prep:** Andrew applies 1512–1514; browser-tests each Overflow ×
+  Wrap; Preview HTML vs designer. Next free **1515**. Justify stays
+  Phase 81.
 
 ### 2026-11-09 — Phase 80 Overflow decisions locked
 

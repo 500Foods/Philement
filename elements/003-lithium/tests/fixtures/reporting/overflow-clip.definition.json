@@ -1,0 +1,76 @@
+{
+  "format": 1,
+  "name": "Overflow overflow-clip",
+  "title": "Overflow overflow-clip",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "12 pt",
+    "style": "Normal"
+  },
+  "datasources": [],
+  "bands": [
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.3 in",
+      "items": []
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "height": "2 in",
+      "items": [
+        {
+          "id": "t1",
+          "typeKey": 0,
+          "text": "MMMMMMMMMM iiiiiiiiii WWWWWWWWWW the quick brown fox jumps over the lazy dog again and again",
+          "box": {
+            "left": "0.5 in",
+            "top": "0.1 in",
+            "width": "1.5 in",
+            "height": "0.25 in"
+          },
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "12 pt",
+            "style": "Normal"
+          },
+          "wrap": "nowrap",
+          "align": "Left",
+          "valign": "top",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "overflow": "Clip"
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.3 in",
+      "items": []
+    }
+  ],
+  "functions": []
+}

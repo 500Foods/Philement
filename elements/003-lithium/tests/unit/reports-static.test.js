@@ -44,7 +44,7 @@ function fieldItem() {
     id: 'note',
     typeKey: 20,
     field: 'note',
-    fitHeight: 'both',
+    overflow: 'Grow',
     lineHeight: 1.2,
     align: 'Left',
     box: { left: '0 in', top: '0 in', width: '100 pt', height: '0.2 in' },
@@ -79,9 +79,10 @@ describe('static text measure', () => {
     const item = fieldItem();
     const short = layoutBand(docFont, band, [{ item, text: 'Hello' }]);
     expect(short.reflow).toBe(true);
-    expect(short.usedPt).toBeCloseTo(12, 5);
+    // Grow = max(stored, content). Stored 0.2 in = 14.4 pt > one line at 10×1.2.
+    expect(short.usedPt).toBeCloseTo(14.4, 5);
     expect(short.items[0]).toMatchObject({
-      lines: ['Hello'], heightPt: 12, grown: true, font: { family: 'Vanadium Sans' },
+      lines: ['Hello'], heightPt: 14.4, grown: false, font: { family: 'Vanadium Sans' },
     });
     const long = layoutBand(docFont, band, [{ item, text: PARAGRAPH }]);
     expect(long.usedPt).toBeCloseTo(24, 5);
@@ -130,18 +131,18 @@ describe('static item defaults', () => {
     const number = addItem(blank, 'd1', { typeKey: 1 });
     expect(itemOf(number, 'staticnum_1')).toEqual({
       id: 'staticnum_1', typeKey: 1, align: 'Left', value: 0, mask: '',
-      wrap: 'nowrap', fitHeight: 'clip', valign: 'top',
+      wrap: 'nowrap', overflow: 'Clip', valign: 'top',
       box: { left: '3.25 in', top: '0.025 in', width: '1.5 in', height: '0.2 in' },
     });
     const date = addItem(blank, 'd1', { typeKey: 4 });
     expect(itemOf(date, 'staticdate_1')).toMatchObject({
-      value: '2026-01-01', wrap: 'nowrap', fitHeight: 'clip', valign: 'top', mask: '',
+      value: '2026-01-01', wrap: 'nowrap', overflow: 'Clip', valign: 'top', mask: '',
     });
     expect(Object.hasOwn(itemOf(date, 'staticdate_1'), 'timezone')).toBe(false);
     const memo = addItem(blank, 'd1', { typeKey: 3 });
     expect(itemOf(memo, 'memo_1')).toEqual({
       id: 'memo_1', typeKey: 3, align: 'Left', text: 'Memo',
-      wrap: 'pre-wrap', fitHeight: 'both', valign: 'top',
+      wrap: 'pre-wrap', overflow: 'Grow', valign: 'top',
       box: { left: '3.25 in', top: '0 in', width: '1.5 in', height: '0.6 in' },
     });
     const image = addItem(blank, 'd1', { typeKey: 2 });
@@ -158,7 +159,8 @@ describe('static item defaults', () => {
     const sel = { bandId: 'd1', itemId: 'staticnum_1' };
     const labels = propertyRows(number, sel, lookups).map((row) => row.label);
     expect(labels).not.toContain('Rotation');
-    expect(labels).toEqual(expect.arrayContaining(['Value', 'Wrap', 'Fit height', 'Mask preset']));
+    expect(labels).toEqual(expect.arrayContaining(['Value', 'Wrap', 'Mask preset']));
+    expect(labels).not.toContain('Fit height');
     const dated = addItem(createBlank(), 'd1', { typeKey: 4, id: 'staticdate_1' });
     expect(propertyRows(dated, { bandId: 'd1', itemId: 'staticdate_1' }, lookups).map((row) => row.label))
       .not.toContain('Rotation');

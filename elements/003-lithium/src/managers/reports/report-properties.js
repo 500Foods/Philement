@@ -48,7 +48,7 @@ export const REPORT_TYPE_KEY = 9;
 const TEXT_KEYS = new Set([29]);
 const PAGE_SIZE_KEY = 30;
 /** Number keys that hold a length; the rest are plain numbers. */
-const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38, 43, 48, 49, 50, 51]);
+const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38, 43, 48, 49, 50, 51, 59, 60]);
 /** Page Width/Height/Margins — bare numbers use Page Units. */
 const PAGE_LENGTH_KEYS = new Set([31, 32, 35, 36, 37, 38]);
 const FONT_SIZE_KEY = 16;
@@ -267,6 +267,9 @@ const ITEM_FIELDS = {
   16: fontField('size'),
   17: fontField('style'),
   29: itemField('link', ''),
+  58: itemField('overflow', 'Clip'),
+  59: itemField('minFontSize', '6 pt'),
+  60: itemField('maxFontSize', '72 pt'),
   55: {
     get: (doc, sel) => {
       const { item } = findSelected(doc, sel);
@@ -616,7 +619,7 @@ export function displayLengthValue(value) {
 
 /** Which unit kind a length key uses for bare numbers. */
 export function lengthUnitKind(key) {
-  if (key === FONT_SIZE_KEY) return 'font';
+  if (key === FONT_SIZE_KEY || key === 59 || key === 60) return 'font';
   if (PAGE_LENGTH_KEYS.has(key)) return 'page';
   return 'position';
 }

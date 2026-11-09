@@ -44,6 +44,19 @@ capture_all() {
 capture_all "${work}/old_tree/${mig}" "${work}/old"
 capture_all "${root}/${mig}" "${work}/new"
 
+# Mirror production scripts.options.sandbox.io (1511 on Reports.Render).
+# Metrics needs io; only enable when that module is in the capture.
+write_options() {
+    local dir="$1"
+    if [[ -f "${dir}/Metrics.lua" ]]; then
+        printf '%s\n' '{"sandbox":{"io":true}}' > "${dir}/options.json"
+    else
+        printf '%s\n' '{}' > "${dir}/options.json"
+    fi
+}
+write_options "${work}/old"
+write_options "${work}/new"
+
 old_list=("${work}"/old/*.lua)
 new_list=("${work}"/new/*.lua)
 echo "old (${rev}): ${old_list[*]##*/}"

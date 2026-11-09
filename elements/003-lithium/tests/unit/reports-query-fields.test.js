@@ -79,7 +79,7 @@ describe('query field items', () => {
     expect(memo.id.startsWith('memofield_')).toBe(true);
     expect(memo.text).toBeUndefined();
     expect(memo.wrap).toBe('pre-wrap');
-    expect(memo.fitHeight).toBe('both');
+    expect(memo.overflow).toBe('Grow');
     expect(memo.valign).toBe('top');
     expect(inches(memo.box.width)).toBeCloseTo(1.5, 5);
     expect(inches(memo.box.height)).toBeCloseTo(0.6, 5);
@@ -136,7 +136,7 @@ describe('query field items', () => {
     const broken = { ...image, field: 'bad' };
     expect(paint(doc, broken).querySelector('img')).toBeNull();
     expect(paint(doc, broken).textContent).toBe('Image');
-    const memo = { ...image, id: 'memofield_1', typeKey: 23, field: 'note', wrap: 'pre-wrap', fitHeight: 'both' };
+    const memo = { ...image, id: 'memofield_1', typeKey: 23, field: 'note', wrap: 'pre-wrap', overflow: 'Grow' };
     expect(paint(doc, memo).textContent).toBe('Hello there');
     const empty = { ...memo, field: 'missing' };
     expect(paint(doc, empty).textContent).toBe('');

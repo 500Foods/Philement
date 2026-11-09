@@ -59,7 +59,7 @@ describe('report property rows', () => {
     expect(labels).toEqual([
       'ID', 'Text', 'Top', 'Left', 'Width', 'Height', 'Rotation',
       'H. Align', 'V. Align', 'Fore Color', 'Back Color',
-      'Wrap', 'Fit height', 'Line height', 'Notes', 'Link',
+      'Wrap', 'Line height', 'Notes', 'Link',
     ]);
     const data = tableData(propertyRows(doc, sel, lookups), [
       { id: 4, label: 'Object', sortSeq: 4 },

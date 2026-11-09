@@ -464,4 +464,9 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1504](/elements/002-helium/acuranzo/migrations/acuranzo_1504.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Metrics (Reporting) |
 | [1505](/elements/002-helium/acuranzo/migrations/acuranzo_1505.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Layout (Reporting) |
 | [1506](/elements/002-helium/acuranzo/migrations/acuranzo_1506.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Paging (Reporting) |
-| **431** | | | | **2575** | **431** | |
+| [1507](/elements/002-helium/acuranzo/migrations/acuranzo_1507.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | scripts.options JSON (sandbox + limits) for Hydrogen scripting |
+| [1508](/elements/002-helium/acuranzo/migrations/acuranzo_1508.lua) | queries | 1.0.0 | 2026-11-09 | 4 | ✗ | QueryRef #087 add options column |
+| [1509](/elements/002-helium/acuranzo/migrations/acuranzo_1509.lua) | queries | 1.0.0 | 2026-11-09 | 4 | ✗ | QueryRef #149 add options column |
+| [1510](/elements/002-helium/acuranzo/migrations/acuranzo_1510.lua) | queries | 1.0.0 | 2026-11-09 | 4 | ✗ | QueryRef #153 add options column |
+| [1511](/elements/002-helium/acuranzo/migrations/acuranzo_1511.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render: enable sandbox.io via scripts.options |
+| **436** | | | | **2595** | **436** | |

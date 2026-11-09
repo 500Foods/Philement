@@ -12,6 +12,7 @@
 -- luacheck: no max line length
 --
 -- CHANGELOG
+-- 1.0.1 - 2026-11-09 - sandbox.io from options.json (not Metrics presence)
 -- 1.0.0 - 2026-11-09 - Initial version (Reports.Render split tooling)
 
 local C = dofile(((arg[0]:match("^(.*)/[^/]*$")) or ".") .. "/common.lua")
@@ -89,14 +90,29 @@ end
 local old_src, old_mods = load_dir(OLDDIR)
 local render_src, modsrc = load_dir(NEWDIR)
 
-local function run(src, p, modsource)
+local function load_options(dir)
+  local raw = readf(dir .. "/options.json")
+  if not raw then return {} end
+  local v, err = jenv.json_decode(raw)
+  if err or type(v) ~= "table" then return {} end
+  return v
+end
+
+local old_options = load_options(OLDDIR)
+local new_options = load_options(NEWDIR)
+
+local function sandbox_allows_io(opts)
+  return type(opts) == "table"
+    and type(opts.sandbox) == "table"
+    and opts.sandbox.io == true
+end
+
+local function run(src, p, modsource, opts)
   local fetched = {}
   local H, get = make_H(fetched, modsource or {})
   local env = setmetatable({ params = deep(p), H = H }, { __index = _G })
-  -- Production sandbox: io is nil unless scripts.options.sandbox.io
-  -- (Reports.Render). Simulate that: enable io only when Metrics is
-  -- present in this build (Phase 79+).
-  if not (modsource and modsource.Metrics) then
+  -- Production: io is nil unless scripts.options.sandbox.io (Reports.Render).
+  if not sandbox_allows_io(opts) then
     rawset(env, "io", nil)
   end
   local chunk = assert(load(src, "=render", "t", env))
@@ -151,8 +167,8 @@ for _, c in ipairs(cases) do
     if c.src then p.sources = c.src end
     p._hydrogen = type(p._hydrogen) == "table" and p._hydrogen or {}
     p._hydrogen.database = "acz"
-    local a = run(old_src, p, old_mods)
-    local b, fetched = run(render_src, p, modsrc)
+    local a = run(old_src, p, old_mods, old_options)
+    local b, fetched = run(render_src, p, modsrc, new_options)
     local same = (a == b)
     if not same then fails = fails + 1 end
     local warns = select(2, a:gsub('"warn"', ""))
