@@ -5,9 +5,11 @@
 
 # FUNCTIONS
 # get_file_hash()
+# check_json_payloads()
 # validate_migration()
 
 # CHANGELOG
+# 1.13.0 - 2026-11-09 - Fail a migration whose JSON_INGEST_START, JSON_INGEST_SCHEMA_START, or JIS payload is not an object
 # 1.12.0 - 2026-10-16 - Include courses in the suite; skip it until its migrations exist
 # 1.11.0 - 2026-10-16 - Require the shared helium/database*.lua set before expanding
 # 1.10.0 - 2026-10-16 - Drop the retired helium printing design from DESIGNS
@@ -29,7 +31,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.12.0"
+TEST_VERSION="1.13.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -59,6 +61,33 @@ DESIGN_SCHEMAS["argent"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 get_file_hash() {
     # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
     "${MD5SUM}" "$1" | "${AWK}" '{print $1}' || true
+}
+
+# JSON payloads must be objects. DB2's JSON2BSON rejects a top-level array,
+# and the payload is encoded in the generated SQL, so sqruff never sees it.
+# Matches ${JSON_INGEST_START}, ${JSON_INGEST_SCHEMA_START}, or ${JIS} followed
+# by a long bracket or a quote whose first non-space character is not '{'.
+JSON_PAYLOAD_PATTERN='\$\{(JSON_INGEST_START|JSON_INGEST_SCHEMA_START|JIS)\}\s*(\[=*\[|'"'"')\s*(?!\{)\S'
+
+# Function to check JSON payload shape in a migration source file.
+# Runs on every pass and is not cached, so a cached PASSED result never hides it.
+check_json_payloads() {
+    local design="$1"
+    local migration_num="$2"
+    local migration_file="$3"
+
+    if ! "${GREP}" -Pzq -- "${JSON_PAYLOAD_PATTERN}" "${migration_file}" 2>/dev/null; then
+        return 0
+    fi
+
+    local diags_file="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}/${design}_${migration_num}_json_payload.txt"
+    mkdir -p "$(dirname "${diags_file}")"
+    {
+        echo "JSON payload is not an object (DB2 JSON2BSON rejects top-level arrays):"
+        "${GREP}" -nP -- "${JSON_PAYLOAD_PATTERN}" "${migration_file}" || true
+    } > "${diags_file}"
+    echo "${diags_file}"
+    return 1
 }
 
 # Function to validate a single migration
@@ -255,16 +284,29 @@ for design in "${DESIGNS[@]}"; do
             migration_name=$(basename "${migration_file}" .lua)
             migration_num="${migration_name#"${design}"_}"
 
+            # JSON payload shape: checked once per file, before any cached result
+            json_diags=$(check_json_payloads "${design}" "${migration_num}" "${migration_file}"; echo "exit:$?")
+            json_failed=false
+            [[ "${json_diags##*exit:}" -eq 0 ]] || json_failed=true
+            json_diags=${json_diags%exit:*}
+            json_diags=${json_diags%$'\n'}
+
             # Validate against each database engine
             for i in "${!ENGINES[@]}"; do
                 engine="${ENGINES[${i}]}"
                 schema="${SCHEMA_ARRAY[${i}]:-}"
 
                 # Call function and capture both status and result
-                cache_info=$(validate_migration "${design}" "${engine}" "${migration_num}" "${migration_file}"; echo "exit:$?")
-                validation_result=${cache_info##*exit:}
-                cache_info=${cache_info%exit:*}
-                IFS='|' read -r cache_status diags_file <<< "${cache_info}"
+                if [[ "${json_failed}" == true ]]; then
+                    validation_result=1
+                    cache_status="fresh"
+                    diags_file="${json_diags}"
+                else
+                    cache_info=$(validate_migration "${design}" "${engine}" "${migration_num}" "${migration_file}"; echo "exit:$?")
+                    validation_result=${cache_info##*exit:}
+                    cache_info=${cache_info%exit:*}
+                    IFS='|' read -r cache_status diags_file <<< "${cache_info}"
+                fi
 
                 if [[ -z "${schema}" ]]; then
                     subtest_name="${engine} ${design} (no schema) ${migration_num}"

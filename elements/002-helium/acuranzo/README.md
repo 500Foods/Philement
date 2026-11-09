@@ -417,24 +417,24 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1457](/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render runs a query datasource (Reporting Phase 29) |
 | [1458](/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render reduces count, filled, unique, and sum (Reporting Phase 38) |
 | [1459](/elements/002-helium/acuranzo/migrations/acuranzo_1459.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render page totals (Reporting Phase 39) |
-| [1460](/elements/002-helium/acuranzo/migrations/acuranzo_1460.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render average and weighted (Reporting Phase 40) |
-| [1461](/elements/002-helium/acuranzo/migrations/acuranzo_1461.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render median (Reporting Phase 41) |
-| [1462](/elements/002-helium/acuranzo/migrations/acuranzo_1462.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render mode (Reporting Phase 42) |
-| [1463](/elements/002-helium/acuranzo/migrations/acuranzo_1463.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render min and max (Reporting Phase 43) |
-| [1464](/elements/002-helium/acuranzo/migrations/acuranzo_1464.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render first and last (Reporting Phase 44) |
-| [1465](/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua) | lookups | 1.0.1 | 2026-11-04 | 32 | ✗ | Lookup 078 (Report Shape Kinds) and shape attributes (Reporting Phase 44a) |
-| [1466](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render static shapes (Reporting Phase 44a) |
-| [1467](/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua) | scripts | 1.0.0 | 2026-11-04 | 6 | ✗ | Reports.Render shape fill and gradient (Reporting Phase 44b) |
-| [1468](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua) | scripts | 1.0.0 | 2026-11-04 | 12 | ✗ | Reports.Render static number, datetime, image, and memo (Reporting Phase 44c) |
-| [1469](/elements/002-helium/acuranzo/migrations/acuranzo_1469.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | zint.Svg invokable wrapper (Reporting Phase 54) |
-| [1470](/elements/002-helium/acuranzo/migrations/acuranzo_1470.lua) | lookups | 1.0.0 | 2026-11-05 | 16 | ✗ | Lookup 079 (Report Barcode Symbologies) (Reporting Phase 54) |
-| [1471](/elements/002-helium/acuranzo/migrations/acuranzo_1471.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render barcode SVG (Reporting Phase 54) |
-| [1472](/elements/002-helium/acuranzo/migrations/acuranzo_1472.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render barcode fit (Reporting Phase 54) |
-| [1473](/elements/002-helium/acuranzo/migrations/acuranzo_1473.lua) | lookups | 1.0.0 | 2026-11-05 | 4 | ✗ | Field Barcode datasource (Reporting Phase 54) |
-| [1474](/elements/002-helium/acuranzo/migrations/acuranzo_1474.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render field barcode (Reporting Phase 54) |
-| [1475](/elements/002-helium/acuranzo/migrations/acuranzo_1475.lua) | lookups | 1.0.0 | 2026-11-05 | 14 | ✗ | Field item datasource lists (Reporting) |
-| [1476](/elements/002-helium/acuranzo/migrations/acuranzo_1476.lua) | scripts | 1.0.0 | 2026-11-05 | 4 | ✗ | Reports.Render field values (text, number, datetime, memo, image, shape, barcode) |
-| [1477](/elements/002-helium/acuranzo/migrations/acuranzo_1477.lua) | lookups | 1.0.0 | 2026-11-05 | 7 | ✗ | Barcode property sections (Reporting) |
-| [1478](/elements/002-helium/acuranzo/migrations/acuranzo_1478.lua) | lookups | 1.0.1 | 2026-11-05 | 28 | ✗ | Report barcode symbologies (Reporting) |
-| [1479](/elements/002-helium/acuranzo/migrations/acuranzo_1479.lua) | scripts | 1.0.1 | 2026-11-05 | 4 | ✗ | Reports.Render barcode symbologies (Reporting) |
-| **404** | | | | **2365** | **404** | |
+| [1460](/elements/002-helium/acuranzo/migrations/acuranzo_1460.lua) | lookups | 1.0.2 | 2026-11-09 | 32 | ✗ | Lookup 078 (Report Shape Kinds) and shape attributes (Reporting Phase 44a) |
+| [1461](/elements/002-helium/acuranzo/migrations/acuranzo_1461.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | zint.Svg invokable wrapper (Reporting Phase 54) |
+| [1462](/elements/002-helium/acuranzo/migrations/acuranzo_1462.lua) | lookups | 1.0.1 | 2026-11-09 | 16 | ✗ | Lookup 079 (Report Barcode Symbologies) (Reporting Phase 54) |
+| [1463](/elements/002-helium/acuranzo/migrations/acuranzo_1463.lua) | lookups | 1.0.1 | 2026-11-09 | 4 | ✗ | Field Barcode datasource (Reporting Phase 54) |
+| [1464](/elements/002-helium/acuranzo/migrations/acuranzo_1464.lua) | lookups | 1.0.1 | 2026-11-09 | 14 | ✗ | Field item datasource lists (Reporting) |
+| [1465](/elements/002-helium/acuranzo/migrations/acuranzo_1465.lua) | lookups | 1.0.1 | 2026-11-09 | 7 | ✗ | Barcode property sections (Reporting) |
+| [1466](/elements/002-helium/acuranzo/migrations/acuranzo_1466.lua) | lookups | 1.0.2 | 2026-11-09 | 28 | ✗ | Report barcode symbologies (Reporting) |
+| [1467](/elements/002-helium/acuranzo/migrations/acuranzo_1467.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Core (Reporting) |
+| [1468](/elements/002-helium/acuranzo/migrations/acuranzo_1468.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Format (Reporting) |
+| [1469](/elements/002-helium/acuranzo/migrations/acuranzo_1469.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Layout (Reporting) |
+| [1470](/elements/002-helium/acuranzo/migrations/acuranzo_1470.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Data (Reporting) |
+| [1471](/elements/002-helium/acuranzo/migrations/acuranzo_1471.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Items (Reporting) |
+| [1472](/elements/002-helium/acuranzo/migrations/acuranzo_1472.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Paging (Reporting) |
+| [1473](/elements/002-helium/acuranzo/migrations/acuranzo_1473.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Zone (Reporting) |
+| [1474](/elements/002-helium/acuranzo/migrations/acuranzo_1474.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Aggregate (Reporting) |
+| [1475](/elements/002-helium/acuranzo/migrations/acuranzo_1475.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Shapes (Reporting) |
+| [1476](/elements/002-helium/acuranzo/migrations/acuranzo_1476.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Images (Reporting) |
+| [1477](/elements/002-helium/acuranzo/migrations/acuranzo_1477.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Barcode (Reporting) |
+| [1478](/elements/002-helium/acuranzo/migrations/acuranzo_1478.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
+| [1479](/elements/002-helium/acuranzo/migrations/acuranzo_1479.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render loader and stage dispatch (Reporting) |
+| **404** | | | | **2355** | **404** | |

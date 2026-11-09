@@ -1,29 +1,194 @@
 -- Migration: acuranzo_1478.lua
--- Report barcode symbologies (Reporting)
+-- Reports.Render.Html (Reporting)
+-- Stage html: font CSS and emit_html. Loaded for stage html.
 --
--- Lookup 079 keys 6-26. Keys 1-5 stay as acuranzo_1470.lua wrote them.
--- sort_seq follows the symbology name, digits as numbers, so keys 1, 4,
--- and 5 move. Compact PDF417 is pdf417comp. pdf417trunc is that same symbol.
--- UPC-A and UPC-E with the check digit supplied stay the Check digit row.
--- Reverse deletes keys 6-26 and restores those three sort values.
--- No new lookup id. No caller-facing QueryRef.
--- QueryRef 175 stays unused.
+-- One module of the split Reports.Render. Reports.Render (acuranzo_1479.lua)
+-- reads this row with H.altquery_sync and runs it with load() in its
+-- per-request environment. The row is not invokable and has no MCP access.
+-- Reverse deletes the row. QueryRef 175 stays unused. No lookup.
 --
 -- luacheck: no max line length
 -- luacheck: no unused args
 --
 -- CHANGELOG
--- 1.0.0 - 2026-11-05 - Lookup 079 lists the wider barcode set
--- 1.0.1 - 2026-11-05 - Sort by name and add Compact PDF417
+-- 1.0.0 - 2026-11-09 - Split from the acuranzo_1479.lua Reports.Render body
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "lookups"
+cfg.TABLE = "scripts"
 cfg.MIGRATION = "1478"
+cfg.GROUP_NAME = "Reports"
+cfg.SCRIPT_NAME = "Render.Html"
 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-table.insert(queries,{sql=[==[
+local sql_new = [==[
+-- Reports.Render.Html (Reporting). Lazy: stage html, font CSS, emit_html.
+-- Loaded by Reports.Render into its per-request environment.
+-- Names defined here are shared with Reports.Render and its other modules.
+
+function embed_font_css(def, pages)
+    if type(def) ~= "table" or def.embedFonts ~= true then return "" end
+    local fonts = type(P.fonts) == "table" and P.fonts or nil
+    if not fonts then
+        add_log("warn", "embedFonts is on and params.fonts is missing; named the family")
+        return ""
+    end
+    local used, order = {}, {}
+    for _, page in ipairs(pages or {}) do
+        for _, band in ipairs(page.bands or {}) do
+            for _, o in ipairs(band.items or {}) do
+                local fam = type(o.font) == "table" and o.font.family or nil
+                if type(fam) == "string" and fam ~= "" and fam ~= "Helvetica" and not used[fam] then
+                    used[fam] = true
+                    order[#order + 1] = fam
+                end
+            end
+        end
+    end
+    local rules, missing = {}, false
+    for _, fam in ipairs(order) do
+        local src = fonts[fam]
+        if type(src) ~= "string" or src == "" then
+            if not missing then
+                missing = true
+                add_log("warn", "embedFonts has no bytes for " .. fam .. "; named the family")
+            end
+        else
+            local uri = src
+            if not uri:find("^data:") then uri = "data:font/woff2;base64," .. uri end
+            rules[#rules + 1] = "@font-face{font-family:" .. css_family(fam)
+                .. ";src:url(" .. uri .. ") format('woff2');}"
+        end
+    end
+    if #rules == 0 then return "" end
+    return "<style>" .. table.concat(rules) .. "</style>"
+end
+
+function emit_html(def, pages)
+    local shape_warned = {}
+    local barcode_warned = {}
+    local image_state = { ids = {}, list = {}, n = 0, warned = {}, dpi = false }
+    local pg = type(def.page) == "table" and def.page or {}
+    local mg = type(pg.margin) == "table" and pg.margin or {}
+    local width = css_or(pg.width, "8.5in", "page width")
+    local height = css_or(pg.height, "11in", "page height")
+    local top = css_or(mg.top, "0.25in", "margin top")
+    local right = css_or(mg.right, "0.25in", "margin right")
+    local bottom = css_or(mg.bottom, "0.25in", "margin bottom")
+    local left = css_or(mg.left, "0.25in", "margin left")
+    local parts = {}
+    for _, page in ipairs(pages or {}) do
+        local bands = {}
+        for _, band in ipairs(page.bands or {}) do
+            local items = {}
+            for _, o in ipairs(band.items or {}) do
+                local box = type(o.box) == "table" and o.box or nil
+                if not box then
+                    add_log("warn", "item " .. tostring(o.id) .. " has no box; skipped")
+                elseif o.typeKey == 25 or o.typeKey == 26 then
+                    need_module("Shapes")
+                    local svg, swarn = shape_svg(o, shape_spacing(def))
+                    if swarn ~= "" then
+                        local skey = tostring(o.id) .. "\0" .. swarn
+                        if not shape_warned[skey] then
+                            shape_warned[skey] = true
+                            add_log("warn", "item " .. tostring(o.id) .. " " .. swarn)
+                        end
+                    else
+                        items[#items + 1] = string.format(
+                            '<div style="position:absolute;left:%s;top:%s;width:%s;height:%s;overflow:visible;padding:0">%s</div>',
+                            css_or(box.left, "0in", "box left"),
+                            css_or(box.top, "0in", "box top"),
+                            css_or(box.width, "0in", "box width"),
+                            css_or(box.height, "0in", "box height"),
+                            svg)
+                    end
+                elseif o.typeKey == 43 or o.typeKey == 45 then
+                    need_module("Barcode")
+                    local html = emit_barcode(o, barcode_warned)
+                    if html then items[#items + 1] = html end
+                elseif type(o.lines) == "table" then
+                    local font = type(o.font) == "table" and o.font or {}
+                    local weight, slant = font_css(font.style)
+                    local align = ALIGN_CSS[o.align]
+                    if not align then
+                        if o.align ~= nil then
+                            add_log("warn", "align " .. tostring(o.align) .. " is not Left, Center, or Right; printed left")
+                        end
+                        align = "left"
+                    end
+                    local pad = o.offsetPt or 0
+                    local padding = math.abs(pad) < 1e-6 and "0" or (fmt_pt(pad) .. " 0 0 0")
+                    local chunks = {}
+                    for _, line in ipairs(o.lines) do chunks[#chunks + 1] = esc(line) end
+                    items[#items + 1] = string.format(
+                        '<div style="position:absolute;left:%s;top:%s;width:%s;height:%s;overflow:hidden;padding:%s;white-space:pre;line-height:%s;text-align:%s;font-family:%s;font-size:%s;font-weight:%s;font-style:%s">%s</div>',
+                        css_or(box.left, "0in", "box left"),
+                        css_or(box.top, "0in", "box top"),
+                        css_or(box.width, "0in", "box width"),
+                        css_or(box.height, "0in", "box height"),
+                        padding,
+                        fmt_pt(o.lineHeightPt or 12),
+                        align,
+                        css_family(font.family),
+                        css_or(font.size, "10pt", "font size"),
+                        weight,
+                        slant,
+                        table.concat(chunks, "\n"))
+                elseif o.typeKey == 2 or o.typeKey == 22 then
+                    need_module("Images")
+                    local html = emit_image(def, o, box, image_state)
+                    if html then items[#items + 1] = html end
+                else
+                    local font = type(o.font) == "table" and o.font or {}
+                    local weight, slant = font_css(font.style)
+                    local align = ALIGN_CSS[o.align]
+                    if not align then
+                        if o.align ~= nil then
+                            add_log("warn", "align " .. tostring(o.align) .. " is not Left, Center, or Right; printed left")
+                        end
+                        align = "left"
+                    end
+                    items[#items + 1] = string.format(
+                        '<div style="position:absolute;left:%s;top:%s;width:%s;height:%s;overflow:hidden;white-space:pre-line;text-align:%s;font-family:%s;font-size:%s;font-weight:%s;font-style:%s">%s</div>',
+                        css_or(box.left, "0in", "box left"),
+                        css_or(box.top, "0in", "box top"),
+                        css_or(box.width, "0in", "box width"),
+                        css_or(box.height, "0in", "box height"),
+                        align,
+                        css_family(font.family),
+                        css_or(font.size, "10pt", "font size"),
+                        weight,
+                        slant,
+                        esc(o.text))
+                end
+            end
+            bands[#bands + 1] = string.format(
+                '<div style="position:relative;height:%s">%s</div>',
+                css_or(band.usedHeight or band.height, "0in", "band height"),
+                table.concat(items))
+        end
+        parts[#parts + 1] = string.format(
+            '<section style="position:relative;box-sizing:border-box;width:%s;height:%s;padding:%s %s %s %s;break-after:page">%s</section>',
+            width, height, top, right, bottom, left, table.concat(bands))
+    end
+    local defs = ""
+    if #image_state.list > 0 then
+        local tags = {}
+        for _, im in ipairs(image_state.list) do
+            tags[#tags + 1] = string.format('<image id="%s" href="%s" width="%d" height="%d"/>', im.id, im.data, im.w, im.h)
+        end
+        defs = '<svg width="0" height="0"><defs>' .. table.concat(tags) .. '</defs></svg>'
+    end
+    return embed_font_css(def, pages) .. defs .. table.concat(parts, "\n") .. "\n"
+end
+
+]==]
+
+-- ----------------------------------------------------------------------------
+-- Forward: insert Reports.Render.Html
+-- ----------------------------------------------------------------------------
+table.insert(queries,{sql=[====[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -41,152 +206,39 @@ table.insert(queries,{sql=[==[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-
-            UPDATE ${SCHEMA}${TABLE}
-              SET sort_seq = 23
-            WHERE lookup_id = 79
-              AND key_idx = 1;
-
-            ${SUBQUERY_DELIMITER}
-
-            UPDATE ${SCHEMA}${TABLE}
-              SET sort_seq = 24
-            WHERE lookup_id = 79
-              AND key_idx = 4;
-
-            ${SUBQUERY_DELIMITER}
-
-            UPDATE ${SCHEMA}${TABLE}
-              SET sort_seq = 16
-            WHERE lookup_id = 79
-              AND key_idx = 5;
-
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 6, 1, 'Code 128 (suppress C)', 6, 4, 'code128ab', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 7, 1, 'Flattermarken', 7, 11, 'flat', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 8, 1, 'EAN-8', 8, 9, 'ean8', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 9, 1, 'EAN-13', 9, 10, 'ean13', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 10, 1, 'UPC-E', 10, 25, 'upce', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 11, 1, 'Interleaved 2 of 5', 11, 17, 'c25inter', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 12, 1, 'ITF-14', 12, 19, 'itf14', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 13, 1, 'NVE-18 (SSCC)', 13, 21, 'nve18', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 14, 1, 'GS1 DataBar Omnidirectional', 14, 14, 'dbaromn', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 15, 1, 'GS1 DataBar Stacked Omnidirectional', 15, 15, 'dbaromnstk', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 16, 1, 'GS1 DataBar Expanded', 16, 12, 'dbarexp', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 17, 1, 'GS1 DataBar Expanded Stacked', 17, 13, 'dbarexpstk', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 18, 1, 'Data Matrix', 18, 6, 'datamatrix', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 19, 1, 'EAN-2 add-on', 19, 7, 'ean2', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 20, 1, 'EAN-5 add-on', 20, 8, 'ean5', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 21, 1, 'ISBN', 21, 18, 'isbn', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 22, 1, 'PDF417', 22, 22, 'pdf417', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 23, 1, 'Aztec', 23, 1, 'aztec', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 24, 1, 'MaxiCode', 24, 20, 'maxicode', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 25, 1, 'USPS Intelligent Mail', 25, 26, 'usps', '', '{}', ${COMMON_VALUES});
-            ${SUBQUERY_DELIMITER}
-
-            INSERT INTO ${SCHEMA}${TABLE}
-                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
-            VALUES
-                (79, 26, 1, 'Compact PDF417', 26, 5, 'pdf417comp', '', '{}', ${COMMON_VALUES});
+            INSERT INTO ${SCHEMA}scripts (
+                group_name,
+                script_name,
+                script_type,
+                schedule,
+                next_run,
+                last_run_start,
+                last_run_end,
+                status,
+                code,
+                summary,
+                invokable,
+                mcp_access,
+                mcp_schema,
+                mcp_annotations,
+                ${COMMON_FIELDS}
+            )
+            VALUES (
+                '${GROUP_NAME}',
+                '${SCRIPT_NAME}',
+                1,
+                NULL, NULL, NULL, NULL,
+                1,
+                [==[
+]====] .. sql_new .. [====[
+                ]==],
+                'Reports.Render.Html module (Reporting)',
+                0,
+                0,
+                NULL,
+                NULL,
+                ${COMMON_VALUES}
+            );
 
             ${SUBQUERY_DELIMITER}
 
@@ -196,23 +248,24 @@ table.insert(queries,{sql=[==[
               and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
-        'Lookup 079 barcode symbologies'                                    AS name,
+        'Insert Reports.Render.Html'                                        AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Lookup 079 barcode symbologies
+            # Forward Migration ${MIGRATION}: Reports.Render.Html
 
-            Adds lookup 079 keys 6 through 26.
-            sort_seq follows the symbology name.
-            Keys 1, 4, and 5 keep their codes and take the new sort.
+            Inserts group Reports, script Render.Html. Stage html: font CSS and emit_html. Loaded for stage html.
+            Reports.Render loads it. It is not invokable.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
-]==]})
+]====]})
 
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-table.insert(queries,{sql=[==[
+-- ----------------------------------------------------------------------------
+-- Reverse: delete Reports.Render.Html
+-- ----------------------------------------------------------------------------
+table.insert(queries,{sql=[====[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -230,16 +283,9 @@ table.insert(queries,{sql=[==[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            DELETE FROM ${SCHEMA}${TABLE}
-            WHERE lookup_id = 79
-              AND key_idx BETWEEN 6 AND 26;
-
-            ${SUBQUERY_DELIMITER}
-
-            UPDATE ${SCHEMA}${TABLE}
-              SET sort_seq = key_idx
-            WHERE lookup_id = 79
-              AND key_idx IN (1, 4, 5);
+            DELETE FROM ${SCHEMA}scripts
+            WHERE group_name = '${GROUP_NAME}'
+              AND script_name = '${SCRIPT_NAME}';
 
             ${SUBQUERY_DELIMITER}
 
@@ -249,18 +295,17 @@ table.insert(queries,{sql=[==[
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Remove lookup 079 keys 6-26'                                       AS name,
+        'Delete Reports.Render.Html'                                        AS name,
         [=[
-            # Reverse Migration ${MIGRATION}: remove lookup 079 keys 6-26
+            # Reverse Migration ${MIGRATION}: delete Reports.Render.Html
 
-            Deletes the symbology rows added by this file.
-            Keys 1, 4, and 5 return to their original sort.
+            Deletes the group Reports script Render.Html row.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
-]==]})
+]====]})
 
 return queries end
