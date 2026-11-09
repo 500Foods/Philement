@@ -15,6 +15,7 @@
 # wait_for_dqm_initialization()
 
 # CHANGELOG
+# 1.6.1 - 2026-11-09 - Result filenames no longer repeat TIMESTAMP (LOG_PREFIX already has it)
 # 1.6.0 - 2026-10-01 - Added MariaDB, YugabyteDB, and MSSQL (eight engines plus Multi)
 # 1.5.0 - 2026-09-23 - Added Firebird as a fifth engine (dedicated config plus Multi)
 # 1.4.2 - 2025-09-22 - Fixed bash syntax errors in arithmetic comparisons
@@ -56,7 +57,7 @@ TEST_NAME="Databases  {BLUE}engines: 8{RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0
-TEST_VERSION="1.6.0"
+TEST_VERSION="1.6.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -223,7 +224,7 @@ run_database_test_parallel() {
     local description="$5"
 
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+    local result_file="${LOG_PREFIX}_${log_suffix}.result"
 
     # Clear result file
     true > "${result_file}"
@@ -331,7 +332,7 @@ analyze_database_test_results() {
     local log_suffix="$2"
     local engine_name="$3"
     local description="$4"
-    local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+    local result_file="${LOG_PREFIX}_${log_suffix}.result"
 
     if [[ ! -f "${result_file}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
@@ -564,7 +565,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Analyzing results"
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
-        result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+        result_file="${LOG_PREFIX}_${log_suffix}.result"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Engine: ..${log_file}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Engine: ..${result_file}"
 
@@ -580,7 +581,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     successful_configs=0
     for test_config in "${!DATABASE_TEST_CONFIGS[@]}"; do
         IFS=':' read -r config_file log_suffix engine_name description <<< "${DATABASE_TEST_CONFIGS[${test_config}]}"
-        result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
+        result_file="${LOG_PREFIX}_${log_suffix}.result"
         if [[ -f "${result_file}" ]] && "${GREP}" -q "DATABASE_TEST_PASSED" "${result_file}" 2>/dev/null; then
             successful_configs=$(( successful_configs + 1 ))
         fi

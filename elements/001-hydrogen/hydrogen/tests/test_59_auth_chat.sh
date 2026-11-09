@@ -24,6 +24,7 @@
 # chat_ws_upload_media()
 
 # CHANGELOG
+# 1.9.0 - 2026-11-09 - Skip whole test when sqlite is not in HYDROGEN_ENGINES
 # 1.0.0 - 2026-07-19 - Initial SQLite + mock LLM blackbox for auth_chat
 # 1.1.0 - 2026-07-19 - Reordered cleanup/stop_mock_llm for shellcheck; justified
 #                       SC2310 disables; added auth_chats blackbox coverage
@@ -62,11 +63,26 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.8.5"
+TEST_VERSION="1.9.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+
+# SQLite-only: end early when sqlite is not in HYDROGEN_ENGINES
+ENGINE_SKIPPED=false
+# shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+if ! engine_enabled "sqlite"; then
+    ENGINE_SKIPPED=true
+    TEST_NAME="${TEST_NAME} (skipped)"
+fi
 setup_test_environment
+
+if [[ "${ENGINE_SKIPPED}" = true ]]; then
+    skip_engine_test "SQLite"
+    ${ORCHESTRATION:-false} && return 0 || exit 0
+fi
 
 WEB_PORT=15900
 MOCK_LLM_PORT=15901

@@ -14,6 +14,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.7.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES; soft-skip SQLite full-fixture when sqlite off
 # 1.5.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (port 15467)
 # 1.4.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.3.9 - 2026-09-08 - Do not skip-pass Echo 404; SQLite online backup
@@ -81,10 +82,12 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -106,6 +109,8 @@ SCRIPT_TEST_CONFIGS=(
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB"
     ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_mssql.json:mssql:mssql:MSSQL"
 )
+
+filter_engine_map SCRIPT_TEST_CONFIGS 3
 
 # shellcheck disable=SC2034 # Reserved for log messages / future fail-fast bounds
 STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
@@ -850,6 +855,9 @@ fi
 config_valid=true
 for test_config in "${!SCRIPT_TEST_CONFIGS[@]}"; do
     IFS=':' read -r config_file log_suffix _ description <<< "${SCRIPT_TEST_CONFIGS[${test_config}]}"
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
+
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File: ${test_config}"
     # shellcheck disable=SC2310 # Mark config_valid false without aborting the loop
     if validate_config_file "${config_file}"; then
@@ -920,11 +928,16 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     done
 
     print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-        "Summary: ${successful}/${#SCRIPT_TEST_CONFIGS[@]} engines ok (SQLite full fixture required)"
-    if [[ "${sqlite_full}" -ne 1 ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "SQLite full invoke path did not pass"
-        EXIT_CODE=1
+    if [[ -n "${SCRIPT_TEST_CONFIGS[SQLite]:-}" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Summary: ${successful}/${#SCRIPT_TEST_CONFIGS[@]} engines ok (SQLite full fixture required)"
+        if [[ "${sqlite_full}" -ne 1 ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "SQLite full invoke path did not pass"
+            EXIT_CODE=1
+        fi
+    else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Summary: ${successful}/${#SCRIPT_TEST_CONFIGS[@]} engines ok (SQLite full-fixture check skipped: sqlite not in HYDROGEN_ENGINES)"
     fi
 else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping conduit script tests due to prerequisite failures"

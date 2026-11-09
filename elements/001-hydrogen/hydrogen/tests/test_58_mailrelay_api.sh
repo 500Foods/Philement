@@ -15,6 +15,7 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.13.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (tests/lib/engine_utils.sh)
 # 2.12.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms, after Yugabyte
 #                      (web/mail 15832-15835; 15830-15831 stay the OTP listeners)
 # 2.11.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
@@ -87,10 +88,12 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.12.0"
+TEST_VERSION="2.13.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # shellcheck source=tests/lib/mailrelay_api_helpers.sh # Split for the 1000-line cap
@@ -116,6 +119,15 @@ MAILRELAY_API_ENGINES=(
 MAILRELAY_API_ENGINE_ORDER=(
     "SQLite" "PostgreSQL" "MySQL" "MariaDB" "DB2" "Firebird" "YugabyteDB" "MSSQL"
 )
+
+filter_engine_map MAILRELAY_API_ENGINES 1
+# Drop filtered engines from the stable start order
+_ORDER_FILTERED=()
+for _ord in "${MAILRELAY_API_ENGINE_ORDER[@]}"; do
+    [[ -n "${MAILRELAY_API_ENGINES[${_ord}]:-}" ]] && _ORDER_FILTERED+=("${_ord}")
+done
+MAILRELAY_API_ENGINE_ORDER=("${_ORDER_FILTERED[@]}")
+unset _ord _ORDER_FILTERED
 
 # Timeouts (seconds). STARTUP_TIMEOUT must exceed mailrelay_init's 30s wait
 # for MAILRELAY_QREF_QUEUE_RECOVER_STALE when Queue.Persist is on, plus
@@ -189,6 +201,9 @@ else
 fi
 
 config_valid=true
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
+
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 for display_name in "${!MAILRELAY_API_ENGINES[@]}"; do
     IFS=':' read -r engine_name web_plain mail_plain web_tls mail_tls <<< "${MAILRELAY_API_ENGINES[${display_name}]}"

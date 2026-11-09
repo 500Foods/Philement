@@ -10,6 +10,7 @@
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
 
 # CHANGELOG
+# 4.1.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (disabled in a config copy)
 # 4.0.7 - 2026-10-01 - Initial, snapshot, and final Prometheus checks grep the
 #                      saved body. echo | grep -q under pipefail was SIGPIPE.
 # 4.0.6 - 2026-10-01 - Seventh enabled engine: MSSQL (Demo_MS, schema demoms).
@@ -36,7 +37,7 @@ TEST_NAME="Exercise ASAN"
 TEST_ABBR="EXA"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="4.0.7"
+TEST_VERSION="4.1.0"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -54,6 +55,8 @@ SCRAPE_RETRY_DELAY=3
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 # shellcheck source=tests/lib/conduit_utils.sh # Multi-DB server lifecycle helpers
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
@@ -157,6 +160,14 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Exercise Configuratio
 CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_exercise.json"
 
 if [[ -f "${CONFIG_FILE}" ]]; then
+    # HYDROGEN_ENGINES: run from a copy with the other engines' connections disabled
+    EXERCISE_CONFIG="${DIAG_TEST_DIR}/$(basename "${CONFIG_FILE}")"
+    # shellcheck disable=SC2310 # Fall back to the original config if the copy fails
+    if exercise_filter_config "${CONFIG_FILE}" "${EXERCISE_CONFIG}"; then
+        CONFIG_FILE="${EXERCISE_CONFIG}"
+    fi
+    warn_unknown_engines
+    [[ ${#EXERCISE_SKIPPED_DBS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${EXERCISE_SKIPPED_DBS[*]}"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${CONFIG_FILE}"; then
         SERVER_PORT=$(get_webserver_port "${CONFIG_FILE}")

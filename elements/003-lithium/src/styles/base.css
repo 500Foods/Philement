@@ -314,10 +314,28 @@
   }
 
   @font-face {
+    font-family: 'Vanadium Sans';
+    src: local('Vanadium Sans Medium'),
+         url('/assets/fonts/VanadiumSans-SemiExtendedMedium.woff2') format('woff2');
+    font-weight: 500 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
     font-family: 'Vanadium Mono';
     src: local('Vanadium Mono'),
          url('/assets/fonts/VanadiumMono-SemiExtended.woff2') format('woff2');
     font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Vanadium Mono';
+    src: local('Vanadium Mono Medium'),
+         url('/assets/fonts/VanadiumMono-SemiExtendedMedium.woff2') format('woff2');
+    font-weight: 500 700;
     font-style: normal;
     font-display: swap;
   }

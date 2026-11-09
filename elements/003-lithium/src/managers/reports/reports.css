@@ -613,6 +613,10 @@
   text-align: right;
 }
 
+.reports-item[data-align='Justified'] {
+  text-align: justify;
+}
+
 .reports-item[data-font-style='Bold'] {
   font-weight: 700;
 }
@@ -1253,6 +1257,8 @@
   color: var(--text-primary);
   border: 1px solid var(--bg-row-border, #ccc);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
 }
 
 .lithium-properties-combo-option {
@@ -1265,7 +1271,8 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  font-family: sans-serif;
+  font-family: inherit;
+  font-size: inherit;
   line-height: 1.2;
 }
 

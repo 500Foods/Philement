@@ -417,7 +417,7 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1457](/elements/002-helium/acuranzo/migrations/acuranzo_1457.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render runs a query datasource (Reporting Phase 29) |
 | [1458](/elements/002-helium/acuranzo/migrations/acuranzo_1458.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render reduces count, filled, unique, and sum (Reporting Phase 38) |
 | [1459](/elements/002-helium/acuranzo/migrations/acuranzo_1459.lua) | scripts | 1.0.0 | 2026-11-04 | 4 | ✗ | Reports.Render page totals (Reporting Phase 39) |
-| [1460](/elements/002-helium/acuranzo/migrations/acuranzo_1460.lua) | lookups | 1.0.2 | 2026-11-09 | 32 | ✗ | Lookup 078 (Report Shape Kinds) and shape attributes (Reporting Phase 44a) |
+| [1460](/elements/002-helium/acuranzo/migrations/acuranzo_1460.lua) | lookups | 1.0.3 | 2026-11-09 | 32 | ✗ | Lookup 078 (Report Shape Kinds) and shape attributes (Reporting Phase 44a) |
 | [1461](/elements/002-helium/acuranzo/migrations/acuranzo_1461.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | zint.Svg invokable wrapper (Reporting Phase 54) |
 | [1462](/elements/002-helium/acuranzo/migrations/acuranzo_1462.lua) | lookups | 1.0.1 | 2026-11-09 | 16 | ✗ | Lookup 079 (Report Barcode Symbologies) (Reporting Phase 54) |
 | [1463](/elements/002-helium/acuranzo/migrations/acuranzo_1463.lua) | lookups | 1.0.1 | 2026-11-09 | 4 | ✗ | Field Barcode datasource (Reporting Phase 54) |
@@ -437,4 +437,31 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1477](/elements/002-helium/acuranzo/migrations/acuranzo_1477.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Barcode (Reporting) |
 | [1478](/elements/002-helium/acuranzo/migrations/acuranzo_1478.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
 | [1479](/elements/002-helium/acuranzo/migrations/acuranzo_1479.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render loader and stage dispatch (Reporting) |
-| **404** | | | | **2355** | **404** | |
+| [1480](/elements/002-helium/acuranzo/migrations/acuranzo_1480.lua) | lookups | 1.0.0 | 2026-11-09 | 12 | ✗ | Report property lists for shape fill and static items (Reporting) |
+| [1481](/elements/002-helium/acuranzo/migrations/acuranzo_1481.lua) | lookups | 1.0.0 | 2026-11-09 | 106 | ✗ | Report Units, Background, Overflow lookups (Reporting Phase 75) |
+| [1482](/elements/002-helium/acuranzo/migrations/acuranzo_1482.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | Reports.Render.Items (Reporting) |
+| [1483](/elements/002-helium/acuranzo/migrations/acuranzo_1483.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
+| [1484](/elements/002-helium/acuranzo/migrations/acuranzo_1484.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | Reports.Render.Shapes (Reporting) |
+| [1485](/elements/002-helium/acuranzo/migrations/acuranzo_1485.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.RewriteBackgroundColor — Phase 77 one-shot shape backgroundColor rewrite |
+| [1486](/elements/002-helium/acuranzo/migrations/acuranzo_1486.lua) | lookups | 1.0.0 | 2026-11-09 | 6 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 1/15 |
+| [1487](/elements/002-helium/acuranzo/migrations/acuranzo_1487.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 2/15 |
+| [1488](/elements/002-helium/acuranzo/migrations/acuranzo_1488.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 3/15 |
+| [1489](/elements/002-helium/acuranzo/migrations/acuranzo_1489.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 4/15 |
+| [1490](/elements/002-helium/acuranzo/migrations/acuranzo_1490.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 5/15 |
+| [1491](/elements/002-helium/acuranzo/migrations/acuranzo_1491.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 6/15 |
+| [1492](/elements/002-helium/acuranzo/migrations/acuranzo_1492.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 7/15 |
+| [1493](/elements/002-helium/acuranzo/migrations/acuranzo_1493.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 8/15 |
+| [1494](/elements/002-helium/acuranzo/migrations/acuranzo_1494.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 9/15 |
+| [1495](/elements/002-helium/acuranzo/migrations/acuranzo_1495.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 10/15 |
+| [1496](/elements/002-helium/acuranzo/migrations/acuranzo_1496.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 11/15 |
+| [1497](/elements/002-helium/acuranzo/migrations/acuranzo_1497.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 12/15 |
+| [1498](/elements/002-helium/acuranzo/migrations/acuranzo_1498.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 13/15 |
+| [1499](/elements/002-helium/acuranzo/migrations/acuranzo_1499.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 14/15 |
+| [1500](/elements/002-helium/acuranzo/migrations/acuranzo_1500.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 080 Named Colours (Reporting Phase 77) batch 15/15 |
+| [1501](/elements/002-helium/acuranzo/migrations/acuranzo_1501.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Items (Reporting) |
+| [1502](/elements/002-helium/acuranzo/migrations/acuranzo_1502.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
+| [1503](/elements/002-helium/acuranzo/migrations/acuranzo_1503.lua) | lookups | 1.0.0 | 2026-11-09 | 4 | ✗ | Lookup 054 key 4 Label: Align → H. Align (Phase 78) |
+| [1504](/elements/002-helium/acuranzo/migrations/acuranzo_1504.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Metrics (Reporting) |
+| [1505](/elements/002-helium/acuranzo/migrations/acuranzo_1505.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Layout (Reporting) |
+| [1506](/elements/002-helium/acuranzo/migrations/acuranzo_1506.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Paging (Reporting) |
+| **431** | | | | **2575** | **431** | |

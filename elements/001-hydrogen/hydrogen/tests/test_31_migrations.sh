@@ -9,6 +9,7 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.14.0 - 2026-11-09 - Add yugabytedb to ENGINES; emit fresh| when sqruff is absent; fix indent
 # 1.13.0 - 2026-11-09 - Fail a migration whose JSON_INGEST_START, JSON_INGEST_SCHEMA_START, or JIS payload is not an object
 # 1.12.0 - 2026-10-16 - Include courses in the suite; skip it until its migrations exist
 # 1.11.0 - 2026-10-16 - Require the shared helium/database*.lua set before expanding
@@ -31,7 +32,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.13.0"
+TEST_VERSION="1.14.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -50,14 +51,14 @@ HELIUM_DIR="../../../elements/002-helium"
 DESIGNS=("acuranzo" "courses" "argent")
 
 # Supported database engines
-ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
+ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "yugabytedb" "mssql")
 
 # Schema mapping per design per engine (corresponding to ENGINES array order)
-# ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
+# ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "yugabytedb" "mssql")
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:test:testfb:testms:"
-DESIGN_SCHEMAS["courses"]="app::acuranzo:ACURANZO:test:testfb:testms:"
-DESIGN_SCHEMAS["argent"]="app::acuranzo:ACURANZO:test:testfb:testms:"
+DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:test:testfb:test:testms"
+DESIGN_SCHEMAS["courses"]="app::acuranzo:ACURANZO:test:testfb:test:testms"
+DESIGN_SCHEMAS["argent"]="app::acuranzo:ACURANZO:test:testfb:test:testms"
 
 # HYDROGEN_ENGINES decides which engines are validated (indexes still follow ENGINES)
 ENABLED_ENGINES=()
@@ -182,8 +183,8 @@ validate_migration() {
         return 1
     fi
 
-# Firebird and MSSQL emit SQL that sqruff (postgres dialect) cannot lint
-if [[ "${engine}" == "firebird" || "${engine}" == "mssql" ]]; then
+    # Firebird and MSSQL emit SQL that sqruff (postgres dialect) cannot lint
+    if [[ "${engine}" == "firebird" || "${engine}" == "mssql" ]]; then
         echo "✅ ${design} ${engine} ${migration} SKIPPED (sqruff not applicable)" > "${cache_file}"
         echo "fresh|"
         return 0
@@ -192,6 +193,7 @@ if [[ "${engine}" == "firebird" || "${engine}" == "mssql" ]]; then
     # Check if sqruff is available
     if ! command -v sqruff >/dev/null 2>&1; then
         echo "✅ ${design} ${engine} ${migration} SKIPPED (sqruff not found)" > "${cache_file}"
+        echo "fresh|"
         return 0
     fi
 
@@ -199,8 +201,10 @@ if [[ "${engine}" == "firebird" || "${engine}" == "mssql" ]]; then
     local config_file=".sqruff_${engine}"
     if [[ ! -f "${config_file}" ]]; then
         echo "✅ ${design} ${engine} ${migration} SKIPPED (config missing)" > "${cache_file}"
+        echo "fresh|"
         return 0
     fi
+
 
     # Create temporary SQL file
     local temp_sql

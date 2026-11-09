@@ -10,6 +10,8 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.5.0 - 2026-11-09 - Soft-skip SQLite full-fixture check when sqlite not in HYDROGEN_ENGINES
+# 1.4.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (tests/lib/engine_utils.sh)
 # 1.3.1 - 2026-10-01 - sqlite3 skips ~/.sqliterc; MySQL login retries HTTP 503
 # 1.3.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (web 15478, MCP 15488)
 # 1.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
@@ -38,10 +40,12 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.3.1"
+TEST_VERSION="1.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # shellcheck source=tests/lib/scripting_helpers.sh # Start/shutdown helpers shared with test_43
@@ -63,6 +67,8 @@ SCRIPT_TEST_CONFIGS=(
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB"
     ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_mssql.json:mssql:mssql:MSSQL"
 )
+
+filter_engine_map SCRIPT_TEST_CONFIGS 3
 
 DISABLED_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_disabled.json"
 
@@ -803,6 +809,8 @@ else
     EXIT_CODE=1
 fi
 
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
 config_valid=true
 for test_config in "${!SCRIPT_TEST_CONFIGS[@]}"; do
     IFS=':' read -r config_file log_suffix _ description <<< "${SCRIPT_TEST_CONFIGS[${test_config}]}"
@@ -885,14 +893,21 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
     print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "SQLite full MCP path"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-        "Summary: ${successful}/${#SCRIPT_TEST_CONFIGS[@]} engines ok (SQLite full fixture required)"
-    if [[ "${sqlite_full}" -eq 1 ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite full MCP path passed"
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    if [[ -n "${SCRIPT_TEST_CONFIGS[SQLite]:-}" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Summary: ${successful}/${#SCRIPT_TEST_CONFIGS[@]} engines ok (SQLite full fixture required)"
+        if [[ "${sqlite_full}" -eq 1 ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite full MCP path passed"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "SQLite full MCP path did not pass"
+            EXIT_CODE=1
+        fi
     else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "SQLite full MCP path did not pass"
-        EXIT_CODE=1
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "SQLite full-fixture check skipped: sqlite not in HYDROGEN_ENGINES"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite full MCP path skipped"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
     fi
 else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping MCP tests due to prerequisite failures"

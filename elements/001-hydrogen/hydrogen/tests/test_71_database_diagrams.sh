@@ -7,6 +7,7 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 3.3.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES
 # 3.2.3 - 2026-10-17 - A migration with no diagram block yet is a skip, not a failure
 # 3.2.2 - 2026-10-16 - Include courses; a design with no migrations is not drawn
 # 3.2.1 - 2026-10-16 - Require the shared helium/database*.lua set before drawing
@@ -25,10 +26,12 @@ TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="71"
 TEST_COUNTER=0
-TEST_VERSION="3.2.3"
+TEST_VERSION="3.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # Parallel execution configuration
@@ -85,12 +88,31 @@ DESIGN_SCHEMAS["argent"]="app:acuranzo::ACURANZO:test:testfb:testms"
 # DESIGN_SCHEMAS["glm"]="glm2:glm2:glm2:GLM2"
 # DESIGN_SCHEMAS["gaius"]="gaius:gaius:gaius:GAIUS"
 
+# HYDROGEN_ENGINES decides which engines are drawn
+ENABLED_ENGINES=()
+SKIPPED_ENGINES=()
+declare -A ENGINE_IS_ENABLED
+for engine in "${ENGINES[@]}"; do
+    # shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+    if engine_enabled "${engine}"; then
+        ENABLED_ENGINES+=("${engine}")
+        ENGINE_IS_ENABLED["${engine}"]=true
+    else
+        SKIPPED_ENGINES+=("${engine}")
+    fi
+done
+warn_unknown_engines
+if [[ ${#SKIPPED_ENGINES[@]} -gt 0 ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINES[*]}"
+fi
+
 # The diagram path loads the same shared scripts the payload packs.
 if [[ ! -f "${HELIUM_DIR}/helium/database.lua" ]]; then
     echo "Missing ${HELIUM_DIR}/helium/database.lua" >&2
     exit 1
 fi
 for engine in "${ENGINES[@]}"; do
+    [[ -n "${ENGINE_IS_ENABLED[${engine}]:-}" ]] || continue
     if [[ ! -f "${HELIUM_DIR}/helium/database_${engine}.lua" ]]; then
         echo "Missing ${HELIUM_DIR}/helium/database_${engine}.lua" >&2
         exit 1
@@ -193,7 +215,7 @@ for design in "${DESIGNS[@]}"; do
     design_schemas="${DESIGN_SCHEMAS[${design}]:-}"
     if [[ -n "${design_schemas}" ]]; then
         IFS=':' read -ra SCHEMA_ARRAY <<< "${design_schemas}"
-        TOTAL_COMBINATIONS=$((TOTAL_COMBINATIONS + ${#ENGINES[@]}))
+        TOTAL_COMBINATIONS=$((TOTAL_COMBINATIONS + ${#ENABLED_ENGINES[@]}))
     fi
 done
 
@@ -293,7 +315,7 @@ for design in "${DESIGNS[@]}"; do
         migration_nums_str="${DESIGN_MIGRATIONS[${design}]:-}"
         if [[ -n "${migration_nums_str}" ]]; then
             IFS=' ' read -ra MIGRATION_ARRAY <<< "${migration_nums_str}"
-            TOTAL_COMBINATIONS=$((TOTAL_COMBINATIONS + (${#ENGINES[@]} * ${#MIGRATION_ARRAY[@]})))
+            TOTAL_COMBINATIONS=$((TOTAL_COMBINATIONS + (${#ENABLED_ENGINES[@]} * ${#MIGRATION_ARRAY[@]})))
         fi
     fi
 done
@@ -318,6 +340,7 @@ for design in "${DESIGNS[@]}"; do
             for migration_num in "${MIGRATION_ARRAY[@]}"; do
                 for i in "${!ENGINES[@]}"; do
                     engine="${ENGINES[${i}]}"
+                    [[ -n "${ENGINE_IS_ENABLED[${engine}]:-}" ]] || continue
                     # Get schema for this engine index, or empty if index is out of bounds
                     if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
                         schema="${SCHEMA_ARRAY[${i}]}"
@@ -366,6 +389,7 @@ for design in "${DESIGNS[@]}"; do
             for migration_num in "${MIGRATION_ARRAY[@]}"; do
                 for i in "${!ENGINES[@]}"; do
                     engine="${ENGINES[${i}]}"
+                    [[ -n "${ENGINE_IS_ENABLED[${engine}]:-}" ]] || continue
                     # Get schema for this engine index, or empty if index is out of bounds
                     if [[ ${i} -lt ${#SCHEMA_ARRAY[@]} ]]; then
                         schema="${SCHEMA_ARRAY[${i}]}"

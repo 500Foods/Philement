@@ -376,6 +376,48 @@ char* orchestrator_extract_code_from_result(const char* data_json) {
     return code_copy;
 }
 
+char* orchestrator_extract_options_from_result(const char* data_json) {
+    json_error_t err;
+    json_t* root;
+    json_t* row;
+    json_t* opt;
+    char* out;
+
+    if (!data_json) {
+        return strdup("{}");
+    }
+    root = json_loads(data_json, 0, &err);
+    if (!root || !json_is_array(root) || json_array_size(root) == 0) {
+        if (root) {
+            json_decref(root);
+        }
+        return strdup("{}");
+    }
+    row = json_array_get(root, 0);
+    if (!json_is_object(row)) {
+        json_decref(root);
+        return strdup("{}");
+    }
+    opt = json_object_get(row, "options");
+    if (!opt || json_is_null(opt)) {
+        json_decref(root);
+        return strdup("{}");
+    }
+    if (json_is_string(opt)) {
+        const char* s = json_string_value(opt);
+        out = strdup(s && s[0] ? s : "{}");
+        json_decref(root);
+        return out;
+    }
+    if (json_is_object(opt) || json_is_array(opt)) {
+        out = json_dumps(opt, JSON_COMPACT);
+        json_decref(root);
+        return out ? out : strdup("{}");
+    }
+    json_decref(root);
+    return strdup("{}");
+}
+
 /*
  * Fetch a script source from the `scripts` table via QueryRef #087.
  * Returns a heap-allocated copy of the `code` column, or NULL if the
@@ -390,7 +432,11 @@ static char* scripting_fetch_script_source_by_queryref(
     const char* script_name,
     const char* database,
     int timeout_seconds,
-    int query_ref) {
+    int query_ref,
+    char** options_out) {
+    if (options_out) {
+        *options_out = NULL;
+    }
     if (!group_name || !script_name || !database || timeout_seconds <= 0
         || query_ref <= 0) {
         log_this(SR_SCRIPTING,
@@ -526,6 +572,9 @@ static char* scripting_fetch_script_source_by_queryref(
         log_this(SR_SCRIPTING,
                  "Script source fetch: no script row for %s.%s in database '%s'",
                  LOG_LEVEL_STATE, 3, group_name, script_name, database);
+    } else if (options_out) {
+        *options_out = orchestrator_extract_options_from_result(
+            query_result ? query_result->data_json : NULL);
     }
 
     // Frees the pending struct, its query_id, and the contained QueryResult.
@@ -543,7 +592,7 @@ char* scripting_fetch_script_source(const char* group_name,
                                     int timeout_seconds) {
     return scripting_fetch_script_source_by_queryref(
         group_name, script_name, database, timeout_seconds,
-        H_SCRIPTING_ORCHESTRATOR_QUERYREF);
+        H_SCRIPTING_ORCHESTRATOR_QUERYREF, NULL);
 }
 
 char* scripting_fetch_invokable_script_source(const char* group_name,
@@ -552,7 +601,7 @@ char* scripting_fetch_invokable_script_source(const char* group_name,
                                               int timeout_seconds) {
     return scripting_fetch_script_source_by_queryref(
         group_name, script_name, database, timeout_seconds,
-        H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF);
+        H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF, NULL);
 }
 
 char* scripting_fetch_mcp_script_source(const char* group_name,
@@ -561,7 +610,29 @@ char* scripting_fetch_mcp_script_source(const char* group_name,
                                         int timeout_seconds) {
     return scripting_fetch_script_source_by_queryref(
         group_name, script_name, database, timeout_seconds,
-        H_SCRIPTING_MCP_SCRIPT_QUERYREF);
+        H_SCRIPTING_MCP_SCRIPT_QUERYREF, NULL);
+}
+
+char* scripting_fetch_invokable_script_source_with_options(
+    const char* group_name,
+    const char* script_name,
+    const char* database,
+    int timeout_seconds,
+    char** options_out) {
+    return scripting_fetch_script_source_by_queryref(
+        group_name, script_name, database, timeout_seconds,
+        H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF, options_out);
+}
+
+char* scripting_fetch_mcp_script_source_with_options(
+    const char* group_name,
+    const char* script_name,
+    const char* database,
+    int timeout_seconds,
+    char** options_out) {
+    return scripting_fetch_script_source_by_queryref(
+        group_name, script_name, database, timeout_seconds,
+        H_SCRIPTING_MCP_SCRIPT_QUERYREF, options_out);
 }
 
 /*

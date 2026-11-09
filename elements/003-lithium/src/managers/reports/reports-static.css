@@ -1,24 +1,35 @@
-/* Wrapped static text paints the pre-broken lines. The image fills its box. */
+/* Text items use flex so V. Align places the face in the box.
+   Wrapped lines keep pre; Clip uses the same valign rules. */
 
 .reports-item.reports-item-wrapped,
-.reports-item.reports-item-image-item {
+.reports-item.reports-item-image-item,
+.reports-item[data-valign] {
   display: flex;
   flex-direction: column;
   padding: 0;
+}
+
+.reports-item.reports-item-wrapped,
+.reports-item.reports-item-image-item {
   white-space: pre;
 }
 
-.reports-item.reports-item-wrapped[data-valign='middle'] {
+.reports-item[data-valign='middle'] {
   justify-content: center;
 }
 
-.reports-item.reports-item-wrapped[data-valign='bottom'] {
+.reports-item[data-valign='bottom'] {
   justify-content: flex-end;
 }
 
 .reports-item.reports-item-wrapped .reports-item-text {
   line-height: var(--reports-item-line-height, 1.2);
   white-space: pre;
+}
+
+/* H. Align: stretch the text face so text-align positions the ink span. */
+.reports-item[data-valign] > .reports-item-text {
+  width: 100%;
 }
 
 .reports-item-image {

@@ -16,6 +16,7 @@ import { appendResizeHandles } from './items.js';
 import {
   FIT_HEIGHTS, VALIGNS, WRAP_MODES, defaultFitHeight, defaultWrap, lengthPt, wrapText,
 } from './model/wrap.js';
+export { VALIGNS } from './model/wrap.js';
 import { formatStaticDate, formatStaticNumber } from './reports-format.js';
 import { canonicalImage } from './reports-rasters.js';
 import { applyItemColourVars, makeItemTextLabel } from './reports-colours.js';
@@ -114,7 +115,7 @@ export function layoutRows(item) {
   return [
     row(ROW.wrap, 'Wrap', wrap || defaultWrap(typeKey), wrap === '', 'List', [...WRAP_MODES], SECTION, 'Formatting'),
     row(ROW.fitHeight, 'Fit height', fit || defaultFitHeight(typeKey), fit === '', 'List', [...FIT_HEIGHTS], SECTION, 'Formatting'),
-    row(ROW.valign, 'Vertical align', valign || 'top', valign === '', 'List', [...VALIGNS], SECTION, 'Formatting'),
+    row(ROW.valign, 'V. Align', valign || 'top', valign === '', 'List', [...VALIGNS], SECTION, 'Formatting'),
     row(ROW.lineHeight, 'Line height', leading === '' ? '1.2' : String(leading), leading === '', 'Number', null, SECTION, 'Formatting'),
   ];
 }
@@ -245,7 +246,7 @@ export function applyStaticProperty(doc, sel, rowId, value) {
   if (rowId === ROW.valign && LAYOUT_TYPES.has(typeKey)) {
     const valign = String(value ?? '').trim();
     if (valign === '') return edit(doc, sel, (target) => { delete target.valign; });
-    if (!VALIGNS.includes(valign)) throw new Error('Vertical align must be top, middle, or bottom.');
+    if (!VALIGNS.includes(valign)) throw new Error('V. Align must be top, middle, or bottom.');
     return edit(doc, sel, (target) => { target.valign = valign; });
   }
   if (rowId === ROW.lineHeight && LAYOUT_TYPES.has(typeKey)) {
@@ -484,12 +485,13 @@ export function paintMeasuredItem(body, item, doc, options = {}) {
   el.className = 'reports-item';
   el.dataset.itemId = item.id;
   if (options.unbound != null) el.dataset.unbound = String(Boolean(options.unbound));
-  const align = item.align === 'Center' || item.align === 'Right' ? item.align : 'Left';
+  const align = item.align === 'Center' || item.align === 'Right' || item.align === 'Justified'
+    ? item.align : 'Left';
   el.dataset.align = align;
   const typeKey = Number(item.typeKey);
-  const fit = typeof item.fitHeight === 'string' && item.fitHeight !== '' ? item.fitHeight : defaultFitHeight(typeKey);
-  const helvetica = typeKey !== STATIC_IMAGE && typeKey !== 22 && fit !== 'clip';
-  const font = fontOf(doc, item, helvetica);
+  // Canvas always paints the item's chosen font. wrapText measures with
+  // canvas.measureText for that family (AFM Helvetica only as fallback).
+  const font = fontOf(doc, item, false);
   el.dataset.fontStyle = font.style;
   el.style.setProperty('--reports-item-font-family', `'${font.family.replace(/'/g, '')}'`);
   el.style.setProperty('--reports-item-font-size', `${font.sizePx}px`);
@@ -504,7 +506,7 @@ export function paintMeasuredItem(body, item, doc, options = {}) {
     const mode = WRAP_MODES.includes(item.wrap) ? item.wrap : defaultWrap(typeKey);
     const widthPt = lengthPt(box.width) || 0;
     const shown = options.text != null ? options.text : sourceText(item);
-    const lines = wrapText(shown, widthPt, font.sizePt, font.style, mode);
+    const lines = wrapText(shown, widthPt, font.sizePt, font.style, mode, font.family);
     const multiple = Number(item.lineHeight);
     const leading = Number.isFinite(multiple) && multiple > 0 ? multiple : 1.2;
     const valign = VALIGNS.includes(item.valign) ? item.valign : 'top';

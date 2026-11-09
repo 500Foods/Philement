@@ -12,7 +12,7 @@ import { createHistory } from '../../src/managers/reports/model/history.js';
 const attr = (key, name, collection) => ({ key_idx: key, value_txt: name, collection: JSON.stringify(collection) });
 const lookups = {
   objectTypes: [
-    { key_idx: 0, value_txt: 'Static Text', collection: JSON.stringify({ attributes: [0, 1, 2, 3, 4, 14, 29] }) },
+    { key_idx: 0, value_txt: 'Static Text', collection: JSON.stringify({ attributes: [0, 1, 2, 3, 4, 14, 29, 55, 56] }) },
     { key_idx: 9, value_txt: 'Report Top', collection: JSON.stringify({ attributes: ['Title', 'Link', 'Page Size', 'Position Units', 'Font Units', 'Page Units', 'Grid Color', 'Grid Background Color', 'Font Family', 'Font Size', 'Font Style'] }) },
   ],
   attributes: [
@@ -20,7 +20,9 @@ const lookups = {
     attr(1, 'Left', { Group: 'Position', section: 5, Editor: 'Number' }),
     attr(2, 'Width', { Group: 'Position', section: 5, Editor: 'Number' }),
     attr(3, 'Height', { Group: 'Position', section: 5, Editor: 'Number' }),
-    attr(4, 'Align', { Group: 'Position', section: 5, Editor: 'List', List: ['Left', 'Center', 'Right'] }),
+    attr(4, 'H. Align', { Group: 'Formatting', section: 7, Editor: 'List', List: ['Left', 'Center', 'Right', 'Justified'] }),
+    attr(55, 'Fore Color', { Group: 'Formatting', section: 7, Label: 'Fore Color', Editor: 'Color' }),
+    attr(56, 'Back Color', { Group: 'Formatting', section: 7, Label: 'Back Color', Editor: 'Color' }),
     attr(6, 'Object Name', { Group: 'Object', section: 4, Label: 'Name', Editor: 'Text' }),
     attr(14, 'Rotation', { Group: 'Position', section: 5, Editor: 'Number' }),
     attr(15, 'Font Family', { Group: 'Fonts', section: 6, Label: 'Font Family', Editor: 'List', List: ['Vanadium Sans', 'Helvetica'] }),
@@ -48,19 +50,21 @@ describe('report property rows', () => {
   it('attribute list filters the panel', () => {
     const doc = withText();
     const item = attributeKeys(doc, { bandId: 'd1', itemId: 't1' }, lookups);
-    expect(item).toEqual([0, 1, 2, 3, 4, 14, 29]);
+    expect(item).toEqual([0, 1, 2, 3, 4, 14, 29, 55, 56]);
     expect(item).not.toContain(24);
     const report = attributeKeys(doc, { bandId: 'd1', itemId: '' }, lookups);
     expect(report).toEqual([6, 18, 29, 30, 53, 54, 34, 21, 24, 15, 16, 17]);
     const sel = { bandId: 'd1', itemId: 't1' };
     const labels = propertyRows(doc, sel, lookups).map((row) => row.label);
     expect(labels).toEqual([
-      'ID', 'Text', 'Top', 'Left', 'Width', 'Height', 'Align', 'Rotation',
-      'Wrap', 'Fit height', 'Vertical align', 'Line height', 'Notes', 'Link',
+      'ID', 'Text', 'Top', 'Left', 'Width', 'Height', 'Rotation',
+      'H. Align', 'V. Align', 'Fore Color', 'Back Color',
+      'Wrap', 'Fit height', 'Line height', 'Notes', 'Link',
     ]);
     const data = tableData(propertyRows(doc, sel, lookups), [
       { id: 4, label: 'Object', sortSeq: 4 },
       { id: 5, label: 'Position', sortSeq: 5 },
+      { id: 7, label: 'Formatting', sortSeq: 7 },
       ...CLIENT_SECTIONS,
     ]);
     const object = data.filter((row) => row.sectionCaption === 'Object').map((row) => row.label);
@@ -68,9 +72,8 @@ describe('report property rows', () => {
     expect(object[0]).toBe('ID');
     expect(data.find((row) => row.label === 'ID')).toMatchObject({ value: 't1', readOnly: true });
     expect(data.filter((row) => row.sectionCaption === 'Notes').map((row) => row.label)).toEqual(['Notes']);
-    expect(data.filter((row) => row.sectionCaption === 'Position')).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'Align' }),
-    ]));
+    expect(data.filter((row) => row.sectionCaption === 'Formatting').map((row) => row.label).slice(0, 4))
+      .toEqual(['H. Align', 'V. Align', 'Fore Color', 'Back Color']);
   });
 
   it('reads editors: Color from 054 on 21 and 24, text on Link, 057 on Page Size', () => {
@@ -209,5 +212,16 @@ describe('Phase 76 units and font editors', () => {
     expect(displayLengthValue('1.2345 in')).toBe('1.23 in');
     expect(fontStyleCss('Bold + Italic')).toEqual({ fontWeight: '700', fontStyle: 'italic' });
     expect(fontStyleCss('Normal')).toEqual({ fontWeight: '400', fontStyle: 'normal' });
+  });
+});
+
+
+describe('Formatting lead order (Phase 78)', () => {
+  it('puts H. Align, V. Align, Fore Color, Back Color first in Formatting', () => {
+    const doc = addItem(createBlank(), 'd1', { typeKey: 0, id: 't1', text: 'Hi' });
+    const sel = { bandId: 'd1', itemId: 't1' };
+    const rows = propertyRows(doc, sel, lookups);
+    const formatting = rows.filter((row) => Number(row.section) === 7 || row.group === 'Formatting');
+    expect(formatting.map((row) => String(row.id)).slice(0, 4)).toEqual(['4', 'static-valign', '55', '56']);
   });
 });

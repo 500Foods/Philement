@@ -18,7 +18,7 @@ import { fieldItemLabel, isFieldType, PARAM_TYPE, paramItemLabel, SYSTEM_TYPES, 
 import { isBarcodeType } from './model/barcode.js';
 import { paintBarcode } from './reports-barcode.js';
 import { FIELD_SHAPE, SHAPE_TYPE, paintShape, shapeKindFromValue } from './reports-shape.js';
-import { paintMeasuredItem, paintsMeasured } from './reports-static.js';
+import { paintMeasuredItem, paintsMeasured, VALIGNS } from './reports-static.js';
 import { applyItemColourVars, makeItemTextLabel } from './reports-colours.js';
 
 /** Smallest resize, in CSS pixels. */
@@ -427,8 +427,10 @@ export function paintBandItems(body, band, doc) {
       el.classList.add('reports-item-field', 'reports-item-param');
       el.dataset.unbound = String(!(typeof item.param === 'string' && item.param.trim() !== ''));
     }
-    const align = item.align === 'Center' || item.align === 'Right' ? item.align : 'Left';
+    const align = item.align === 'Center' || item.align === 'Right' || item.align === 'Justified' ? item.align : 'Left';
     el.dataset.align = align;
+    const valign = VALIGNS.includes(item.valign) ? item.valign : 'top';
+    el.dataset.valign = valign;
     const font = itemFont(doc, item);
     el.dataset.fontStyle = font.style;
     el.style.setProperty('--reports-item-font-family', `'${font.family}'`);

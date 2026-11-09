@@ -414,7 +414,7 @@ void scripting_worker_process_one(ScriptingWorkerPool* pool,
         return;
     }
 
-    lua_State* L = H_lua_create_context();
+    lua_State* L = H_lua_create_context_ex(entry->options_json);
     if (!L) {
         log_this(SR_SCRIPTING, "Worker [%s]: failed to create Lua state",
                  LOG_LEVEL_ERROR, 1, job_id);

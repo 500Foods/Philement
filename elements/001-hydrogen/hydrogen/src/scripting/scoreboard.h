@@ -91,6 +91,7 @@ typedef struct {
     char                job_id[ID_LEN + 1];
     char*               script_name;     // strdup'd; freed by entry destroy
     char*               params_json;     // strdup'd; freed by entry destroy; may be NULL
+    char*               options_json;    // scripts.options JSON; strdup'd; may be NULL
     ScoreboardJobStatus status;
     struct timespec     created_at;
     struct timespec     started_at;      // 0,0 until status -> RUNNING
@@ -216,7 +217,7 @@ void scoreboard_destroy(Scoreboard* sb);
  * any future long-running tier-2 script) keeps the same observability
  * path without risking being killed by its own growth.
  */
-typedef struct {
+typedef struct ScoreboardJobLimits {
     int    instruction_hook_interval;  // 0 = use config default
     size_t memory_soft_limit_kb;       // 0 = use config default
     size_t memory_hard_limit_kb;       // 0 = use config default; SIZE_MAX explicitly = no limit
@@ -259,6 +260,14 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
                                     const char* script_name,
                                     const char* params_json,
                                     const ScoreboardJobLimits* limits);
+
+/*
+ * Attach scripts.options JSON to a pending/running job (strdup'd).
+ * Replaces any prior value. Safe with NULL options (clears).
+ */
+bool scoreboard_set_options_json(Scoreboard* sb,
+                                 const char* job_id,
+                                 const char* options_json);
 
 /*
  * Look up a job by its 5-char ID.

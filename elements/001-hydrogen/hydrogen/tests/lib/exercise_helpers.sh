@@ -6,6 +6,7 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.1.0 - 2026-11-09 - exercise_filter_config: honour HYDROGEN_ENGINES
 # 1.0.7 - 2026-10-01 - hydrogen_ presence is grep of a file, not echo | grep -q.
 #                     pipefail turned grep -q's early exit into SIGPIPE (141).
 # 1.0.6 - 2026-09-08 - Capture auth flood HTTP codes instead of discarding them
@@ -25,7 +26,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.7"
+EXERCISE_HELPERS_VERSION="1.1.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -270,4 +271,34 @@ exercise_enabled_db_names() {
 exercise_enabled_db_count() {
     local config_file="$1"
     jq '[.Databases.Connections[] | select(.Enabled == true)] | length' "${config_file}" 2>/dev/null || echo "0"
+}
+
+# exercise_filter_config src_config dest_config
+# Write a copy of src_config with Enabled:false on every connection whose engine
+# is not in HYDROGEN_ENGINES (tests/lib/engine_utils.sh), and drop those engines
+# from DATABASE_NAMES so readiness checks skip them.
+# Sets EXERCISE_SKIPPED_DBS to the disabled connection names (sorted).
+exercise_filter_config() {
+    local src="$1"
+    local dest="$2"
+    local db_engine off_json
+    local -a off=()
+    # shellcheck disable=SC2034 # read by the calling test
+    EXERCISE_SKIPPED_DBS=()
+    for db_engine in "${!DATABASE_NAMES[@]}"; do
+        # shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+        if ! engine_enabled "${db_engine}"; then
+            off+=("${DATABASE_NAMES[${db_engine}]}")
+            unset "DATABASE_NAMES[${db_engine}]"
+        fi
+    done
+    off_json=$(jq -nc '$ARGS.positional' --args "${off[@]}") || return 1
+    # shellcheck disable=SC2016 # $off and $n are jq variables, not shell ones
+    jq --argjson off "${off_json}" '.Databases.Connections |= map(if (.Name as $n | $off | index($n)) then .Enabled = false else . end)' \
+        "${src}" > "${dest}" || return 1
+    if [[ ${#off[@]} -gt 0 ]]; then
+        # shellcheck disable=SC2034 # read by the calling test
+        mapfile -t EXERCISE_SKIPPED_DBS < <("${PRINTF:-printf}" '%s\n' "${off[@]}" | sort || true)
+    fi
+    return 0
 }

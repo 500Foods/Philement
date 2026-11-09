@@ -80,7 +80,7 @@ local function make_H(fetched, modsrc)
   return H, function() return result end
 end
 
-local MODS = { "Core", "Format", "Layout", "Data", "Items", "Paging", "Zone", "Aggregate", "Shapes", "Images", "Barcode", "Html" }
+local MODS = { "Core", "Format", "Layout", "Data", "Items", "Paging", "Zone", "Aggregate", "Shapes", "Images", "Barcode", "Html", "Metrics" }
 local function load_dir(dir)
   local mods = {}
   for _, m in ipairs(MODS) do mods[m] = readf(dir .. "/" .. m .. ".lua") end
@@ -93,6 +93,12 @@ local function run(src, p, modsource)
   local fetched = {}
   local H, get = make_H(fetched, modsource or {})
   local env = setmetatable({ params = deep(p), H = H }, { __index = _G })
+  -- Production sandbox: io is nil unless scripts.options.sandbox.io
+  -- (Reports.Render). Simulate that: enable io only when Metrics is
+  -- present in this build (Phase 79+).
+  if not (modsource and modsource.Metrics) then
+    rawset(env, "io", nil)
+  end
   local chunk = assert(load(src, "=render", "t", env))
   local ok, rv = pcall(chunk)
   return ser({ ok = ok, rv = ok and rv or tostring(rv), result = get() }), fetched

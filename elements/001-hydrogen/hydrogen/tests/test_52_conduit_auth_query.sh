@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.2.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (exercise_filter_config)
 # 1.1.5 - 2026-10-30 - Score a conduit server startup failure as a FAIL
 # 1.1.4 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.1.3 - 2026-09-04 - Drop extra print_result after validate_config_file
@@ -34,16 +35,29 @@ TEST_NAME="Conduit Auth Query"
 TEST_ABBR="CA1"
 TEST_NUMBER="52"
 TEST_COUNTER=0
-TEST_VERSION="1.1.5"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 # shellcheck source=tests/lib/conduit_utils.sh # Conduit testing utilities
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
+# shellcheck source=tests/lib/exercise_helpers.sh # exercise_filter_config for HYDROGEN_ENGINES
+[[ -n "${EXERCISE_HELPERS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/exercise_helpers.sh"
 
 # Single server configuration with all 8 database engines
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_52_conduit_auth_query.json"
+
+# HYDROGEN_ENGINES: run from a copy with disabled engines off
+_FILTERED_CONFIG="${DIAG_TEST_DIR}/$(basename "${CONDUIT_CONFIG_FILE}")"
+# shellcheck disable=SC2310 # Fall back to the original config if the copy fails
+if exercise_filter_config "${CONDUIT_CONFIG_FILE}" "${_FILTERED_CONFIG}"; then
+    CONDUIT_CONFIG_FILE="${_FILTERED_CONFIG}"
+fi
+warn_unknown_engines
+[[ ${#EXERCISE_SKIPPED_DBS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${EXERCISE_SKIPPED_DBS[*]}"
 CONDUIT_LOG_SUFFIX="conduit_auth_query"
 CONDUIT_DESCRIPTION="SSQ"
 

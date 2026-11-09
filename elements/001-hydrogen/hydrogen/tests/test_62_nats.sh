@@ -10,6 +10,7 @@
 # /api/nats/instances) against the live two-peer cluster.
 
 # CHANGELOG
+# 1.1.0 - 2026-11-09 - Skip whole test when sqlite is not in HYDROGEN_ENGINES
 # 1.0.3 - 2026-10-14 - Subtest 11: /api/nats/status and /api/nats/instances answer 401/405/200 on A and B (JWT login, live peer list)
 # 1.0.2 - 2026-10-06 - Queue check counts the jobs.refresh-all trace. A presence heartbeat is not a second delivery.
 # 1.0.1 - 2026-10-06 - Watch received for 3s, give websocat a terminal so frames flush, sample a short quiet gap for the queue, recheck subjects after reconnect
@@ -22,11 +23,26 @@ TEST_NAME="NATS"
 TEST_ABBR="NAT"
 TEST_NUMBER="62"
 TEST_COUNTER=0
-TEST_VERSION="1.0.3"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+
+# SQLite-only: end early when sqlite is not in HYDROGEN_ENGINES
+ENGINE_SKIPPED=false
+# shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+if ! engine_enabled "sqlite"; then
+    ENGINE_SKIPPED=true
+    TEST_NAME="${TEST_NAME} (skipped)"
+fi
 setup_test_environment
+
+if [[ "${ENGINE_SKIPPED}" = true ]]; then
+    skip_engine_test "SQLite"
+    ${ORCHESTRATION:-false} && return 0 || exit 0
+fi
 
 # shellcheck source=tests/lib/nats_helpers.sh # Locate, broker, gauges, and one PUB
 [[ -n "${NATS_HELPERS_GUARD:-}" ]] || source "${LIB_DIR}/nats_helpers.sh"

@@ -45,6 +45,53 @@ struct Scoreboard;
 lua_State* H_lua_create_context(void);
 
 /*
+ * Create a sandboxed Lua state with optional per-script options JSON
+ * (scripts.options). NULL or "{}" uses global Scripting.Sandbox only.
+ * See H_lua_parse_script_options for the shape.
+ */
+lua_State* H_lua_create_context_ex(const char* options_json);
+
+/*
+ * Parsed scripts.options. Zero/false means "absent" (use global /
+ * deny for sandbox; use config default for limits).
+ */
+typedef struct {
+    bool sandbox_io;
+    bool sandbox_os_execute;
+    bool sandbox_debug;
+    bool sandbox_loadlib;
+    bool has_memory_soft_kb;
+    size_t memory_soft_kb;
+    bool has_memory_hard_kb;
+    size_t memory_hard_kb;
+    bool has_max_runtime_seconds;
+    int max_runtime_seconds;
+    bool has_instruction_hook_interval;
+    int instruction_hook_interval;
+} H_LuaScriptOptions;
+
+void H_lua_script_options_clear(H_LuaScriptOptions* opt);
+
+/*
+ * Parse scripts.options JSON into *opt. Malformed / NULL → clear *opt
+ * and return false (caller may warn). Valid "{}" returns true with
+ * all flags false / limits unset.
+ */
+bool H_lua_parse_script_options(const char* options_json, H_LuaScriptOptions* opt);
+
+/*
+ * Merge script options into ScoreboardJobLimits (only sets fields the
+ * options actually carry). Caller still resolves zeros to config
+ * defaults via scoreboard_submit_with_limits. Clamps memory to
+ * config MemoryHardLimitKB when that ceiling is positive.
+ */
+/* Forward decl — full type in scoreboard.h; avoid circular include. */
+struct ScoreboardJobLimits;
+
+void H_lua_limits_from_script_options(const H_LuaScriptOptions* opt,
+                                      struct ScoreboardJobLimits* limits);
+
+/*
  * Destroy a Lua state previously returned by H_lua_create_context.
  *
  * Safe to call with a NULL pointer. After this call, the pointer must not
@@ -171,6 +218,7 @@ char* H_lua_build_traceback(lua_State* L);
  * Exposed for Unity tests (NOT part of the stable public API).
  */
 void H_lua_open_sandboxed_libraries(lua_State* L);
+void H_lua_open_sandboxed_libraries_ex(lua_State* L, const H_LuaScriptOptions* opt);
 int H_lua_panic(lua_State* L);
 
 #endif /* HYDROGEN_SCRIPTING_LUA_CONTEXT_H */

@@ -15,6 +15,7 @@
 # format_seconds()
 
 # CHANGELOG
+# 1.1.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (exercise_filter_config)
 # 1.0.5 - 2026-10-30 - Score a performance server startup failure as a FAIL
 # 1.0.4 - 2026-10-01 - Score the median of warm catalog scans, not the fastest sample
 #                    - QueryRef 25 (Get Queries List) repeated, plus QueryRef 30
@@ -41,16 +42,29 @@ TEST_NAME="Performance Test"
 TEST_ABBR="PRF"
 TEST_NUMBER="60"
 TEST_COUNTER=0
-TEST_VERSION="1.0.5"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 # shellcheck source=tests/lib/conduit_utils.sh # Conduit testing utilities
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
+# shellcheck source=tests/lib/exercise_helpers.sh # exercise_filter_config for HYDROGEN_ENGINES
+[[ -n "${EXERCISE_HELPERS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/exercise_helpers.sh"
 
 # Single server configuration with all 8 database engines
 PERF_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_60_performance.json"
+
+# HYDROGEN_ENGINES: run from a copy with disabled engines off
+_FILTERED_CONFIG="${DIAG_TEST_DIR}/$(basename "${PERF_CONFIG_FILE}")"
+# shellcheck disable=SC2310 # Fall back to the original config if the copy fails
+if exercise_filter_config "${PERF_CONFIG_FILE}" "${_FILTERED_CONFIG}"; then
+    PERF_CONFIG_FILE="${_FILTERED_CONFIG}"
+fi
+warn_unknown_engines
+[[ ${#EXERCISE_SKIPPED_DBS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${EXERCISE_SKIPPED_DBS[*]}"
 PERF_LOG_SUFFIX="performance"
 PERF_DESCRIPTION="PERF"
 

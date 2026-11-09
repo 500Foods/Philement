@@ -90,12 +90,15 @@ lookup packet and nothing else lands first.
 | `acuranzo_1484.lua` | `Render.Shapes` | Phase 77 (read shared Background Color; Fill Style patterns stay) |
 | `acuranzo_1485.lua` | `Reports.RewriteBackgroundColor` | Phase 77 (one-shot reports.report rewrite; invoke once) |
 | `acuranzo_1486.lua`–`acuranzo_1500.lua` | Lookup 080 Named Colours | Phase 77 (CSS + xkcd seed; 15 batches) |
-| `acuranzo_1501.lua` | `Render.Html` (second pass) | Phase 78 (valign on non-lines branch) — skip if 1483 already did it |
-| `acuranzo_1502.lua` | `Render.Metrics` **insert** (new lazy module) | Phase 79 |
-| `acuranzo_1503.lua` | `Reports.Render` loader | Phase 79 (register Metrics; load before measure) |
-| `acuranzo_1504.lua` | `Render.Layout` | Phase 79 (call Metrics; stop Helvetica-only measure) and/or Phase 80 (Overflow) |
-| `acuranzo_1505.lua` | `Render.Paging` | Phase 79 (drop `grown → Helvetica`) and/or Phase 80 |
-| later | `Render.Html` / `Render.Items` / `Render.Layout` as needed | Phase 80 Overflow, Phase 81 Justified |
+| `acuranzo_1501.lua` | `Render.Items` | Phase 78 (`item_out` always carries `valign`) — **applied** |
+| `acuranzo_1502.lua` | `Render.Html` | Phase 78 (flexbox V. Align on non-lines text) — **applied** |
+| `acuranzo_1503.lua` | Lookup 054 key 4 | Phase 78 (Label Align → H. Align) — **applied** |
+| `acuranzo_1504.lua` | `Render.Metrics` **insert** (lazy) | Phase 79 |
+| `acuranzo_1505.lua` | `Render.Layout` | Phase 79 (measure_family → Metrics) |
+| `acuranzo_1506.lua` | `Render.Paging` | Phase 79 (drop grown → Helvetica) |
+| Phase 80 lookup | 054 Overflow list + Min/Max Font Size | Next free after Phase 79 (**1507**) |
+| Phase 80 Render | `Layout` / `Paging` / `Items` / `Html` as needed | Overflow Clip/Ellipsis/Shrink/Grow/**Fit**; rule 12 |
+| later | as needed | Phase 81 Justified |
 | TBD after 75–81 | `Render.Core` (`safe_uri`) | Phase 82 |
 | TBD | `Render.Items` (carry `link` on placed item) | Phase 82 |
 | TBD | `Render.Html` (`<a href>`) | Phase 82 |
@@ -605,9 +608,10 @@ emit uses that hex with `fillStyle` / gradient stops as today.
       every revision (map above). Hand over with the Render
       packets. QueryRef 175 unused.
 - [x] 77.6 `render_check.sh`, `npm test`, lint. Andrew applies.
-- [ ] 77.7 Browser: Fore/Back/Background on Static Text; open an
+- [x] 77.7 Browser: Fore/Back/Background on Static Text; open an
       old shape report and confirm the colour landed on Background
-      Color; Fill Style still patterns.
+      Color; Fill Style still patterns. Andrew confirmed 2026-11-09
+      after applying 1482–1500.
 
 
 ### Named colour lookup (same phase)
@@ -634,35 +638,22 @@ Applied packets, `render_check.sh`, Andrew's browser check.
 
 ### Status
 
-**In progress** — packets written (incl. 1.0.1 none); Static Text
-canvas paint bug fixed; Coloris ✓/✕ + Name tab + PP caret wired.
-Andrew applies 1482–1500, invokes `Reports.RewriteBackgroundColor`
-once, then browser-checks 77.7.
+**Complete** — Andrew applied `1482`–`1500` and confirmed the
+browser check 2026-11-09.
 
 ### Accomplished
 
 - Lithium: Fore/Back/Background Color (keys 55–57) in PP; designer
-  paints fore/back/background via CSS vars; shapes drop Fill Color
-  (47); load-time `normalizeDefinitionColours`; fixtures updated;
-  vitest including `reports-item-colours` (property commit → paint).
-- **Root cause (Static Text colours invisible on canvas):** keys
-  55/56/57 stored `foreColor`/`backColor`/`backgroundColor`
-  correctly and CSS used the vars, but the default (non-measured)
-  `paintBandItems` path never called `applyItemColours` /
-  `applyItemColourVars`. Fixed; measured path already applied.
-- Canonical empty colour is stored `none` (accepts transparent /
-  empty); designer + Render treat none as transparent / no paint.
-  Unapplied `1482`–`1484` patched in place to 1.0.1.
-- Coloris: ✓ apply / ✕ cancel (revert); Name format tab (searchable
-  list); mid-picker name strip removed; PP caret opens named list
-  (closes Coloris); field click opens Coloris; PP color-wrap
-  `color: inherit` so editor text stays visible.
+  paints fore/background on the item box and Back Color on inline
+  `.reports-item-text-ink` (matches Render `item_back_span`);
+  shapes drop Fill Color (47); load-time
+  `normalizeDefinitionColours`; fixtures; vitest
+  (`reports-item-colours`).
+- Canonical stored `none`; Coloris ✓/✕ / none (`fa-ban`) / Name
+  tab; PP caret→names; stock Close removed.
 - Render: `acuranzo_1482` Items, `1483` Html, `1484` Shapes
-  (rule 12; sizecheck OK). `1485` invokable rewrite script.
-  `render_check.sh`: 4 expected diffs on shapes / shape-fill vs
-  HEAD (new untracked modules). Other fixtures identical.
-- Named colours: lookup 080 batches `1486`–`1500` (1002 names);
-  Coloris named dropdown + swatch flag; PP type-ahead; vitest.
+  (1.0.1 none); `1485` `Reports.RewriteBackgroundColor`; lookup
+  080 `1486`–`1500` (1002 names).
 
 ### Lessons learned
 
@@ -672,17 +663,18 @@ once, then browser-checks 77.7.
 - Named-colour seed is too large for one DB2 literal; split across
   migrations (~70 rows each).
 - One-shot `reports.report` rewrite is an invokable script (SQL
-  migrations cannot portably walk JSON across engines); Render
-  fallback + load normalize cover the gap until invoke.
-- Canvas colour bugs: confirm the paint path for the item's
-  typeKey (simple vs measured) actually sets the CSS vars after
-  property commit — storage alone is not enough.
+  cannot portably walk JSON); Render fallback + load normalize
+  cover until invoke.
+- Canvas: confirm the paint path sets CSS vars after property
+  commit; Back Color must be inline (glyph highlight), not block.
+- Coloris cannot parse `none` — keep pending none out of its
+  change handler; ✓ writes the linked field.
 
 ### Handoff
 
-Andrew applies `1482`–`1500`, runs `Reports.RewriteBackgroundColor`
-once, reloads the designer, checks 77.7. Phase 78 next (tentative
-Html amend `1501` if valign still needed).
+Phase 78 — V. Align for un-measured (Clip) text. Next free
+Acuranzo **1501**. Map row for `1501` Html still accurate; Items
+may also need a packet (see Phase 78 plan).
 
 ---
 
@@ -700,43 +692,58 @@ Phase 77 Status complete.
 
 ### Work items
 
-- [ ] 78.1 Designer CSS: apply `data-valign` for middle/bottom on
-      text items that are not `.reports-item-wrapped` (today only
-      wrapped items get it in `reports-static.css`). Keep mount
-      code that sets `dataset.valign` (`reports-static.js` ~506).
-- [ ] 78.2 `Render.Html`: on the non-lines branch, apply the same
-      vertical alignment (flexbox or computed top offset from
-      `valign` + box height). Lines branch keeps `offsetPt`.
-- [ ] 78.3 Rule 12: one Html migration if 1483 did not already
-      land this (tentative `acuranzo_1485.lua`). `sql_old` =
-      current Html body.
-- [ ] 78.4 Fixture or Vitest where possible; `render_check.sh`;
-      browser check with Clip + middle/bottom.
+- [x] 78.1 Designer: simple path sets `data-valign`; CSS flexes any
+      `.reports-item[data-valign]` (not only wrapped); text face
+      `width:100%` so H. Align positions the ink span. Labels
+      **H. Align** / **V. Align**.
+- [x] 78.2 `Render.Html` non-lines: flexbox `justify-content` from
+      `o.valign`; lines branch keeps `offsetPt`. Font CSS on both
+      branches unchanged (uses `o.font`).
+- [x] 78.3 Rule 12: `acuranzo_1501` Items (`valign` on `item_out`),
+      `acuranzo_1502` Html (flex), `acuranzo_1503` lookup 054 key 4
+      → H. Align. Unapplied.
+- [x] 78.4 Vitest (`reports-valign-font`); fixture `valign9`
+      (9 H×V Clip cells + frame); `render_check.sh` run.
+- [x] 78.5 Font bug: non-Clip canvas no longer forces Helvetica for
+      display (`fontOf(..., false)`); AFM still used only inside
+      `wrapText` until Phase 79.
 
 ### Done means
 
 A Clip Static Text with V. Align middle or bottom is centred or
-bottom-aligned in the designer and in Preview HTML.
+bottom-aligned in the designer and in Preview HTML. Nine H×V
+positions work with Back Color on glyphs and Background on the box.
 
 ### Exit gate
 
-Packet applied (if any), checks green, Andrew confirms.
+Packets applied, checks green, Andrew confirms.
 
 ### Status
 
-**not started**
+**In progress** — packets `1501`–`1503` **applied** (Andrew);
+awaiting his final browser confirm on 9-position + font.
 
 ### Accomplished
 
-_(empty until the phase closes)_
+- Designer Clip path `data-valign` + flex CSS; ink span H. Align;
+  V. Align / H. Align labels (client + lookup 1503).
+- Font: chosen family on canvas for Clip and non-Clip.
+- Render: Items carries `valign`; Html non-lines flexbox.
+- Fixture `valign9`; vitest; sizecheck OK.
 
 ### Lessons learned
 
-_(empty until the phase closes)_
+- Non-Clip canvas font flip was `fontOf(doc, item, helvetica=true)`
+  when Fit Height ≠ Clip — display used Helvetica AFM family.
+  Measure can stay Helvetica AFM; paint must use the item font.
+- Clip `item_out` lacked `valign` because Paging only merges layout
+  fields when `lines` exist; Items must copy `valign` itself.
 
 ### Handoff
 
-Phase 79. Helvetica forcing still present until 79.
+Andrew browser-confirms 9-position Clip + wrapped text
+(Back/Background) and non-Clip font. Phase 79 packets `1504`–`1506`
+written (unapplied).
 
 ---
 
@@ -849,34 +856,27 @@ those constructors expect one. Prefer fontkit + AFM for
 
 ### Work items
 
-- [ ] 79.1 Place TTF/OTF (or WOFF1) for every selectable
-      family/style under the configurable server font root. Document
-      the setting name and default path in the packet summary. Do
-      not commit width tables.
-- [ ] 79.2 Lithium: replace Helvetica-only advances in
-      `model/wrap.js` / `reports-static.js` measure paths with
-      canvas `measureText` (family/style/size). Keep AFM Helvetica
-      as fallback when the face is not loaded in the browser.
-- [ ] 79.3 Insert `Reports.Render.Metrics` (lazy). Resolve
-      family/style to a file under the configurable font root;
-      `fontkit.openSync` (or `create` on read bytes). AFM Helvetica
-      when the file is missing. Cache opened fonts per request.
-      Tentative `acuranzo_1486.lua`.
-- [ ] 79.4 Loader (`acuranzo_1487.lua`): register Metrics; load it
-      before Layout/Paging measure when a non-fallback face is
-      used (or always before measure — pin in the packet summary).
-      Rule 12: `sql_old` = current loader body.
-- [ ] 79.5 Amend `Render.Layout` and `Render.Paging`: call Metrics;
-      remove `grown → Helvetica` (`acuranzo_1472.lua` today) and
-      Helvetica-only measure assumptions. Tentative 1488 Layout,
-      1489 Paging (adjust if Phase 80 should own Overflow edits in
-      the same modules — prefer one amendment per module per
-      sitting when possible).
-- [ ] 79.6 `render_check.sh`, sizecheck on Metrics. Vitest for the
-      canvas measure helper. Hand packets over.
-- [ ] 79.7 Browser: Vanadium Sans grow/shrink no longer flips to
-      Helvetica; Preview HTML matches designer line breaks for the
-      faces that have server files.
+- [x] 79.1 Server font root: default `/usr/share/fonts/vanadium`
+      (`REPORTS_FONT_ROOT` / `params._hydrogen.fontRoot`). Option B:
+      Vanadium Sans/Mono → full `*SemiExtended*.ttf` (same width as
+      designer `@font-face`). Italic → upright SemiExtended (no
+      italic file). Bold / Bold+Italic → SemiExtendedMedium.
+      Mail SemiExtended = future one-line map swap (option C).
+- [x] 79.2 Lithium `model/wrap.js`: canvas `measureText` with
+      family/style/size; AFM Helvetica fallback (no canvas /
+      Helvetica family). `ensureFontsReady`. Drop grown→Helvetica.
+- [x] 79.3 Insert `Reports.Render.Metrics` (`acuranzo_1504`).
+      cmap `glyphForCodePoint` + `advanceWidth` (not `font:layout` —
+      Vanadium GSUB errors in lua-pdfkit). Ligatures not applied.
+      Per-process face cache. AFM fallback.
+- [x] 79.4 Loader: **no amend**. Layout calls `need_module("Metrics")`
+      on first non-Helvetica measure (lazy).
+- [x] 79.5 Amend Layout (`1505`) + Paging (`1506`): measure_family;
+      drop grown→Helvetica.
+- [x] 79.6 Fixture `wrap-vanadium`; harness lists Metrics;
+      vitest; ESLint. Packets unapplied.
+- [ ] 79.7 Browser: Vanadium grow no longer flips to Helvetica;
+      Preview HTML line breaks match designer for SemiExtended faces.
 
 ### Done means
 
@@ -885,25 +885,37 @@ is only the fallback; no width-table files are in the repo.
 
 ### Exit gate
 
-Applied Metrics + loader + Layout/Paging packets, `render_check.sh`,
+Applied Metrics + Layout/Paging packets, `render_check.sh`,
 Andrew's browser check.
 
 ### Status
 
-**not started**
+**In progress** — packets `1504`–`1506` written (unapplied);
+designer + Metrics ready. Awaiting Andrew apply + browser check.
 
 ### Accomplished
 
-_(empty until the phase closes)_
+- Benchmark gate: full SemiExtended TTFs open ~40–90 ms; Mail Regular
+  matches advances; Mail Medium does not. Andrew chose option B.
+- `Render.Metrics` insert; Layout/Paging amend; designer canvas
+  measure; `wrap-vanadium` fixture (DIFF vs Helvetica AFM).
+- Mapping table data-driven for a future Mail SemiExtended swap.
 
 ### Lessons learned
 
-_(empty until the phase closes)_
+- `font:layout` fails on Vanadium GSUB ("Not a fixed size"); use
+  cmap + `advanceWidth` only (no ligatures/kerning).
+- Harness `MODS` must list every lazy module file or
+  `need_module` reports "not installed".
+- Designer Bold uses CSS weight 700 on SemiExtended Regular woff2
+  (synthetic); Render Bold uses SemiExtendedMedium TTF — widths
+  may differ slightly until a Bold woff2 ships.
 
 ### Handoff
 
-Phase 80. Record the font-root setting and which faces have files
-under it.
+Andrew applies `1504`–`1506`, confirms grow keeps Vanadium, and
+spot-checks Preview HTML wraps. Phase 80 next (next free **1507**).
+Record font-root env and SemiExtended faces under it.
 
 ---
 
@@ -911,45 +923,83 @@ under it.
 
 ### Goal
 
-Overflow (Clip, Ellipsis, Shrink, Grow) replaces Fit Height for
-Static Text. The Lithium-only Fit Height row goes away. Shrink is
-shrink-to-width; Grow is vertical grow (what Fit Height `grow`
-did). Measure uses Phase 79 metrics.
+Overflow replaces the Lithium-only Fit Height row on Static Text.
+**Wrap** decides what must fit the box; **Overflow** decides how
+text that does not fit is handled. Measure uses Phase 79 metrics
+(real font widths).
+
+### Overflow values (Andrew, 2026-11-09 — locked)
+
+| Value | Behaviour |
+| --- | --- |
+| **Clip** (default) | Font as set; excess clipped. |
+| **Ellipsis** | Font as set; truncated with `…`. |
+| **Grow** | Font as set; box height grows (old Fit Height `grow`). |
+| **Shrink** | Font reduced only when text is too big; never above the set size. |
+| **Fit** | Font scaled up or down until text fills the box (like image `contain`); proportional; only font size changes. |
+
+**Wrap** decides the fit target:
+
+- **nowrap** — a single line must fit the width.
+- **wrapped** — all lines must fit the width and height.
+
+**Min Font Size** / **Max Font Size** (new 054 properties): Min
+applies to Shrink and Fit; Max applies to Fit.
+
+### Pinned load mapping (`fitHeight` → Overflow)
+
+| Old `fitHeight` | Overflow |
+| --- | --- |
+| `clip` | Clip |
+| `grow` | Grow |
+| `shrink` | Shrink |
+| `both` | **Grow** (pinned; Andrew did not object) |
+
+Stop writing `fitHeight` on Static Text after this phase. Wrap
+stays. Friendlier labels for Wrap's CSS values are an optional
+small add-on (not yet decided).
 
 ### Entry gate
 
-Phase 79 Status complete.
+Phase 79 Status complete (Shrink/Fit need real widths from Metrics).
 
 ### Work items
 
-- [ ] 80.1 Lithium: remove the Fit Height row from Static Text
-      layout rows (`reports-static.js`). Bind Overflow from lookup
-      054. Map old `fitHeight` values when loading a definition:
-      `clip`→Clip, `grow`→Grow, `shrink`→Shrink, `both`→pin with
-      Andrew (recommend Grow+Shrink behaviour or Grow). Stop
-      writing `fitHeight` on Static Text.
-- [ ] 80.2 Clip: overflow hidden, no measure grow. Ellipsis:
-      nowrap single-line ellipsis (designer CSS + Html). Shrink:
-      reduce font size to fit width using Metrics/canvas.
-      Grow: grow box height by line steps (old grow).
-- [ ] 80.3 Rule 12: amend Layout / Paging / Items / Html as needed
-      for Overflow (modules not already updated in 79). One module
-      per migration. `render_check.sh`.
-- [ ] 80.4 Browser: each Overflow value on Static Text; Preview
-      HTML matches.
+- [ ] 80.1 Lookup: amend 054 Overflow list to
+      Clip, Ellipsis, Shrink, Grow, **Fit** (was Clip, Ellipsis,
+      Shrink, Grow from Phase 75). Add **Min Font Size** and
+      **Max Font Size** (054 keys; next free after Phase 79
+      packets — next free **1507** after Phase 79 1504–1506).
+      Reversible. Wire on Static Text (and other Kinds that show
+      Overflow).
+- [ ] 80.2 Lithium: remove Fit Height from layout rows; bind
+      Overflow + Min/Max Font Size. Load-map `fitHeight` as
+      pinned above; stop writing `fitHeight`.
+- [ ] 80.3 Implement Overflow behaviours (designer + Render) using
+      Phase 79 metrics. Wrap selects nowrap vs multi-line fit
+      target. Shrink/Fit respect Min/Max Font Size.
+- [ ] 80.4 Rule 12: amend Layout / Paging / Items / Html as needed
+      (modules not finished in 79). One module per migration.
+      `render_check.sh`.
+- [ ] 80.5 Browser: each Overflow value × Wrap mode; Preview HTML
+      matches. Optional: friendlier Wrap labels if Andrew decides.
+- [ ] 80.6 (Optional add-on) Friendlier PP labels for Wrap CSS
+      values — only if Andrew picks captions this sitting.
 
 ### Done means
 
-Static Text has Overflow, not Fit Height; Clip/Ellipsis/Shrink/Grow
-behave as above.
+Static Text has Overflow (five values) and no Fit Height; Wrap
+selects the fit target; Min/Max Font Size drive Shrink/Fit; load
+mapping applied; designer and Preview HTML agree.
 
 ### Exit gate
 
-Packets applied, checks green, Andrew confirms.
+Lookup + Render packets applied, checks green, Andrew confirms.
 
 ### Status
 
-**not started**
+**not started** — behaviours and mapping locked 2026-11-09;
+implementation waits on Phase 79.
 
 ### Accomplished
 
@@ -961,7 +1011,8 @@ _(empty until the phase closes)_
 
 ### Handoff
 
-Phase 81. Note the `fitHeight`→Overflow load mapping chosen.
+Phase 81 (Justified). Record which Wrap label captions shipped, if
+any.
 
 ---
 

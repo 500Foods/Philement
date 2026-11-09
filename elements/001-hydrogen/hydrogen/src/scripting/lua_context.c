@@ -19,10 +19,14 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+#include <jansson.h>
+#include <string.h>
+#include <limits.h>
 
 // Local includes
 #include "lua_context.h"
 #include "scripting_api.h"
+#include "scoreboard.h"
 
 // External allocator shared with the database migration engine.
 // Cheap insurance against process-heap contamination; both subsystems
@@ -30,7 +34,7 @@
 extern void* lua_mmap_alloc(void* ud, void* ptr, size_t osize, size_t nsize);
 
 // Forward declarations for the limited sandbox policy applied here.
-void H_lua_open_sandboxed_libraries(lua_State* L);
+void H_lua_open_sandboxed_libraries_ex(lua_State* L, const H_LuaScriptOptions* opt);
 int H_lua_panic(lua_State* L);
 
 /*
@@ -46,6 +50,21 @@ int H_lua_panic(lua_State* L);
  * Returns NULL on failure; logs at LOG_LEVEL_ERROR.
  */
 lua_State* H_lua_create_context(void) {
+    return H_lua_create_context_ex(NULL);
+}
+
+lua_State* H_lua_create_context_ex(const char* options_json) {
+    H_LuaScriptOptions opt;
+    H_lua_script_options_clear(&opt);
+    if (options_json && options_json[0] != '\0') {
+        if (!H_lua_parse_script_options(options_json, &opt)) {
+            log_this(SR_SCRIPTING,
+                     "scripts.options JSON malformed; treating as {}",
+                     LOG_LEVEL_ALERT, 0);
+            H_lua_script_options_clear(&opt);
+        }
+    }
+
     /* Lua 5.5: lua_newstate takes a hash seed (luaL_makeseed). */
     lua_State* L = lua_newstate(lua_mmap_alloc, NULL, luaL_makeseed(NULL));
     if (!L) {
@@ -53,20 +72,134 @@ lua_State* H_lua_create_context(void) {
         return NULL;
     }
 
-    // Install a panic handler that surfaces failures clearly. Without
-    // this, a panic during state creation would invoke the default
-    // abort() and yield no useful context.
     lua_atpanic(L, H_lua_panic);
 
-    // Open all standard libraries, then prune per the sandbox policy.
     luaL_openlibs(L);
-    H_lua_open_sandboxed_libraries(L);
+    H_lua_open_sandboxed_libraries_ex(L, &opt);
 
-    // Install the (currently empty) H host table. Later phases will
-    // populate H.log, H.query, H.llm, etc.
     H_lua_install_api(L);
 
     return L;
+}
+
+void H_lua_script_options_clear(H_LuaScriptOptions* opt) {
+    if (!opt) {
+        return;
+    }
+    memset(opt, 0, sizeof(*opt));
+}
+
+bool H_lua_parse_script_options(const char* options_json, H_LuaScriptOptions* opt) {
+    json_error_t err;
+    json_t* root;
+    json_t* sandbox;
+    json_t* limits;
+    json_t* v;
+
+    if (!opt) {
+        return false;
+    }
+    H_lua_script_options_clear(opt);
+    if (!options_json || options_json[0] == '\0') {
+        return true;
+    }
+
+    root = json_loads(options_json, 0, &err);
+    if (!root) {
+        return false;
+    }
+    if (!json_is_object(root)) {
+        json_decref(root);
+        return false;
+    }
+
+    sandbox = json_object_get(root, "sandbox");
+    if (sandbox && json_is_object(sandbox)) {
+        v = json_object_get(sandbox, "io");
+        if (v && json_is_boolean(v)) {
+            opt->sandbox_io = json_is_true(v);
+        }
+        v = json_object_get(sandbox, "osExecute");
+        if (v && json_is_boolean(v)) {
+            opt->sandbox_os_execute = json_is_true(v);
+        }
+        v = json_object_get(sandbox, "debug");
+        if (v && json_is_boolean(v)) {
+            opt->sandbox_debug = json_is_true(v);
+        }
+        v = json_object_get(sandbox, "loadlib");
+        if (v && json_is_boolean(v)) {
+            opt->sandbox_loadlib = json_is_true(v);
+        }
+    }
+
+    limits = json_object_get(root, "limits");
+    if (limits && json_is_object(limits)) {
+        v = json_object_get(limits, "memorySoftKB");
+        if (v && json_is_integer(v) && json_integer_value(v) > 0) {
+            opt->has_memory_soft_kb = true;
+            opt->memory_soft_kb = (size_t)json_integer_value(v);
+        }
+        v = json_object_get(limits, "memoryHardKB");
+        if (v && json_is_integer(v) && json_integer_value(v) > 0) {
+            opt->has_memory_hard_kb = true;
+            opt->memory_hard_kb = (size_t)json_integer_value(v);
+        }
+        v = json_object_get(limits, "maxRuntimeSeconds");
+        if (v && json_is_integer(v) && json_integer_value(v) > 0) {
+            opt->has_max_runtime_seconds = true;
+            opt->max_runtime_seconds = (int)json_integer_value(v);
+        }
+        v = json_object_get(limits, "instructionHookInterval");
+        if (v && json_is_integer(v) && json_integer_value(v) > 0) {
+            opt->has_instruction_hook_interval = true;
+            opt->instruction_hook_interval = (int)json_integer_value(v);
+        }
+    }
+
+    json_decref(root);
+    return true;
+}
+
+void H_lua_limits_from_script_options(const H_LuaScriptOptions* opt,
+                                      ScoreboardJobLimits* limits) {
+    size_t ceiling;
+
+    if (!limits) {
+        return;
+    }
+    if (opt) {
+        if (opt->has_instruction_hook_interval) {
+            limits->instruction_hook_interval = opt->instruction_hook_interval;
+        }
+        if (opt->has_memory_soft_kb) {
+            limits->memory_soft_limit_kb = opt->memory_soft_kb;
+        }
+        if (opt->has_memory_hard_kb) {
+            limits->memory_hard_limit_kb = opt->memory_hard_kb;
+        }
+        if (opt->has_max_runtime_seconds) {
+            limits->max_runtime_seconds = opt->max_runtime_seconds;
+        }
+    }
+
+    /* Clamp memory to global MemoryHardLimitKB when that ceiling is set. */
+    ceiling = 0;
+    if (app_config && app_config->scripting.MemoryHardLimitKB > 0) {
+        ceiling = (size_t)app_config->scripting.MemoryHardLimitKB;
+    }
+    if (ceiling > 0) {
+        if (limits->memory_hard_limit_kb > 0
+            && limits->memory_hard_limit_kb != SIZE_MAX
+            && limits->memory_hard_limit_kb > ceiling) {
+            limits->memory_hard_limit_kb = ceiling;
+        }
+        if (limits->memory_soft_limit_kb > ceiling) {
+            limits->memory_soft_limit_kb = ceiling;
+        }
+    }
+    /* No global hard ceiling for maxRuntimeSeconds (DefaultMaxRuntime is
+     * a default, not a max). Leave script value as-is. */
 }
 
 /*
@@ -92,11 +225,15 @@ void H_lua_destroy_context(lua_State* L) {
  * attack vectors and a missing config implies no consent.
  */
 void H_lua_open_sandboxed_libraries(lua_State* L) {
+    H_lua_open_sandboxed_libraries_ex(L, NULL);
+}
+
+void H_lua_open_sandboxed_libraries_ex(lua_State* L, const H_LuaScriptOptions* opt) {
     bool allow_io = false;
     bool allow_debug = false;
     bool allow_loadlib = false;
-    bool allow_os_time = true;     // default true
-    bool allow_os_execute = false; // default false
+    bool allow_os_time = true;
+    bool allow_os_execute = false;
 
     if (app_config) {
         allow_io = app_config->scripting.Sandbox.AllowIo;
@@ -104,6 +241,22 @@ void H_lua_open_sandboxed_libraries(lua_State* L) {
         allow_loadlib = app_config->scripting.Sandbox.AllowLoadlib;
         allow_os_time = app_config->scripting.Sandbox.AllowOsTime;
         allow_os_execute = app_config->scripting.Sandbox.AllowOsExecute;
+    }
+
+    /* Per-script options OR with global (opt-in when global is false). */
+    if (opt) {
+        if (opt->sandbox_io) {
+            allow_io = true;
+        }
+        if (opt->sandbox_debug) {
+            allow_debug = true;
+        }
+        if (opt->sandbox_loadlib) {
+            allow_loadlib = true;
+        }
+        if (opt->sandbox_os_execute) {
+            allow_os_execute = true;
+        }
     }
 
     if (!allow_io) {
@@ -116,10 +269,6 @@ void H_lua_open_sandboxed_libraries(lua_State* L) {
         lua_setglobal(L, "debug");
     }
 
-    // package.loadlib / require of native modules - nilling package
-    // outright would also break require() of pure-Lua modules (Phase
-    // 20). Strip just package.loadlib, which is the native loader entry
-    // point; require stays available but loads only Lua modules.
     if (!allow_loadlib) {
         lua_getglobal(L, "package");
         if (lua_istable(L, -1)) {
@@ -129,12 +278,11 @@ void H_lua_open_sandboxed_libraries(lua_State* L) {
         lua_pop(L, 1);
     }
 
-    // os.* handling: we cannot safely "nil" the entire os table without
-    // breaking sandboxed scripts that legitimately call os.time / os.date
-    // (AllowOsTime) or rely on the clock indirectly. Phase 6+ will install
-    // a controlled shim if necessary; for Phase 3 we just log the
-    // decision so reviewers can see which policy was in effect.
-    log_this(SR_SCRIPTING, "Sandbox policy: io=%s debug=%s loadlib=%s os.time=%s os.execute=%s",
+    /* NOTE: os.execute is NOT currently stripped from the os table
+     * despite AllowOsExecute / options.sandbox.osExecute. A future
+     * shim will enforce this; the flag is logged honestly today. */
+    log_this(SR_SCRIPTING,
+             "Sandbox policy: io=%s debug=%s loadlib=%s os.time=%s os.execute=%s (os.execute shim not enforced)",
              LOG_LEVEL_TRACE, 5,
              allow_io ? "on" : "off",
              allow_debug ? "on" : "off",
@@ -142,9 +290,6 @@ void H_lua_open_sandboxed_libraries(lua_State* L) {
              allow_os_time ? "on" : "off",
              allow_os_execute ? "on" : "off");
 
-    // Suppress unused-variable warning - allow_os_time and
-    // allow_os_execute are kept here for the future shim and so the
-    // log line above documents the live policy.
     (void)allow_os_time;
     (void)allow_os_execute;
 }

@@ -20,6 +20,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.1.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (tests/lib/engine_utils.sh)
 # 1.0.0 - 2026-10-14 - Initial blackbox for LUA_CLIENT Phase 14 (webhook.c coverage)
 
 set -euo pipefail
@@ -28,10 +29,12 @@ TEST_NAME="Conduit Webhook"
 TEST_ABBR="CWH"
 TEST_NUMBER="63"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -56,6 +59,8 @@ WEBHOOK_TEST_CONFIGS=(
     ["SQLite-WebhooksDisabled"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_webhook_sqlite_wh_disabled.json:sqlite_wh_disabled:sqlite:SQLite (webhooks disabled):wh_disabled"
     ["SQLite-ScriptingDisabled"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_webhook_sqlite_scripting_disabled.json:sqlite_scripting_disabled:sqlite:SQLite (scripting disabled):scripting_disabled"
 )
+
+filter_engine_map WEBHOOK_TEST_CONFIGS 3
 
 # shellcheck disable=SC2034 # Reserved for log messages / future fail-fast bounds
 STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
@@ -704,6 +709,9 @@ else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Missing required env vars"
     EXIT_CODE=1
 fi
+
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
 
 config_valid=true
 for test_config in "${!WEBHOOK_TEST_CONFIGS[@]}"; do

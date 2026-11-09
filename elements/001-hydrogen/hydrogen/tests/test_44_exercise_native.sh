@@ -18,6 +18,7 @@
 # heapmon_prepare() heapmon_capture() heapmon_report()
 
 # CHANGELOG
+# 1.3.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (disabled in a config copy)
 # 1.2.2 - 2026-10-01 - Snapshot and final Prometheus checks use
 #                     metrics_text_has_hydrogen. echo | grep -q under
 #                     pipefail was SIGPIPE.
@@ -34,7 +35,7 @@ TEST_NAME="Exercise Native"
 TEST_ABBR="EXN"
 TEST_NUMBER="44"
 TEST_COUNTER=0
-TEST_VERSION="1.2.2"
+TEST_VERSION="1.3.0"
 
 TOTAL_REQUESTS=5000
 SNAPSHOT_INTERVAL=500
@@ -55,6 +56,8 @@ STEADY_BYTES_PER_REQ=""
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 # shellcheck source=tests/lib/conduit_utils.sh # Multi-DB server lifecycle helpers
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
@@ -195,6 +198,14 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Exercise Configuratio
 CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_exercise_native.json"
 
 if [[ -f "${CONFIG_FILE}" ]]; then
+    # HYDROGEN_ENGINES: run from a copy with the other engines' connections disabled
+    EXERCISE_CONFIG="${DIAG_TEST_DIR}/$(basename "${CONFIG_FILE}")"
+    # shellcheck disable=SC2310 # Fall back to the original config if the copy fails
+    if exercise_filter_config "${CONFIG_FILE}" "${EXERCISE_CONFIG}"; then
+        CONFIG_FILE="${EXERCISE_CONFIG}"
+    fi
+    warn_unknown_engines
+    [[ ${#EXERCISE_SKIPPED_DBS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${EXERCISE_SKIPPED_DBS[*]}"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${CONFIG_FILE}"; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Exercise Configuration"

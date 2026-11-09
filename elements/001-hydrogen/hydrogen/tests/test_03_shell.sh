@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.8 - 2026-11-09 - HYDROGEN_ENGINES range note covers 30-73
 # 1.4.7 - 2026-10-30 - CONDUIT_* readiness timeouts are read in conduit_server.sh
 # 1.4.6 - 2026-09-21 - Added FIREBIRD_DB_USER and FIREBIRD_DB_PASS env vars (Test 37, 40)
 # 1.4.5 - 2026-09-19 - Added FIREBIRD_SYSDBA_PASSWORD and FIREBIRD_DB_PATH env vars (Test 37, 40)
@@ -40,7 +41,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.4.7"
+TEST_VERSION="1.4.8"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -396,7 +397,7 @@ declare -a ENV_VARS=(
     "HELIUM_DOCS_ROOT|all|Helium project root|Root directory path of the Helium project. Required for payload generation and cross-project operations."
                               
     # Key project parameters
-    "HYDROGEN_ENGINES|30-39|supported databases|Database engines that can be tested against - used when running build on platforms like GitHub where not all DBs are installed"
+    "HYDROGEN_ENGINES|30-73|supported databases|Database engines that can be tested against - used when running build on platforms like GitHub where not all DBs are installed"
     "HYDROGEN_SCHEMA|10-69|schema validation|The location of the JSON schma file (2020-12) used for validating Hydrogen configuration files."
     "HYDROGEN_DEV_EMAIL|02,12|Developer email|The email address of the developer responsible for this Hydrogen instance. Used for notifications and support contact."
 

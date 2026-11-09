@@ -782,6 +782,32 @@ function notesOwner(doc, sel) {
  * Read-only id first in Object, notes on the object, Link last in Object.
  * A blank notes string is omitted from the file.
  */
+/** Formatting ids pinned to the top of that section (Phase 78). */
+const FORMATTING_LEAD_IDS = ['4', 'static-valign', '55', '56'];
+
+/**
+ * H. Align, V. Align, Fore Color, Back Color first within Formatting;
+ * other rows keep their relative order. Client-only — no lookup sort change.
+ * @param {object[]} rows
+ * @returns {object[]}
+ */
+function prioritizeFormattingRows(rows) {
+  const lead = [];
+  const taken = new Set();
+  for (const id of FORMATTING_LEAD_IDS) {
+    const at = rows.findIndex((row) => String(row.id) === id);
+    if (at < 0) continue;
+    lead.push(rows[at]);
+    taken.add(at);
+  }
+  if (!lead.length) return rows;
+  const rest = rows.filter((_, index) => !taken.has(index));
+  const isFormatting = (row) => Number(row.section) === 7 || row.group === 'Formatting';
+  const insertAt = rest.findIndex(isFormatting);
+  if (insertAt < 0) return [...rest, ...lead];
+  return [...rest.slice(0, insertAt), ...lead, ...rest.slice(insertAt)];
+}
+
 function finishPanelRows(rows, doc, sel) {
   const scope = selectionScope(doc, sel);
   const owner = notesOwner(doc, sel);
@@ -800,7 +826,7 @@ function finishPanelRows(rows, doc, sel) {
   }
   const linkAt = rows.findIndex((row) => row.key === 29);
   if (linkAt >= 0) rows.push(rows.splice(linkAt, 1)[0]);
-  return rows;
+  return prioritizeFormattingRows(rows);
 }
 
 /**

@@ -142,9 +142,9 @@ Andrew reports the apply.
 | 74 | Resize from all sides and corners | Lithium UI | Medium | Complete (2026-11-09) |
 | 75 | Lookup Units, Background, Overflow | Helium, human apply | Easy | Complete (2026-11-09) |
 | 76 | Units defaults and font dropdown previews | Lithium UI | Medium | Complete (2026-11-09) |
-| 77 | Fore, Back, and Background colours | Lithium UI + Helium | Medium | In progress |
-| 78 | V. Align for un-measured text | Lithium UI + Helium | Easy | Not started |
-| 79 | Runtime font metrics (no width tables) | Lithium UI + Helium | Hard | Not started |
+| 77 | Fore, Back, and Background colours | Lithium UI + Helium | Medium | Complete |
+| 78 | V. Align for un-measured text | Lithium UI + Helium | Easy | In progress |
+| 79 | Runtime font metrics (no width tables) | Lithium UI + Helium | Hard | In progress |
 | 80 | Overflow replaces Fit Height | Lithium UI + Helium | Medium | Not started |
 | 81 | Justified alignment | Lithium UI + Helium | Medium | Not started |
 | 82 | Element Link as URI anchor | Lithium UI + Helium | Medium | Not started |
@@ -196,7 +196,7 @@ They do not replace it.
 | 71 | Get charts and barcodes as vectors in the PDF. |
 | 74 | Resize any Element from eight handles; Borders toggle is available. |
 | 76 | See Position and Font units as `#0.## unit`, with font lists previewing their own values. |
-| 80 | Set Overflow (Clip, Ellipsis, Shrink, Grow) on Static Text instead of Fit Height. |
+| 80 | Set Overflow (Clip, Ellipsis, Shrink, Grow, Fit) on Static Text instead of Fit Height; Min/Max Font Size for Shrink/Fit. |
 | 81 | Justify Static Text; the last line of a block is not stretched. |
 | 82 | Set Link on any Element as a URI; HTML and PDF emit a safe anchor. |
 | 85 | Place a child report as a Subreport; Bind maps parent to child params. |
@@ -5032,11 +5032,16 @@ caller-facing QueryRef 175.
   [`/docs/Li/plans/reporting/08-elements.md`](/docs/Li/plans/reporting/08-elements.md).
   All ten phases are Not started.
 - Decisions: Justified = late Phase 81; Overflow replaces Fit
-  Height and Fit is removed from Static Text; Units Section holds
-  Position Units, Font Units, and Page Units; Background merges
-  with shape Fill (Fill Style patterns stay); Font Family / Size /
-  Style stay three separate dropdowns with independent previews;
-  no generated width tables (Phase 79 measures at runtime).
+  Height (Fit Height row removed from Static Text). **Phase 80
+  Overflow locked 2026-11-09:** Clip / Ellipsis / Grow / Shrink /
+  **Fit** (Fit = scale font like image contain); Wrap selects
+  nowrap vs wrapped fit target; Min/Max Font Size for Shrink/Fit;
+  load `fitHeight` `clip`→Clip, `grow`→Grow, `shrink`→Shrink,
+  `both`→**Grow**. Units Section holds Position/Font/Page Units;
+  Background merges with shape Fill (Fill Style patterns stay);
+  Font Family / Size / Style stay three separate dropdowns with
+  independent previews; no generated width tables (Phase 79
+  measures at runtime).
 - Next free Acuranzo file **1481** (Phase 75 lookups). Render
   changes follow rule 12 from 1482 upward; see the tentative map
   in `08-elements.md`. Lookup 075 next free **17**; lookup 054
@@ -5136,7 +5141,7 @@ caller-facing QueryRef 175.
   live from 1481. Next free Acuranzo **1482**.
 
 
-### 2026-11-09 — Phase 77 in progress (colours + named lookup)
+### 2026-11-09 — Phase 77 Complete (colours + named lookup)
 
 - **Lessons:** Shared `backgroundColor` replaces shape Fill Color;
   sync solid/stop-0 when Background Color is edited. Named-colour
@@ -5144,18 +5149,87 @@ caller-facing QueryRef 175.
   size. `reports.report` JSON rewrite is an invokable script
   (`Reports.RewriteBackgroundColor`); SQL cannot portably walk
   JSON — Render fallback + load normalize cover until invoke.
-  Static Text canvas: property keys matched storage, but the
-  default `paintBandItems` path skipped `applyItemColourVars` —
-  storage without paint looks like a CSS bug.
-- **Work:** Lithium PP 55/56/57 + canvas paint (simple + measured)
-  + load normalize + fixtures + vitest (`reports-item-colours`).
-  Canonical stored `none`; Coloris ✓/✕ + Name tab; PP caret→names /
-  field→Coloris; color-wrap inherit. Render `1482`–`1484` 1.0.1
-  none (rule 12; sizecheck OK; shape diffs vs HEAD expected).
-  `1485` rewrite. Lookup 080 `1486`–`1500`.
-- **Prep:** Andrew applies `1482`–`1500`, invokes rewrite once,
-  browser-checks Fore/Back/Background on Static Text and named
-  picker. Next free after apply **1501**. Phase 78 next.
+  Canvas colour bugs: property keys can match storage while the
+  paint path never sets CSS vars (simple Static Text path). Back
+  Color must be an inline glyph highlight, not a block face, or it
+  looks identical to Background. Coloris cannot parse the string
+  `none` — pending none stays out of its change handler; ✓ commits
+  onto the linked field.
+- **Work:** Lithium PP 55/56/57 + canvas paint (simple + measured) +
+  inline `.reports-item-text-ink` Back Color; load normalize;
+  fixtures; vitest. Canonical stored `none`; Coloris ✓/✕ / none /
+  Name tab; PP caret→names. Render `1482` Items, `1483` Html,
+  `1484` Shapes (1.0.1 none); `1485` rewrite; lookup 080
+  `1486`–`1500`. Andrew applied `1482`–`1500` and confirmed
+  browser 2026-11-09. Phase 77 Status: Complete.
+- **Prep:** Phase 78 V. Align for un-measured (Clip) text. Next free
+  Acuranzo **1501**. See `08-elements.md` Phase 78.
+
+
+### 2026-11-09 — Phase 78 in progress (V. Align + H. Align + font)
+
+- **Lessons:** Clip `item_out` omitted `valign` (Paging merges
+  layout only when `lines` exist). Non-Clip canvas forced
+  Helvetica via `fontOf(..., true)` for Fit Height ≠ Clip —
+  display must keep the item font; AFM measure can stay until 79.
+- **Work:** Designer `data-valign` + flex CSS; labels H./V. Align;
+  font fix; `1501` Items valign, `1502` Html flex, `1503` lookup
+  H. Align; fixture `valign9`; vitest. Unapplied. Later same day:
+  Formatting lead order (H/V Align, Fore/Back) client-side; theme
+  font on PP dropdowns. Status remains **In progress** until Andrew
+  **applied** 1501–1503; awaits final browser confirm.
+- **Prep:** Andrew browser-checks 9-position
+  text in a box (Clip + wrapped) and non-Clip font. Next free
+  **1504**. Phase 79 next (Phase 80 after 79).
+
+
+
+
+### 2026-11-09 — Phase 79 scripts.options (sandbox.io for Metrics)
+
+- **Finding:** Orchestrator does **not** source per-script run limits
+  (only `H.scoreboard.submit({script_name, source})`; limits come from
+  global `DefaultMaxRuntime` / `Memory*LimitKB` via ScoreboardJobLimits).
+  Client REST `timeout_seconds` is wait-budget only (limits=NULL).
+- **Added:** `scripts.options` JSON (1507); QueryRefs 087/149/153 return
+  it (1508–1510); `Reports.Render` gets `{"sandbox":{"io":true}}` (1511).
+- **Hydrogen:** per-script sandbox OR global; limits feed ScoreboardJobLimits
+  (submit-time > options > config default; memory clamped to
+  `MemoryHardLimitKB`). `os.execute` shim still not enforced.
+- **Prep:** rebuild Hydrogen, apply 1507–1511, restart, retest Vanadium Bold wrap.
+- **Follow-up:** Lithium Scripts UI does not yet edit `scripts.options` (SQL/migration only for now).
+
+### 2026-11-09 — Phase 79 in progress (runtime Metrics, option B)
+
+- **Gate:** lua-pdfkit open/measure on Vanadium TTFs; Mail Regular
+  advances match full; Mail Medium does not. Andrew chose **option B**
+  (full SemiExtended, same as designer `@font-face`).
+- **Work:** `1504` Metrics insert (cmap advances, configurable
+  `REPORTS_FONT_ROOT`, AFM fallback); `1505` Layout measure_family;
+  `1506` Paging drop grown→Helvetica; designer canvas `measureText`;
+  fixture `wrap-vanadium`; harness Metrics; vitest/ESLint.
+- **Note:** ligatures not applied; Italic→upright SemiExtended;
+  future Mail SemiExtended = map-only swap. Packets **unapplied**.
+- **Phase 78:** 1501–1503 applied; status stays In progress until
+  Andrew's final browser confirm.
+- **Prep:** Andrew applies 1504–1506; browser-checks Vanadium grow.
+  Phase 80 next free **1507**.
+
+### 2026-11-09 — Phase 80 Overflow decisions locked
+
+- **Overflow:** Clip (default), Ellipsis, Grow, Shrink, **Fit**
+  (scale font up/down like image contain; size only).
+- **Wrap** chooses the fit target: nowrap = one line vs width;
+  wrapped = all lines vs width×height.
+- **Min Font Size** / **Max Font Size** (new 054): Min → Shrink+Fit;
+  Max → Fit. Lookup migration in Phase 80 at next free after 79
+  (1504 was next while 1501–1503 were Phase 78). Also extend
+  Overflow list with Fit.
+- **Load map pinned:** `fitHeight` clip→Clip, grow→Grow,
+  shrink→Shrink, both→**Grow**. Fit Height row removed; Wrap stays.
+  Optional friendlier Wrap labels undecided.
+- **Entry:** after Phase 79 (real metrics). Details in
+  `08-elements.md` Phase 80.
 
 
 ### 2026-11-09 — Phase 82 planned (Element Link as URI anchor)

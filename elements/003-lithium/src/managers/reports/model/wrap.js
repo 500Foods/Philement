@@ -1,9 +1,9 @@
 /**
  * Line breaks and fitHeight for a band instance.
- * Widths are Helvetica AFM advances. The HTML and PDF emitters
- * paint the lines this function returns. The Reports.Render.Layout
- * module keeps the same advance table and the same break rules.
- * A grown item is drawn in Helvetica so the measured line fits.
+ * Widths use canvas.measureText for the item's family when a canvas
+ * is available (Phase 79). Helvetica AFM is the test / no-canvas
+ * fallback. Reports.Render.Metrics mirrors the same break rules with
+ * cmap advances for Vanadium SemiExtended on the server.
  */
 
 import { AFM_BOLD, AFM_MISSING, AFM_ROMAN } from './afm-helvetica.js';
@@ -17,6 +17,60 @@ const PT_PER_INCH = 72;
 const EPS = 1e-6;
 
 const UNIT_PT = { in: 72, mm: 72 / 25.4, cm: 72 / 2.54, pt: 1, px: 0.75 };
+
+/** CSS px per PDF point (96/72). Canvas measures in CSS pixels. */
+const CSS_PX_PER_PT = 96 / 72;
+
+let measureCtx = null;
+
+/**
+ * @returns {CanvasRenderingContext2D|null}
+ */
+function getMeasureCtx() {
+  if (measureCtx) return measureCtx;
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
+  try {
+    const canvas = document.createElement('canvas');
+    measureCtx = canvas.getContext('2d');
+  } catch {
+    measureCtx = null;
+  }
+  return measureCtx;
+}
+
+/**
+ * Wait for document fonts (designer paint can await). Sync measure still
+ * runs; callers should load @font-face first.
+ * @returns {Promise<void>}
+ */
+export function ensureFontsReady() {
+  if (typeof document === 'undefined' || !document.fonts || !document.fonts.ready) {
+    return Promise.resolve();
+  }
+  return document.fonts.ready.then(() => undefined);
+}
+
+/**
+ * @param {string} [style]
+ * @returns {{ weight: string, italic: string }}
+ */
+function cssFace(style) {
+  const bold = style === 'Bold' || style === 'Bold + Italic';
+  const italic = style === 'Italic' || style === 'Bold + Italic';
+  // 700 selects the SemiExtendedMedium @font-face (font-weight: 500 700).
+  return { weight: bold ? '700' : '400', italic: italic ? 'italic' : 'normal' };
+}
+
+/**
+ * True when we should use AFM (Helvetica / missing family / no canvas).
+ * @param {string} [family]
+ * @returns {boolean}
+ */
+function useAfm(family) {
+  if (!family || family === 'Helvetica') return true;
+  return getMeasureCtx() == null;
+}
+
 
 /**
  * Bold faces use the bold table. Oblique uses the roman table.
@@ -48,20 +102,33 @@ export function advanceUnits(ch, face) {
  * @param {string} [style]
  * @returns {number}
  */
-export function advancePt(ch, fontSizePt, style) {
-  return advanceUnits(ch, faceForStyle(style)) * fontSizePt / 1000;
+export function advancePt(ch, fontSizePt, style, family) {
+  if (useAfm(family)) {
+    return advanceUnits(ch, faceForStyle(style)) * fontSizePt / 1000;
+  }
+  return measurePt(ch, fontSizePt, style, family);
 }
 
 /**
  * @param {string} text
  * @param {number} fontSizePt
  * @param {string} [style]
+ * @param {string} [family]
  * @returns {number}
  */
-export function measurePt(text, fontSizePt, style) {
-  let width = 0;
-  for (const ch of String(text)) width += advancePt(ch, fontSizePt, style);
-  return width;
+export function measurePt(text, fontSizePt, style, family) {
+  const source = text == null ? '' : String(text);
+  if (useAfm(family)) {
+    let width = 0;
+    for (const ch of source) width += advanceUnits(ch, faceForStyle(style)) * fontSizePt / 1000;
+    return width;
+  }
+  const ctx = getMeasureCtx();
+  const { weight, italic } = cssFace(style);
+  const px = fontSizePt * CSS_PX_PER_PT;
+  const safeFamily = String(family).replace(/"/g, '');
+  ctx.font = italic + ' ' + weight + ' ' + px + 'px "' + safeFamily + '"';
+  return ctx.measureText(source).width / CSS_PX_PER_PT;
 }
 
 /**
@@ -75,9 +142,6 @@ export function lineHeightPt(fontSizePt, multiple) {
   return factor * fontSizePt;
 }
 
-function isSpace(ch) {
-  return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f';
-}
 
 function collapse(text) {
   return String(text).replace(/[ \t\n\r\f]+/g, ' ').trim();
@@ -96,13 +160,13 @@ function collapseLine(text) {
  * @param {string} style
  * @returns {string[]}
  */
-function breakWord(word, widthPt, fontSizePt, style) {
+function breakWord(word, widthPt, fontSizePt, style, family) {
   if (!(widthPt > EPS)) return [...word];
   const parts = [];
   let line = '';
   let used = 0;
   for (const ch of word) {
-    const width = advancePt(ch, fontSizePt, style);
+    const width = advancePt(ch, fontSizePt, style, family);
     if (line !== '' && used + width > widthPt + EPS) {
       parts.push(line);
       line = ch;
@@ -126,22 +190,22 @@ function breakWord(word, widthPt, fontSizePt, style) {
  * @param {boolean} charBreak
  * @returns {string[]}
  */
-function packWords(words, widthPt, fontSizePt, style, charBreak) {
+function packWords(words, widthPt, fontSizePt, style, charBreak, family) {
   if (words.length === 0) return [''];
   if (!(widthPt > EPS)) {
     if (!charBreak) return [words.join(' ')];
     return [...words.join(' ')];
   }
-  const space = advancePt(' ', fontSizePt, style);
+  const space = advancePt(' ', fontSizePt, style, family);
   const lines = [];
   let line = '';
   let used = 0;
   const put = (word) => {
-    const pieces = charBreak && measurePt(word, fontSizePt, style) > widthPt + EPS
-      ? breakWord(word, widthPt, fontSizePt, style)
+    const pieces = charBreak && measurePt(word, fontSizePt, style, family) > widthPt + EPS
+      ? breakWord(word, widthPt, fontSizePt, style, family)
       : [word];
     for (const piece of pieces) {
-      const width = measurePt(piece, fontSizePt, style);
+      const width = measurePt(piece, fontSizePt, style, family);
       if (line === '') {
         line = piece;
         used = width;
@@ -169,7 +233,7 @@ function packWords(words, widthPt, fontSizePt, style, charBreak) {
  * @param {string} style
  * @returns {string[]}
  */
-function wrapPre(text, widthPt, fontSizePt, style) {
+function wrapPre(text, widthPt, fontSizePt, style, family) {
   if (text === '') return [''];
   if (!(widthPt > EPS)) return [...text];
   const lines = [];
@@ -180,14 +244,14 @@ function wrapPre(text, widthPt, fontSizePt, style) {
   const finish = (end) => {
     lines.push(line.slice(0, end));
     line = line.slice(end);
-    used = measurePt(line, fontSizePt, style);
+    used = measurePt(line, fontSizePt, style, family);
     lastSpace = -1;
     for (let index = 0; index < line.length; index += 1) {
       if (line[index] === ' ' || line[index] === '\t') lastSpace = index + 1;
     }
   };
   for (const ch of chars) {
-    const width = advancePt(ch === '\t' ? ' ' : ch, fontSizePt, style);
+    const width = advancePt(ch === '\t' ? ' ' : ch, fontSizePt, style, family);
     if (line !== '' && used + width > widthPt + EPS) {
       if (lastSpace > 0) finish(lastSpace);
       else finish(line.length);
@@ -215,7 +279,7 @@ function wrapPre(text, widthPt, fontSizePt, style) {
  * @param {string} [mode]
  * @returns {string[]}
  */
-export function wrapText(text, widthPt, fontSizePt, style = 'Normal', mode = 'pre-line') {
+export function wrapText(text, widthPt, fontSizePt, style = 'Normal', mode = 'pre-line', family) {
   const source = text == null ? '' : String(text);
   const size = Number.isFinite(fontSizePt) && fontSizePt > 0 ? fontSizePt : 10;
   if (mode === 'pre') {
@@ -226,13 +290,13 @@ export function wrapText(text, widthPt, fontSizePt, style = 'Normal', mode = 'pr
   if (mode === 'normal') {
     const collapsed = collapse(source);
     if (collapsed === '') return [''];
-    return packWords(collapsed.split(' '), widthPt, size, style, true);
+    return packWords(collapsed.split(' '), widthPt, size, style, true, family);
   }
   if (mode === 'pre-wrap') {
     if (source === '') return [''];
     const blocks = source.split('\n');
     const lines = [];
-    for (const block of blocks) lines.push(...wrapPre(block.replace(/\r/g, ''), widthPt, size, style));
+    for (const block of blocks) lines.push(...wrapPre(block.replace(/\r/g, ''), widthPt, size, style, family));
     return lines.length ? lines : [''];
   }
   const blocks = source.split('\n');
@@ -240,7 +304,7 @@ export function wrapText(text, widthPt, fontSizePt, style = 'Normal', mode = 'pr
   for (const block of blocks) {
     const collapsed = collapseLine(block.replace(/\r/g, ''));
     if (collapsed === '') lines.push('');
-    else lines.push(...packWords(collapsed.split(' ').filter((word) => word !== ''), widthPt, size, style, true));
+    else lines.push(...packWords(collapsed.split(' ').filter((word) => word !== ''), widthPt, size, style, true, family));
   }
   return lines.length ? lines : [''];
 }
@@ -401,7 +465,7 @@ export function layoutBand(doc, band, entries, warn) {
     const mode = resolveMode(item, seen, warn);
     const valign = resolveValign(item, seen, warn);
     const lines = paintsLines(item, fit) && !entry.defer
-      ? wrapText(entry.text || '', width || 0, fontSize, font.style, mode)
+      ? wrapText(entry.text || '', width || 0, fontSize, font.style, mode, font.family)
       : null;
     const storedH = height && height > 0 ? height : 0;
     const contentH = Math.max(1, lines ? lines.length : 1) * leading;
@@ -457,7 +521,7 @@ export function layoutBand(doc, band, entries, warn) {
         text: row.text,
         lines: row.lines,
         align: row.item.align || 'Left',
-        font: grown ? { ...row.font, family: 'Helvetica' } : row.font,
+        font: row.font,
         grown,
         valign: row.valign,
         lineHeightPt: row.leading,

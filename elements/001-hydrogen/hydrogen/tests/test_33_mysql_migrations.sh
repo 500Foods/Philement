@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.1.2 - 2026-11-09 - Config fail keeps the single result from validate_config_file
 # 1.1.1 - 2026-08-22 - Increased timeout to 1800 seconds for suite-parallel LOAD/APPLY/REVERSE
 # 1.1.0 - 2026-07-02 - Added migration failure detection (APPLY/REVERSE/transaction errors) and reversed-migration count in summary
 # 1.0.1 - 2025-11-24 - Increased timeout to 90 seconds
@@ -20,7 +21,7 @@ TEST_NAME="MySQL Migration"
 TEST_ABBR="MYS"
 TEST_NUMBER="33"
 TEST_COUNTER=0
-TEST_VERSION="1.1.1"
+TEST_VERSION="1.1.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -173,7 +174,7 @@ if validate_config_file "${CONFIG_FILE}"; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validation failed"
     EXIT_CODE=1
 fi
 

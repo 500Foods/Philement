@@ -42,6 +42,10 @@ void entry_clear_owned(ScoreboardEntry* entry) {
         free(entry->params_json);
         entry->params_json = NULL;
     }
+    if (entry->options_json) {
+        free(entry->options_json);
+        entry->options_json = NULL;
+    }
     // Phase 9: H.set_current_state report, if any.
     if (entry->current_state) {
         free(entry->current_state);
@@ -281,6 +285,34 @@ char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* par
     return scoreboard_submit_with_limits(sb, script_name, params_json, NULL);
 }
 
+
+bool scoreboard_set_options_json(Scoreboard* sb,
+                                 const char* job_id,
+                                 const char* options_json) {
+    if (!sb || !job_id) {
+        return false;
+    }
+    char* dup = NULL;
+    if (options_json) {
+        dup = strdup(options_json);
+        if (!dup) {
+            return false;
+        }
+    }
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        if (strcmp(sb->entries[i].job_id, job_id) == 0) {
+            free(sb->entries[i].options_json);
+            sb->entries[i].options_json = dup;
+            pthread_mutex_unlock(&sb->mutex);
+            return true;
+        }
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    free(dup);
+    return false;
+}
+
 ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
     if (!sb || !job_id) {
         return NULL;
@@ -301,6 +333,7 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
             // The match's script_name / params_json / current_state point at strings owned by the scoreboard. The copy must own its own strings so the caller can free it independently.
             copy->script_name = match->script_name ? strdup(match->script_name) : NULL;
             copy->params_json = match->params_json ? strdup(match->params_json) : NULL;
+            copy->options_json = match->options_json ? strdup(match->options_json) : NULL;
             copy->current_state = match->current_state ? strdup(match->current_state) : NULL;
             copy->error_message = match->error_message ? strdup(match->error_message) : NULL;
             copy->error_traceback = match->error_traceback ? strdup(match->error_traceback) : NULL;
@@ -310,6 +343,7 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
             copy->submitted_by = match->submitted_by ? strdup(match->submitted_by) : NULL;
             if ((match->script_name && !copy->script_name)
                 || (match->params_json && !copy->params_json)
+                || (match->options_json && !copy->options_json)
                 || (match->current_state && !copy->current_state)
                 || (match->error_message && !copy->error_message)
                 || (match->error_traceback && !copy->error_traceback)
@@ -662,6 +696,7 @@ bool scoreboard_list(Scoreboard* sb, ScoreboardEntry*** out_list, size_t* out_co
         // Strdup the owned strings, same as scoreboard_find, so the caller can free each entry independently with scoreboard_entry_free.
         copy->script_name = sb->entries[i].script_name         ? strdup(sb->entries[i].script_name) : NULL;
         copy->params_json = sb->entries[i].params_json         ? strdup(sb->entries[i].params_json) : NULL;
+        copy->options_json = sb->entries[i].options_json       ? strdup(sb->entries[i].options_json) : NULL;
         copy->current_state = sb->entries[i].current_state     ? strdup(sb->entries[i].current_state) : NULL;
         copy->error_message = sb->entries[i].error_message     ? strdup(sb->entries[i].error_message) : NULL;
         copy->error_traceback = sb->entries[i].error_traceback ? strdup(sb->entries[i].error_traceback) : NULL;
@@ -671,6 +706,7 @@ bool scoreboard_list(Scoreboard* sb, ScoreboardEntry*** out_list, size_t* out_co
         copy->submitted_by = sb->entries[i].submitted_by       ? strdup(sb->entries[i].submitted_by) : NULL;
         if ((sb->entries[i].script_name && !copy->script_name)
             || (sb->entries[i].params_json && !copy->params_json)
+            || (sb->entries[i].options_json && !copy->options_json)
             || (sb->entries[i].current_state && !copy->current_state)
             || (sb->entries[i].error_message && !copy->error_message)
             || (sb->entries[i].error_traceback && !copy->error_traceback)

@@ -1,7 +1,7 @@
 // Lithium PWA Service Worker
 // Cache strategy: cache-first for statics, stale-while-revalidate for API data
 
-const CACHE_VERSION = 3497;
+const CACHE_VERSION = 3498;
 const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
 const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
 
@@ -15,7 +15,9 @@ const STATIC_ASSETS = [
   '/assets/images/logo-192x192.png',
   '/assets/images/logo-512x512.png',
   '/assets/fonts/VanadiumSans-SemiExtended.woff2',
-  '/assets/fonts/VanadiumMono-SemiExtended.woff2'
+  '/assets/fonts/VanadiumSans-SemiExtendedMedium.woff2',
+  '/assets/fonts/VanadiumMono-SemiExtended.woff2',
+  '/assets/fonts/VanadiumMono-SemiExtendedMedium.woff2'
 ];
 
 // Install event — pre-cache static assets

@@ -28,7 +28,7 @@
 typedef struct ScriptingSandboxConfig {
     bool AllowOsTime;         // os.time and os.date only
     bool AllowOsExecute;      // os.execute, os.exit, os.remove
-    bool AllowIo;             // io.* library (file I/O)
+    bool AllowIo;             // io.* library (file I/O); also opt-in via scripts.options.sandbox.io
     bool AllowDebug;          // debug.* library
     bool AllowLoadlib;        // package.loadlib / require of native modules
 } ScriptingSandboxConfig;

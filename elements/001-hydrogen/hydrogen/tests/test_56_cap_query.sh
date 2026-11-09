@@ -7,6 +7,7 @@
 # required in CI.
 
 # CHANGELOG
+# 1.4.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (exercise_filter_config)
 # 1.3.3 - 2026-10-30 - Score a conduit server startup failure as a FAIL
 # 1.3.2 - 2026-10-16 - Course suggestion positive path uses QueryRef 4000
 # 1.3.1 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
@@ -22,18 +23,31 @@ TEST_NAME="Conduit Cap Query"
 TEST_ABBR="CCQ"
 TEST_NUMBER="56"
 TEST_COUNTER=0
-TEST_VERSION="1.3.3"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 # shellcheck source=tests/lib/conduit_utils.sh # Conduit testing utilities
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
+# shellcheck source=tests/lib/exercise_helpers.sh # exercise_filter_config for HYDROGEN_ENGINES
+[[ -n "${EXERCISE_HELPERS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/exercise_helpers.sh"
 
 # Use a dedicated config on port 5560 (per the 5x port scheme) so this test
 # does not collide with test 50/51 which both bind port 5500 in the same 5x
 # parallel batch. The config mirrors test_50's but only the WebServer.Port differs.
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_56_cap_query.json"
+
+# HYDROGEN_ENGINES: run from a copy with disabled engines off
+_FILTERED_CONFIG="${DIAG_TEST_DIR}/$(basename "${CONDUIT_CONFIG_FILE}")"
+# shellcheck disable=SC2310 # Fall back to the original config if the copy fails
+if exercise_filter_config "${CONDUIT_CONFIG_FILE}" "${_FILTERED_CONFIG}"; then
+    CONDUIT_CONFIG_FILE="${_FILTERED_CONFIG}"
+fi
+warn_unknown_engines
+[[ ${#EXERCISE_SKIPPED_DBS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${EXERCISE_SKIPPED_DBS[*]}"
 CONDUIT_LOG_SUFFIX="cap_query"
 CONDUIT_DESCRIPTION="CCQ"
 

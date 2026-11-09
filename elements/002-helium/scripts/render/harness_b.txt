@@ -1,0 +1,1 @@
+{"ok":true,"result":{"error":"compose failed: Reports.Render.Html:171: invalid conversion '%\"' to 'format'","log":[{"level":"warn","message":"item img1 in band detail image is not a png or svg data uri; skipped"},{"level":"error","message":"compose failed: Reports.Render.Html:171: invalid conversion '%\"' to 'format'"}]},"rv":0}

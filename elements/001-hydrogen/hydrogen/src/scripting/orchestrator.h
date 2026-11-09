@@ -94,6 +94,20 @@ char* scripting_fetch_invokable_script_source(const char* group_name,
                                               const char* database,
                                               int timeout_seconds);
 
+char* scripting_fetch_invokable_script_source_with_options(
+    const char* group_name,
+    const char* script_name,
+    const char* database,
+    int timeout_seconds,
+    char** options_out);
+
+char* scripting_fetch_mcp_script_source_with_options(
+    const char* group_name,
+    const char* script_name,
+    const char* database,
+    int timeout_seconds,
+    char** options_out);
+
 /*
  * MCP Phase 8: Fetch script source only when scripts.mcp_access
  * is set (QueryRef #153). Missing or mcp_access=0 both return
@@ -168,5 +182,13 @@ const char* orchestrator_resolve_database(void);
 char* orchestrator_build_params_json(const char* group_name,
                                      const char* script_name);
 char* orchestrator_extract_code_from_result(const char* data_json);
+
+/*
+ * Extract scripts.options from the first row of a conduit result.
+ * Returns a heap-allocated JSON string (caller frees). Missing or
+ * null column → strdup("{}"). Object/array values are re-dumped.
+ * Returns NULL only on allocation failure.
+ */
+char* orchestrator_extract_options_from_result(const char* data_json);
 
 #endif /* HYDROGEN_SCRIPTING_ORCHESTRATOR_H */

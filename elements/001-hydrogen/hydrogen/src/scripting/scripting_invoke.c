@@ -15,6 +15,9 @@
 #include "source_cache.h"
 #include "worker_pool.h"
 #include "script_registry.h"
+#include "lua_context.h"
+#include "scoreboard.h"
+#include <string.h>
 
 static scripting_invoke_load_source_fn g_load_source_hook = NULL;
 static char scripting_wait_job_waiter_tag;
@@ -173,27 +176,69 @@ ScriptingInvokeError scripting_submit_job_from_db(
     }
 
     ScriptingInvokeError load_err = SCRIPTING_INVOKE_ERR_INTERNAL;
-    char* source = scripting_invoke_load_source(group, script,
-                                                fetch_timeout_seconds,
-                                                &load_err);
+    char* options_json = NULL;
+    const char* database = orchestrator_resolve_database();
+    char* source = NULL;
+    if (!database) {
+        free(group);
+        free(script);
+        return SCRIPTING_INVOKE_ERR_NO_DATABASE;
+    }
+    source = scripting_fetch_invokable_script_source_with_options(
+        group, script, database, fetch_timeout_seconds, &options_json);
     free(group);
     free(script);
     if (!source) {
-        return load_err != SCRIPTING_INVOKE_OK
-            ? load_err
-            : SCRIPTING_INVOKE_ERR_NOT_FOUND;
+        free(options_json);
+        return SCRIPTING_INVOKE_ERR_NOT_FOUND;
+    }
+    (void)load_err;
+
+    ScoreboardJobLimits merged;
+    memset(&merged, 0, sizeof(merged));
+    merged.enforce_limits = true;
+    H_LuaScriptOptions opt;
+    H_lua_script_options_clear(&opt);
+    if (options_json && !H_lua_parse_script_options(options_json, &opt)) {
+        log_this(SR_SCRIPTING,
+                 "scripts.options malformed for %s; ignoring",
+                 LOG_LEVEL_ALERT, 1, script_name);
+        H_lua_script_options_clear(&opt);
+    }
+    /* Precedence: script options first, then explicit submit-time
+     * overrides, then scoreboard resolves zeros to config defaults.
+     * Memory is clamped to config MemoryHardLimitKB. */
+    H_lua_limits_from_script_options(&opt, &merged);
+    if (limits) {
+        if (limits->instruction_hook_interval > 0) {
+            merged.instruction_hook_interval = limits->instruction_hook_interval;
+        }
+        if (limits->memory_soft_limit_kb > 0) {
+            merged.memory_soft_limit_kb = limits->memory_soft_limit_kb;
+        }
+        if (limits->memory_hard_limit_kb > 0) {
+            merged.memory_hard_limit_kb = limits->memory_hard_limit_kb;
+        }
+        if (limits->max_runtime_seconds > 0) {
+            merged.max_runtime_seconds = limits->max_runtime_seconds;
+        }
+        merged.enforce_limits = limits->enforce_limits;
+        /* Clamp again after submit override. */
+        {
+            H_LuaScriptOptions clamp_only;
+            H_lua_script_options_clear(&clamp_only);
+            H_lua_limits_from_script_options(&clamp_only, &merged);
+        }
     }
 
-    /* Registry key is the full client name (Group.Name). */
-    char* job_id = NULL;
-    if (limits) {
-        job_id = scripting_submit_job_with_source_and_limits(
-            script_name, source, params_json, limits);
-    } else {
-        job_id = scripting_submit_job_with_source(
-            script_name, source, params_json);
-    }
+    char* job_id = scripting_submit_job_with_source_and_limits(
+        script_name, source, params_json, &merged);
     free(source);
+    if (job_id && options_json && scripting_scoreboard) {
+        (void)scoreboard_set_options_json(scripting_scoreboard, job_id,
+                                          options_json);
+    }
+    free(options_json);
 
     if (!job_id) {
         return SCRIPTING_INVOKE_ERR_SUBMIT_FAILED;

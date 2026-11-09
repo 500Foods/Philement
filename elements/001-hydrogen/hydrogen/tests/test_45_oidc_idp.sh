@@ -5,6 +5,7 @@
 # PKCE token, userinfo, refresh, error paths (inverse of Test 42).
 
 # CHANGELOG
+# 2.4.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (tests/lib/engine_utils.sh)
 # 2.3.1 - 2026-10-01 - Config checks keep the single result from validate_config_file
 # 2.3.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (port 5458)
 # 2.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
@@ -21,10 +22,12 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="2.3.1"
+TEST_VERSION="2.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # shellcheck source=tests/lib/oidc_idp_helpers.sh # Helpers live next to other test libs
@@ -55,6 +58,8 @@ IDP_TEST_CONFIGS=(
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
     ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mssql.json:mssql:mssql:MSSQL Engine"
 )
+
+filter_engine_map IDP_TEST_CONFIGS 3
 
 pass_subtest() {
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "$1"
@@ -684,6 +689,8 @@ else
     EXIT_CODE=1
 fi
 
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
 config_valid=true
 for test_config in "${!IDP_TEST_CONFIGS[@]}"; do
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate config: ${test_config}"

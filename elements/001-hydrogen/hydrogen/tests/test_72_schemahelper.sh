@@ -17,6 +17,7 @@
 # (Helpers live in tests/lib/schemahelper_helpers.sh)
 
 # CHANGELOG
+# 1.8.0 - 2026-11-09 - Live roundtrip honours HYDROGEN_ENGINES
 # 1.7.1 - 2026-10-07 - Name the sixteen wrappers and the sidecar role suffix
 # 1.7.0 - 2026-10-07 - Live schematooltest round trip on eight Test 40 databases
 # 1.6.0 - 2026-10-07 - Contacts default rows; extra person stays out of the queue
@@ -51,7 +52,7 @@ TEST_NAME="SchemaHelper"
 TEST_ABBR="SCH"
 TEST_NUMBER="72"
 TEST_COUNTER=0
-TEST_VERSION="1.7.1"
+TEST_VERSION="1.8.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

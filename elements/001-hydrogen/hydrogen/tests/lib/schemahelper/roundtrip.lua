@@ -23,6 +23,26 @@ local ENGINES = {
     { id = 'mssql', schema = 'demoms' },
 }
 
+local function engine_enabled(id)
+    local list = os.getenv('HYDROGEN_ENGINES') or ''
+    list = list:gsub('%s+', '')
+    if list == '' then
+        return true
+    end
+    local wanted = id:lower()
+    if wanted == 'postgres' then wanted = 'postgresql' end
+    if wanted == 'yugabyte' then wanted = 'yugabytedb' end
+    for token in list:gmatch('[^,]+') do
+        local t = token:lower()
+        if t == 'postgres' then t = 'postgresql' end
+        if t == 'yugabyte' then t = 'yugabytedb' end
+        if t == wanted then
+            return true
+        end
+    end
+    return false
+end
+
 local function die(msg)
     print('ERR: ' .. msg)
     os.exit(1)
@@ -470,7 +490,22 @@ local function main()
         die('mktemp returned nothing')
     end
     local failures = {}
-    for _, spec in ipairs(ENGINES) do
+local active = {}
+local skipped = {}
+for _, spec in ipairs(ENGINES) do
+    if engine_enabled(spec.id) then
+        active[#active + 1] = spec
+    else
+        skipped[#skipped + 1] = spec.id
+    end
+end
+if #skipped > 0 then
+    print('Skipped by HYDROGEN_ENGINES: ' .. table.concat(skipped, ' '))
+end
+if #active == 0 then
+    die('no engines enabled by HYDROGEN_ENGINES')
+end
+for _, spec in ipairs(active) do
         print('roundtrip ' .. spec.id .. ' start')
         io.stdout:flush()
         local err = run_engine(spec, root)
@@ -487,7 +522,7 @@ local function main()
         os.exit(1)
     end
     os.execute('rm -rf "' .. root .. '"')
-    print('OK: schematooltest round trip on eight Test 40 databases')
+    print('OK: schematooltest round trip on ' .. #active .. ' Test 40 databases')
 end
 
 main()

@@ -1,0 +1,266 @@
+{
+  "format": 1,
+  "name": "Valign9",
+  "title": "Valign9",
+  "page": {
+    "sizeKey": 0,
+    "orientation": "portrait",
+    "units": "in",
+    "width": "8.5 in",
+    "height": "11 in",
+    "margin": {
+      "left": "0.25 in",
+      "right": "0.25 in",
+      "top": "0.25 in",
+      "bottom": "0.25 in"
+    }
+  },
+  "grid": {
+    "visible": true,
+    "style": "dots",
+    "spacing": "0.125 in",
+    "weight": "0.5",
+    "color": "silver",
+    "background": "white"
+  },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
+  "datasources": [],
+  "bands": [
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.3 in",
+      "items": []
+    },
+    {
+      "id": "detail",
+      "typeKey": 15,
+      "height": "2.7 in",
+      "items": [
+        {
+          "id": "frame",
+          "typeKey": 25,
+          "kind": "rectangle",
+          "box": {
+            "left": "0.1 in",
+            "top": "0.1 in",
+            "width": "7.5 in",
+            "height": "2.4 in"
+          },
+          "strokeColor": "#000000",
+          "strokeWidth": "1 pt",
+          "backgroundColor": "none",
+          "fillStyle": "none"
+        },
+        {
+          "id": "t1",
+          "typeKey": 0,
+          "text": "top/Left",
+          "align": "Left",
+          "valign": "top",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "0.2 in",
+            "top": "0.2 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t2",
+          "typeKey": 0,
+          "text": "top/Center",
+          "align": "Center",
+          "valign": "top",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "2.7 in",
+            "top": "0.2 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t3",
+          "typeKey": 0,
+          "text": "top/Right",
+          "align": "Right",
+          "valign": "top",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "5.2 in",
+            "top": "0.2 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t4",
+          "typeKey": 0,
+          "text": "middle/Left",
+          "align": "Left",
+          "valign": "middle",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "0.2 in",
+            "top": "1 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t5",
+          "typeKey": 0,
+          "text": "middle/Center",
+          "align": "Center",
+          "valign": "middle",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "2.7 in",
+            "top": "1 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t6",
+          "typeKey": 0,
+          "text": "middle/Right",
+          "align": "Right",
+          "valign": "middle",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "5.2 in",
+            "top": "1 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t7",
+          "typeKey": 0,
+          "text": "bottom/Left",
+          "align": "Left",
+          "valign": "bottom",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "0.2 in",
+            "top": "1.8 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t8",
+          "typeKey": 0,
+          "text": "bottom/Center",
+          "align": "Center",
+          "valign": "bottom",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "2.7 in",
+            "top": "1.8 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        },
+        {
+          "id": "t9",
+          "typeKey": 0,
+          "text": "bottom/Right",
+          "align": "Right",
+          "valign": "bottom",
+          "fitHeight": "clip",
+          "foreColor": "#000000",
+          "backColor": "#ffff00",
+          "backgroundColor": "#ddeeff",
+          "font": {
+            "family": "Vanadium Sans",
+            "size": "10 pt",
+            "style": "Normal"
+          },
+          "box": {
+            "left": "5.2 in",
+            "top": "1.8 in",
+            "width": "2.2 in",
+            "height": "0.7 in"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.3 in",
+      "items": []
+    }
+  ]
+}

@@ -99,6 +99,8 @@
   background: var(--bg-secondary, #2a2a2a);
   border: 1px solid var(--border-primary, #444);
   border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
 }
 .lithium-color-named-option {
   display: flex;
@@ -147,6 +149,8 @@
   background: var(--bg-secondary, #2a2a2a);
   border: 1px solid var(--border-primary, #444);
   border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
 }
 .lithium-properties-color-named-option {
   display: flex;
@@ -176,4 +180,11 @@
 /* Hide the old mid-picker name strip if present */
 .clr-picker > .lithium-color-named {
   display: none !important;
+}
+
+
+/* Coloris Name-tab list (fixed on document.body) */
+#lithium-clr-name-menu {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
 }

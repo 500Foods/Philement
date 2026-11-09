@@ -27,6 +27,7 @@
 # exercise_engine()
 
 # CHANGELOG
+# 1.1.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (exercise_filter_config)
 # 1.0.3 - 2026-10-17 - Best-effort #158 before the cases, so a leftover table does not fail #156
 # 1.0.2 - 2026-10-14 - Firebird parameter-free UPDATE reports affected 0
 # 1.0.1 - 2026-10-14 - Sum statement affected counts; Yugabyte keeps staging after rollback
@@ -39,15 +40,28 @@ TEST_NAME="QueryRef Transactions"
 TEST_ABBR="QRT"
 TEST_NUMBER="64"
 TEST_COUNTER=0
-TEST_VERSION="1.0.3"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 # shellcheck source=tests/lib/conduit_utils.sh # Conduit testing utilities
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
+# shellcheck source=tests/lib/exercise_helpers.sh # exercise_filter_config for HYDROGEN_ENGINES
+[[ -n "${EXERCISE_HELPERS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/exercise_helpers.sh"
 
 TXN_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_64_queryref_transactions.json"
+
+# HYDROGEN_ENGINES: run from a copy with disabled engines off
+_FILTERED_CONFIG="${DIAG_TEST_DIR}/$(basename "${TXN_CONFIG_FILE}")"
+# shellcheck disable=SC2310 # Fall back to the original config if the copy fails
+if exercise_filter_config "${TXN_CONFIG_FILE}" "${_FILTERED_CONFIG}"; then
+    TXN_CONFIG_FILE="${_FILTERED_CONFIG}"
+fi
+warn_unknown_engines
+[[ ${#EXERCISE_SKIPPED_DBS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${EXERCISE_SKIPPED_DBS[*]}"
 TXN_LOG_SUFFIX="queryref_transactions"
 TXN_DESCRIPTION="QueryRef Transactions"
 TXN_FAIL_157="transaction block 4 failed at statement 3 (rolled back)"

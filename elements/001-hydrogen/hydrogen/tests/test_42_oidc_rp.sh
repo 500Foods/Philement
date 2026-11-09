@@ -1,26 +1,12 @@
 #!/usr/bin/env bash
 
 # Test: OIDC Relying Party — End-to-End Coverage
-# Drives the OIDC RP endpoints through every gate the plan defines
-# from Phase 6 through Phase 22:
-#
-#   - Disabled feature gate (Phase 6): all three endpoints respond 503 {"error":"oidc_disabled"} when OIDC_RP.Enabled = false.
-#   - Method discrimination (Phase 6): wrong methods get 405.
-#   - Mock IdP reachability + discovery/JWKS shape (Phase 9).
-#   - Mock IdP /token endpoint (Phases 11/12).
-#   - /oidc/start redirect to IdP with PKCE+state (Phase 10).
-#   - /oidc/handoff exchange via debug-only injector (Phase 13).
-#   - /oidc/callback full chain (Phase 14; stub linker removed in Phase 21).
-#   - match_sub_only linker: hit/miss paths (Phase 18).
-#   - match_email_only linker: hit/miss/ambiguous paths (Phase 19).
-#   - provision_only linker: happy path (creates account) + blocked domain (Phase 20).
-#   - match_email_then_provision (default): sub fast-path + provision path (Phase 21).
-#   - Role mapping: database (QueryRef #017), idp_realm_roles, merge (Phase 22).
-#   - RP-initiated logout: POST /api/auth/oidc/end-session with the  OIDC JWT -> 200 + IdP redirect_url; GET -> 405 (Phase 22).
-#
-# The endpoint helper functions, mock-Keycloak lifecycle, and per-phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this script is the orchestrator (server lifecycle + sub-test invocation).
+# Drives OIDC RP endpoints through Phases 6–22 (disabled gate, mock IdP,
+# start/handoff/callback, linkers, role mapping, end-session). Helpers live in
+# tests/lib/oidc_rp_helpers*.sh; this script is the orchestrator.
 
 # CHANGELOG
+# 2.5.0 - 2026-11-09 - Skip whole test when sqlite is not in HYDROGEN_ENGINES
 # 2.4.1 - 2026-10-01 - Config checks keep the single result from validate_config_file
 # 2.4.0 - 2026-07-17 - Phase 23: /callback deep-error coverage — token_invalid_grant, id_token_kid_unknown, and no_api_key (missing + rejected SystemApiKey) branches driven via mock Keycloak error-mode toggles and DB-backed instances lacking a valid SystemApiKey; new helper lib oidc_rp_helpers_callback_errors.sh; mock gains /_test/set-mode admin endpoint; new configs hydrogen_test_42_oidc_rp_no_api_key.json / _bad_api_key.json
 # 2.3.0 - 2026-07-13 - Phase 22: RP-initiated logout /end-session sub-test; POST the OIDC JWT -> 200 + IdP redirect_url (id_token_hint + post_logout_redirect_uri + client_id), GET -> 405
@@ -47,7 +33,7 @@ TEST_NAME="OIDC Relying Party"
 TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.4.1"
+TEST_VERSION="2.5.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen port range (5000s) and the test config's WebServer port (5242). If this collides on someone's machine, override via MOCK_KC_PORT.
 MOCK_KC_PORT="${MOCK_KC_PORT:-7042}"
@@ -57,7 +43,16 @@ MOCK_KC_LOG=""
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+ENGINE_SKIPPED=false
+# shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+if ! engine_enabled "sqlite"; then ENGINE_SKIPPED=true; TEST_NAME="${TEST_NAME} (skipped)"; fi
 setup_test_environment
+if [[ "${ENGINE_SKIPPED}" = true ]]; then
+    skip_engine_test "SQLite"
+    ${ORCHESTRATION:-false} && return 0 || exit 0
+fi
 
 CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp.json"
 CONFIG_PATH_ENABLED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_enabled.json"

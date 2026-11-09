@@ -29,7 +29,7 @@ const lookups = {
     attr(1, 'Left', { Group: 'Position', section: 5, Editor: 'Number' }),
     attr(2, 'Width', { Group: 'Position', section: 5, Editor: 'Number' }),
     attr(3, 'Height', { Group: 'Position', section: 5, Editor: 'Number' }),
-    attr(4, 'Align', { Group: 'Position', section: 5, Editor: 'List', List: ['Left', 'Center', 'Right'] }),
+    attr(4, 'H. Align', { Group: 'Position', section: 5, Editor: 'List', List: ['Left', 'Center', 'Right'] }),
     attr(14, 'Rotation', { Group: 'Position', section: 5, Editor: 'Number' }),
     attr(29, 'Link', { Group: 'Object', section: 4, Label: 'Link', Editor: 'None' }),
   ],
@@ -74,20 +74,20 @@ describe('static text measure', () => {
     expect(lines(140)).toEqual(['Annual notes cover the narrow', 'column']);
   });
 
-  it('gives a one-line row 12 pt and a two-line row 24 pt in Helvetica', () => {
+  it('gives a one-line row 12 pt and a two-line row 24 pt (keeps item font when grown)', () => {
     const band = { id: 'd1', typeKey: 15, height: '0.4 in' };
     const item = fieldItem();
     const short = layoutBand(docFont, band, [{ item, text: 'Hello' }]);
     expect(short.reflow).toBe(true);
     expect(short.usedPt).toBeCloseTo(12, 5);
     expect(short.items[0]).toMatchObject({
-      lines: ['Hello'], heightPt: 12, grown: true, font: { family: 'Helvetica' },
+      lines: ['Hello'], heightPt: 12, grown: true, font: { family: 'Vanadium Sans' },
     });
     const long = layoutBand(docFont, band, [{ item, text: PARAGRAPH }]);
     expect(long.usedPt).toBeCloseTo(24, 5);
     expect(long.items[0].lines).toEqual(['Annual notes cover', 'the narrow column']);
     expect(long.items[0].heightPt).toBeCloseTo(24, 5);
-    expect(long.items[0].font.family).toBe('Helvetica');
+    expect(long.items[0].font.family).toBe('Vanadium Sans');
     const clip = layoutBand(docFont, band, [{
       item: {
         id: 'text_1', typeKey: 0, align: 'Left',
