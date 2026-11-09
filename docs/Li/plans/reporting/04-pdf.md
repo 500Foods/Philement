@@ -584,7 +584,10 @@ and OCR stay disabled. 31-UI.12 stays unchecked. The phase stays
 in progress until he reports that check. The fixture stays
 untracked under `public/assets/documents/`. Phases 53 and 54
 stay in progress. Do not start Phase 30, Phase 31, Phase 45,
-Phase 50, or Phase 55. The next free Acuranzo file is 1480.
+Phase 50, or Phase 55. The next free Acuranzo file is 1481.
+The PDF stage goes in its own Reports.Render module, loaded only for
+`stage=pdf`, under the size ceiling in REPORTING_PLAN.md Implementor
+workflow rule 12. It does not go in the loader.
 QueryRef 175 stays unused. Lookup 080 and lookup 054 key 53
 stay free.
 

@@ -32,7 +32,7 @@ There are of course variations in what these database engines are each capable o
 
 To ensure migration scripts work correctly across all supported database engines, we use sqruff for SQL syntax validation. This tool checks migrations for engine-specific SQL dialect compliance and catches potential issues before deployment. Each engine has its own sqruff configuration file (.sqruff_postgresql, .sqruff_mysql, etc.) that defines appropriate rules and exceptions.
 
-[Test 31: Migrations](/docs/H/tests/test_31_migrations.md) runs sqruff validation on migration scripts. The individual engine migration tests ([Test 32: PostgreSQL Migrations](/docs/H/tests/test_32_postgres_migrations.md), [Test 33: MySQL Migrations](/docs/H/tests/test_33_mysql_migrations.md), [Test 34: SQLite Migrations](/docs/H/tests/test_34_sqlite_migrations.md), [Test 35: DB2 Migrations](/docs/H/tests/test_35_db2_migrations.md)) perform the full LOAD/APPLY/REVERSE cycle to validate that schema changes execute successfully and can be rolled back.
+[Test 31: Migrations](/docs/H/tests/test_31_migrations.md) runs sqruff validation on migration scripts. The individual engine migration tests ([Test 32: PostgreSQL Migrations](/docs/H/tests/test_32_postgresql_migrations.md), [Test 33: MySQL Migrations](/docs/H/tests/test_33_mysql_migrations.md), [Test 34: SQLite Migrations](/docs/H/tests/test_34_sqlite_migrations.md), [Test 35: DB2 Migrations](/docs/H/tests/test_35_db2_migrations.md)) perform the full LOAD/APPLY/REVERSE cycle to validate that schema changes execute successfully and can be rolled back.
 
 For more details on Lua scripting, sqruff usage, and the migration system, see [CURIOSITIES.md](/docs/H/CURIOSITIES.md).
 

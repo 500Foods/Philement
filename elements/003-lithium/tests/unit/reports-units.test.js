@@ -5,6 +5,7 @@ import {
   CSS_PX_PER_INCH,
   contentBox,
   convertLength,
+  displayLength,
   formatLength,
   pageBox,
   parseLength,
@@ -41,6 +42,16 @@ describe('report lengths', () => {
     expect(formatLength(10, 'mm')).toBe('10 mm');
     expect(parseLength('11 in')).toEqual({ value: 11, unit: 'in' });
   });
+
+  it('displayLength is #0.## unit with a space (PP only)', () => {
+    expect(displayLength('1.5 in')).toBe('1.5 in');
+    expect(displayLength('12 pt')).toBe('12 pt');
+    expect(displayLength('1.2345 in')).toBe('1.23 in');
+    expect(displayLength('0.125 in')).toBe('0.13 in');
+    expect(displayLength('10.00 mm')).toBe('10 mm');
+    expect(formatLength(1.2345, 'in')).toBe('1.2345 in');
+  });
+
 
   it('converts a length into another unit', () => {
     expect(convertLength('96 px', 'in')).toBe('1 in');

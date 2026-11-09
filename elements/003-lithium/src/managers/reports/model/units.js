@@ -75,6 +75,19 @@ export function formatLength(value, unit) {
   return `${formatNumber(value)} ${normalized}`;
 }
 
+/**
+ * Display-only length for the Properties Panel: `#0.## unit` with a
+ * space. Stored strings keep full precision via formatLength.
+ * @param {string} input Length such as "1.5 in" or "12 pt".
+ * @returns {string}
+ */
+export function displayLength(input) {
+  const parsed = parseLength(input);
+  const rounded = Math.round(snapNearInteger(parsed.value) * 100) / 100;
+  const number = rounded === 0 ? '0' : String(rounded);
+  return `${number} ${parsed.unit}`;
+}
+
 function toInches(input) {
   const parsed = parseLength(input);
   return parsed.value / PER_INCH[parsed.unit];

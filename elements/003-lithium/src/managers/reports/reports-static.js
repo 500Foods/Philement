@@ -12,11 +12,13 @@ import {
   releaseImage, resolveFit, resolveFlip, storeImage,
 } from './model/images.js';
 import { toCssPx } from './model/units.js';
+import { appendResizeHandles } from './items.js';
 import {
   FIT_HEIGHTS, VALIGNS, WRAP_MODES, defaultFitHeight, defaultWrap, lengthPt, wrapText,
 } from './model/wrap.js';
 import { formatStaticDate, formatStaticNumber } from './reports-format.js';
 import { canonicalImage } from './reports-rasters.js';
+import { applyItemColourVars, makeItemTextLabel } from './reports-colours.js';
 
 export const STATIC_NUMBER = 1;
 export const STATIC_IMAGE = 2;
@@ -391,7 +393,7 @@ function fontOf(doc, item, helvetica) {
   const style = typeof source.style === 'string' && source.style !== '' ? source.style : 'Normal';
   let size = '10 pt';
   if (typeof source.size === 'string' && source.size !== '') size = source.size;
-  let sizePx = toCssPx('10 pt');
+  let sizePx;
   try {
     sizePx = toCssPx(size);
   } catch {
@@ -437,10 +439,7 @@ function paintImage(el, item, doc, srcOverride) {
     ? srcOverride
     : (typeof item.image === 'string' ? images[item.image] : '');
   if (!src) {
-    const label = document.createElement('span');
-    label.className = 'reports-item-text';
-    label.textContent = 'Image';
-    el.append(label);
+    el.append(makeItemTextLabel('Image'));
     return;
   }
   const img = document.createElement('img');
@@ -468,6 +467,11 @@ function paintImage(el, item, doc, srcOverride) {
   if (filters.length) el.style.setProperty('--reports-image-filter', filters.join(' '));
   el.append(img);
 }
+
+function applyItemColours(el, item) {
+  applyItemColourVars(el, item);
+}
+
 
 /**
  * Paint one static item into the band body. The box is the stored box.
@@ -506,15 +510,10 @@ export function paintMeasuredItem(body, item, doc, options = {}) {
     const valign = VALIGNS.includes(item.valign) ? item.valign : 'top';
     el.dataset.valign = valign;
     el.style.setProperty('--reports-item-line-height', `${leading * font.sizePt * CSS_PX_PER_PT}px`);
-    const label = document.createElement('span');
-    label.className = 'reports-item-text';
-    label.textContent = lines.join('\n');
-    el.append(label);
+    el.append(makeItemTextLabel(lines.join('\n')));
   }
-  const corner = document.createElement('div');
-  corner.className = 'reports-item-corner';
-  corner.title = 'Resize item';
-  el.append(corner);
+  applyItemColours(el, item);
+  appendResizeHandles(el);
   body.append(el);
 }
 

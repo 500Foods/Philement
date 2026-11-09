@@ -43,7 +43,7 @@ Example: `helium_0001.lua` for design "helium" migration "0001"
 
 ## Integration with Test Suite
 
-This script is used by database migration tests (test_31_migrations.sh, test_32_postgres_migrations.sh, etc.) to:
+This script is used by database migration tests (test_31_migrations.sh, test_32_postgresql_migrations.sh, etc.) to:
 
 - Generate migration SQL for different database engines
 - Validate migration syntax and structure
@@ -86,7 +86,7 @@ lua get_migration_wrapper.lua
 ## Related Documentation
 
 - [Database Migration Tests](/docs/H/tests/test_31_migrations.md) - How this script is used in testing
-- [PostgreSQL Migration Tests](/docs/H/tests/test_32_postgres_migrations.md) - PostgreSQL-specific usage
+- [PostgreSQL Migration Tests](/docs/H/tests/test_32_postgresql_migrations.md) - PostgreSQL-specific usage
 - [MySQL Migration Tests](/docs/H/tests/test_33_mysql_migrations.md) - MySQL-specific usage
 - [SQLite Migration Tests](/docs/H/tests/test_34_sqlite_migrations.md) - SQLite-specific usage
 - [DB2 Migration Tests](/docs/H/tests/test_35_db2_migrations.md) - DB2-specific usage

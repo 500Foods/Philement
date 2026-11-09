@@ -18,6 +18,7 @@ import {
   formatLength,
   parseLength,
 } from './units.js';
+import { normalizeDefinitionColours } from '../reports-colours.js';
 
 const BAND_HEIGHT = {
   12: '0.4 in',
@@ -171,7 +172,7 @@ function copyDefinition(input) {
  * @returns {object}
  */
 export function importDefinition(input) {
-  return copyDefinition(input);
+  return normalizeDefinitionColours(copyDefinition(input));
 }
 
 /**
@@ -737,6 +738,7 @@ export function addItem(doc, bandId, spec) {
     if (!Object.hasOwn(item, 'strokeColor')) item.strokeColor = '#000000';
     if (!Object.hasOwn(item, 'fillStyle')) item.fillStyle = 'solid';
     if (!Object.hasOwn(item, 'fillPaint')) item.fillPaint = { kind: 'solid', color: '#d3d3d3' };
+    if (!Object.hasOwn(item, 'backgroundColor')) item.backgroundColor = '#d3d3d3';
     if (!Object.hasOwn(item, 'rotation')) item.rotation = 0;
   }
   if (isAggregateType(typeKey)) {

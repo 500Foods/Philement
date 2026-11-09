@@ -7,6 +7,7 @@
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { loadReportingQueries } from './reports-query.js';
+import { setNamedColoursFromLookup } from './reports-named-colours.js';
 
 export const PANEL_LOOKUPS = {
   objectTypes: 53, attributes: 54, pageSizes: 57, paletteGroups: 74, sections: 75,
@@ -18,6 +19,8 @@ export const PANEL_LOOKUPS = {
   shapeKinds: 78,
   /** 079 barcode symbologies (Phase 54). Empty until 1470 applies; the panel uses the built-in five. */
   symbologies: 79,
+  /** 080 named colours (Phase 77). Empty until 1486–1500 apply. */
+  namedColours: 80,
 };
 
 /**
@@ -39,5 +42,6 @@ export async function loadPanelLookups(api) {
       out[name] = [];
     }
   })]);
+  setNamedColoursFromLookup(out.namedColours || []);
   return out;
 }

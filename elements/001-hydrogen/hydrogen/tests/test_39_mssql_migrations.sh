@@ -23,7 +23,23 @@ TEST_VERSION="1.0.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+
+# End early when this engine is not in HYDROGEN_ENGINES
+ENGINE_SKIPPED=false
+# shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+if ! engine_enabled "mssql"; then
+    ENGINE_SKIPPED=true
+    TEST_NAME="${TEST_NAME} (skipped)"
+fi
+
 setup_test_environment
+
+if [[ "${ENGINE_SKIPPED}" = true ]]; then
+    skip_engine_test "MSSQL"
+    ${ORCHESTRATION:-false} && return 0 || exit 0
+fi
 
 # MSSQL env vars for Hydrogen config ${env.MSSQL_SA_PASSWORD} and ${env.MSSQL_DB_NAME}
 # Test 39 assumes the SQL Server container is already running (started via

@@ -490,7 +490,7 @@ cd "${HYDROGEN_ROOT}"
 
 # echo ""
 # echo "Validating TEST databases"
-# tests/test_32_postgres_migrations.sh    2>&1 | grep -A3 -B1 "Test #"
+# tests/test_32_postgresql_migrations.sh    2>&1 | grep -A3 -B1 "Test #"
 # tests/test_33_mysql_migrations.sh       2>&1 | grep -A3 -B1 "Test #"
 # tests/test_34_sqlite_migrations.sh      2>&1 | grep -A3 -B1 "Test #"
 # tests/test_35_db2_migrations.sh         2>&1 | grep -A3 -B1 "Test #"

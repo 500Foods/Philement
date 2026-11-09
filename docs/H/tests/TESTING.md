@@ -83,7 +83,7 @@ Test 01 builds the targets. Test 10 runs the Unity executables, which call proje
 
 - **[test_30_database.sh](/docs/H/tests/test_30_database.md)**: All Engines Parallel Operational Test (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB, MSSQL, plus a combined config)
 - **[test_31_migrations.sh](/docs/H/tests/test_31_migrations.md)**: SQL-lints Helium migration files on disk with sqruff. Does not launch Hydrogen
-- **[test_32_postgres_migrations.sh](/docs/H/tests/test_32_postgres_migrations.md)**: PostgreSQL migration performance test
+- **[test_32_postgresql_migrations.sh](/docs/H/tests/test_32_postgresql_migrations.md)**: PostgreSQL migration performance test
 - **[test_33_mysql_migrations.sh](/docs/H/tests/test_33_mysql_migrations.md)**: MySQL migration performance test
 - **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](/docs/H/tests/test_35_db2_migrations.md)**: DB2 migration performance test

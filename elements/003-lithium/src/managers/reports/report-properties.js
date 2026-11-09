@@ -20,7 +20,8 @@ import {
 } from './reports-aggregate.js';
 import { GROUP_HEADER_TYPE, bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
 import { DateTime } from 'luxon';
-import { parseLength } from './model/units.js';
+import { displayLength, parseLength } from './model/units.js';
+import { NONE_COLOR, normalizeColorValue } from './reports-colours.js';
 import {
   addDatasource, datasourceColumns, datasourceKinds, datasourceList, datasourceNames,
   LIVE_DS_CODES, removeDatasource, renameDatasource, setDatasourceKind,
@@ -48,8 +49,13 @@ const TEXT_KEYS = new Set([29]);
 const PAGE_SIZE_KEY = 30;
 /** Number keys that hold a length; the rest are plain numbers. */
 const LENGTH_KEYS = new Set([0, 1, 2, 3, 16, 23, 31, 32, 35, 36, 37, 38, 43, 48, 49, 50, 51]);
+/** Page Width/Height/Margins — bare numbers use Page Units. */
+const PAGE_LENGTH_KEYS = new Set([31, 32, 35, 36, 37, 38]);
+const FONT_SIZE_KEY = 16;
+/** Font Size editable combo presets (Phase 76). */
+export const FONT_SIZE_LIST = [8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 40, 48, 64];
 /** Editors the panel knows. Field and Datasource (Phase 15) become Lists. */
-export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None', 'Field', 'Datasource', 'File']);
+export const KNOWN_EDITORS = new Set(['Text', 'Number', 'List', 'Boolean', 'Color', 'PageSize', 'Date', 'None', 'Field', 'Datasource', 'File', 'FontFamily', 'FontSize', 'FontStyle']);
 /** Items that take a mask string (Phase 15.5 edits it). */
 const MASK_ITEM_TYPES = new Set([1, 4, 5, 21, 24, 29, 32, 35, 38, 61, 62, 63]);
 export const DEFAULT_MASK_NOTE = 'No mask: the Value format default applies.';
@@ -61,7 +67,7 @@ export const FONT_NOTE = 'No item font in the file; report font shown.';
 export const PLAIN_DECIMAL_NOTE = 'No mask: prints as a plain decimal, no thousands separator.';
 
 /** Report keys used when 053 key 9 is not loaded. */
-const REPORT_FALLBACK = [6, 18, 30, 33, 31, 32, 35, 36, 37, 38, 15, 16, 17, 20, 22, 21, 24, 23, 40];
+const REPORT_FALLBACK = [6, 18, 30, 33, 31, 32, 35, 36, 37, 38, 53, 54, 34, 15, 16, 17, 20, 22, 21, 24, 23, 40];
 
 const DEFAULTS = {
   name: 'Report', title: 'Report', link: '',
@@ -129,6 +135,9 @@ const REPORT_FIELDS = {
   31: reportField(['page', 'width'], DEFAULTS.width),
   32: reportField(['page', 'height'], DEFAULTS.height),
   33: reportField(['page', 'orientation'], DEFAULTS.orientation, (v) => String(v).toLowerCase(), cap),
+  34: reportField(['page', 'units'], 'in', (v) => String(v).toLowerCase()),
+  53: reportField(['page', 'positionUnits'], 'in', (v) => String(v).toLowerCase()),
+  54: reportField(['page', 'fontUnits'], 'pt', (v) => String(v).toLowerCase()),
   35: reportField(['page', 'margin', 'left'], DEFAULTS.margin),
   36: reportField(['page', 'margin', 'right'], DEFAULTS.margin),
   37: reportField(['page', 'margin', 'top'], DEFAULTS.margin),
@@ -178,7 +187,7 @@ function boxField(side) {
       return own(box, side) ? { value: box[side], omitted: false } : { value: '', omitted: true };
     },
     set: (doc, sel, value) => {
-      const text = withUnit(value, doc);
+      const text = withUnit(value, doc, 'position');
       return resize
         ? resizeItem(doc, sel.bandId, sel.itemId, { [side]: text })
         : moveItem(doc, sel.bandId, sel.itemId, { [side]: text });
@@ -258,6 +267,76 @@ const ITEM_FIELDS = {
   16: fontField('size'),
   17: fontField('style'),
   29: itemField('link', ''),
+  55: {
+    get: (doc, sel) => {
+      const { item } = findSelected(doc, sel);
+      return own(item, 'foreColor')
+        ? { value: item.foreColor, omitted: false }
+        : { value: '', omitted: true };
+    },
+    set: (doc, sel, value) => {
+      const color = normalizeColorValue(value);
+      return editItem(doc, sel, (item) => {
+        if (color === NONE_COLOR) item.foreColor = NONE_COLOR;
+        else item.foreColor = color;
+      });
+    },
+  },
+  56: {
+    get: (doc, sel) => {
+      const { item } = findSelected(doc, sel);
+      return own(item, 'backColor')
+        ? { value: item.backColor, omitted: false }
+        : { value: '', omitted: true };
+    },
+    set: (doc, sel, value) => {
+      const color = normalizeColorValue(value);
+      return editItem(doc, sel, (item) => {
+        if (color === NONE_COLOR) item.backColor = NONE_COLOR;
+        else item.backColor = color;
+      });
+    },
+  },
+  57: {
+    get: (doc, sel) => {
+      const { item } = findSelected(doc, sel);
+      if (own(item, 'backgroundColor')) return { value: item.backgroundColor, omitted: false };
+      // Shape legacy: show fillPaint colour as the omitted default.
+      const paint = item && item.fillPaint && typeof item.fillPaint === 'object' ? item.fillPaint : null;
+      if (paint && typeof paint.color === 'string' && paint.color !== '') {
+        return { value: paint.color, omitted: true, note: OMITTED_NOTE };
+      }
+      const stop = paint && Array.isArray(paint.stops) && paint.stops[0];
+      if (stop && typeof stop.color === 'string' && stop.color !== '') {
+        return { value: stop.color, omitted: true, note: OMITTED_NOTE };
+      }
+      return { value: '', omitted: true };
+    },
+    set: (doc, sel, value) => {
+      return editItem(doc, sel, (item) => {
+        const color = normalizeColorValue(value);
+        item.backgroundColor = color;
+        // Keep shape fillPaint colour in step with the shared background.
+        if (Number(item.typeKey) === 25 || Number(item.typeKey) === 26) {
+          const paint = item.fillPaint && typeof item.fillPaint === 'object' ? item.fillPaint : null;
+          const kind = paint && typeof paint.kind === 'string' ? paint.kind : 'solid';
+          if (kind === 'linear' || kind === 'radial') {
+            const stops = Array.isArray(paint.stops) && paint.stops.length
+              ? paint.stops.map((stop, index) => (index === 0 ? { ...stop, color } : { ...stop }))
+              : [{ at: 0, color }, { at: 1, color }];
+            const next = { kind, stops };
+            if (kind === 'linear') {
+              const angle = Number(paint.angle);
+              next.angle = Number.isFinite(angle) ? angle : 0;
+            }
+            item.fillPaint = next;
+          } else {
+            item.fillPaint = { kind: 'solid', color };
+          }
+        }
+      });
+    },
+  },
 };
 
 Object.assign(ITEM_FIELDS, shapeItemFields, barcodeItemFields);
@@ -496,14 +575,50 @@ function zoneRows(item, presets) {
   return rows;
 }
 
-/** Number with no unit gets the report unit. */
-export function withUnit(value, doc) {
+/** Report Position Units (default in). Changing it does not rewrite stored lengths. */
+export function positionUnitsOf(doc) {
+  return pathValue(doc, ['page', 'positionUnits'], 'in').value;
+}
+
+/** Report Font Units (default pt). */
+export function fontUnitsOf(doc) {
+  return pathValue(doc, ['page', 'fontUnits'], 'pt').value;
+}
+
+/** Report Page Units (054 key 34; default in). */
+export function pageUnitsOf(doc) {
+  return pathValue(doc, ['page', 'units'], 'in').value;
+}
+
+/**
+ * Bare number gets the report unit for `kind`: position (default), font, or page.
+ * Values that already carry a unit are left alone.
+ */
+export function withUnit(value, doc, kind = 'position') {
   const text = String(value).trim();
   if (/^-?\d+(\.\d+)?$/.test(text)) {
-    const units = pathValue(doc, ['page', 'units'], 'in').value;
+    const units = kind === 'font' ? fontUnitsOf(doc)
+      : kind === 'page' ? pageUnitsOf(doc)
+        : positionUnitsOf(doc);
     return `${text} ${units}`;
   }
   return text;
+}
+
+/** Display-only `#0.## unit` for a stored length; falls back to the raw text. */
+export function displayLengthValue(value) {
+  try {
+    return displayLength(String(value));
+  } catch {
+    return value === undefined || value === null ? '' : String(value);
+  }
+}
+
+/** Which unit kind a length key uses for bare numbers. */
+export function lengthUnitKind(key) {
+  if (key === FONT_SIZE_KEY) return 'font';
+  if (PAGE_LENGTH_KEYS.has(key)) return 'page';
+  return 'position';
 }
 
 function applyPageSize(doc, value, ctx) {
@@ -528,11 +643,12 @@ function applyPageSize(doc, value, ctx) {
 
 /**
  * Number rows: a length key takes a number and a unit (a bare number
- * gets the report unit); a plain key takes a finite number.
+ * gets Position/Font/Page Units as appropriate); a plain key takes a
+ * finite number. Saved strings keep full precision.
  */
 export function checkNumber(key, value, doc) {
   if (LENGTH_KEYS.has(key)) {
-    const text = withUnit(value, doc);
+    const text = withUnit(value, doc, lengthUnitKind(key));
     parseLength(text);
     return text;
   }
@@ -645,6 +761,11 @@ function bindingEditor(editor, choices) {
 function editorFor(key, collection) {
   if (TEXT_KEYS.has(key)) return 'Text';
   if (key === PAGE_SIZE_KEY) return 'PageSize';
+  if (key === 15) return 'FontFamily';
+  if (key === FONT_SIZE_KEY) return 'FontSize';
+  if (key === 17) return 'FontStyle';
+  // Lookups say Color; keep Color even if a row is stale Text.
+  if (key === 55 || key === 56 || key === 57) return 'Color';
   return collection.Editor || 'Text';
 }
 
@@ -783,7 +904,10 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
         choices = names;
       }
     }
-    let list = choices || (editor === 'List' && Array.isArray(collection.List) ? collection.List : null);
+    // FontFamily/FontStyle/FontSize are List-backed; do not require editor === 'List'.
+    const listBacked = editor === 'List' || editor === 'FontFamily'
+      || editor === 'FontStyle' || editor === 'FontSize';
+    let list = choices || (listBacked && Array.isArray(collection.List) ? collection.List : null);
     if (key === 5 && (itemType === STATIC_IMAGE || itemType === 22)) list = [...IMAGE_FITS];
     if (key === 41) {
       list = shapeKindOptions(lookups && lookups.shapeKinds).map((entry) => ({
@@ -792,11 +916,16 @@ export function propertyRows(doc, sel, lookups, labelOf = (row, c) => c.Label ||
     }
     if (key === 52) list = symbologyList(lookups);
     if (key === 46) list = fillStyleChoices();
+    if (key === FONT_SIZE_KEY) {
+      list = FONT_SIZE_LIST.map((n) => ({ value: String(n), label: String(n) }));
+    }
+    const showDisplay = LENGTH_KEYS.has(key);
     rows.push({
       id: String(key),
       key,
       label: labelOf(row, collection),
       value: read.value,
+      display: showDisplay ? displayLengthValue(read.value) : undefined,
       omitted: read.omitted,
       note: read.omitted ? (read.note || OMITTED_NOTE) : '',
       editor: bindingEditor(editor, choices),

@@ -344,5 +344,9 @@ selected_row() {
     if [[ -n "${ENGINE_FILTER}" && "${engine}" != "${ENGINE_FILTER}" ]]; then
         return 1
     fi
+    # HYDROGEN_ENGINES (tests/lib/engine_utils.sh) applies unless --engine names one
+    if [[ -z "${ENGINE_FILTER}" ]] && ! engine_enabled "${engine}"; then
+        return 1
+    fi
     return 0
 }

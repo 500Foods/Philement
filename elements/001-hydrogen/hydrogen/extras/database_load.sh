@@ -13,7 +13,8 @@
 #
 # CHANGELOG
 # 1.0.0 - 2026-10-07 - Load test schemas in parallel, then demo schemas
-# TEST_VERSION: 1.0.0
+# 1.1.0 - 2026-11-09 - Honour HYDROGEN_ENGINES (an explicit --engine still wins)
+# TEST_VERSION: 1.1.0
 
 set -euo pipefail
 set +H
@@ -27,6 +28,10 @@ HYDROGEN_BIN_OVERRIDE="${HYDROGEN_BIN:-}"
 HYDROGEN_BIN=""
 LOG_DIR=""
 PIDS=()
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tests/lib/engine_utils.sh # HYDROGEN_ENGINES filtering
+source "${SCRIPT_DIR}/../tests/lib/engine_utils.sh"
 
 TARGETS=(
     "test|32|postgresql|PostgreSQL|hydrogen_test_32_postgres.json"
@@ -61,6 +66,9 @@ Hydrogen is stopped when the load finishes. The databases stay.
   --engine name       One engine: postgresql, mysql, sqlite, db2, mariadb,
                       firebird, yugabytedb, mssql.
   --timeout seconds   How long one wave may run. Default 1800.
+
+Only engines listed in HYDROGEN_ENGINES are used (unset means all).
+An explicit --engine overrides HYDROGEN_ENGINES.
 
 HYDROGEN_BIN overrides the binary. Otherwise the script uses hydrogen,
 hydrogen_release, hydrogen_coverage, then hydrogen_debug in the project
@@ -199,6 +207,9 @@ row_selected() {
         return 1
     fi
     if [[ -n "${ENGINE_FILTER}" && "${engine}" != "${ENGINE_FILTER}" ]]; then
+        return 1
+    fi
+    if [[ -z "${ENGINE_FILTER}" ]] && ! engine_enabled "${engine}"; then
         return 1
     fi
     return 0
@@ -384,6 +395,9 @@ main() {
 
     printf 'Binary %s\n' "${HYDROGEN_BIN}"
     printf 'Test schemas run together, then demo schemas. TestMigration stays off.\n\n'
+    if [[ -z "${ENGINE_FILTER}" && -n "${HYDROGEN_ENGINES:-}" ]]; then
+        printf 'HYDROGEN_ENGINES %s (other engines skipped)\n\n' "${HYDROGEN_ENGINES}"
+    fi
 
     if [[ "${DRY_RUN}" -eq 0 ]]; then
         LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/database_load.XXXXXX")" || {

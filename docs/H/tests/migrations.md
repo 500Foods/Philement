@@ -136,7 +136,7 @@ return {
 Used by database migration performance tests:
 
 - **test_31_migrations.sh**: General migration validation
-- **test_32_postgres_migrations.sh**: PostgreSQL-specific testing
+- **test_32_postgresql_migrations.sh**: PostgreSQL-specific testing
 - **test_33_mysql_migrations.sh**: MySQL-specific testing
 - **test_34_sqlite_migrations.sh**: SQLite-specific testing
 - **test_35_db2_migrations.sh**: DB2-specific testing
@@ -177,7 +177,7 @@ local sql = migrations:replace_query(template, 'postgresql', 'helium', 'app')
 
 - [Get Migration Wrapper](/docs/H/tests/get_migration_wrapper.md) - Command-line interface for this module
 - [Database Migration Tests](/docs/H/tests/test_31_migrations.md) - General migration testing
-- [PostgreSQL Migration Tests](/docs/H/tests/test_32_postgres_migrations.md) - PostgreSQL-specific tests
+- [PostgreSQL Migration Tests](/docs/H/tests/test_32_postgresql_migrations.md) - PostgreSQL-specific tests
 - [MySQL Migration Tests](/docs/H/tests/test_33_mysql_migrations.md) - MySQL-specific tests
 - [SQLite Migration Tests](/docs/H/tests/test_34_sqlite_migrations.md) - SQLite-specific tests
 - [DB2 Migration Tests](/docs/H/tests/test_35_db2_migrations.md) - DB2-specific tests

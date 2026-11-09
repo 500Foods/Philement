@@ -39,7 +39,7 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 
 - [Test 30 - Database Subsystem Test](/docs/H/tests/test_30_database.md) - Validates Database Queue Manager (DQM) startup and functionality across multiple database engines
 - [Test 31 - Migration Validation](/docs/H/tests/test_31_migrations.md) - Performs static analysis on database migration files using SQL linting tools
-- [Test 32 - PostgreSQL Migrations](/docs/H/tests/test_32_postgres_migrations.md) - Tests PostgreSQL 15+ / YugabyteDB (primary active target) database migration performance and execution
+- [Test 32 - PostgreSQL Migrations](/docs/H/tests/test_32_postgresql_migrations.md) - Tests PostgreSQL 15+ / YugabyteDB (primary active target) database migration performance and execution
 - [Test 38 - YugabyteDB Migrations](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - End-to-end migration bootstrap test against YugabyteDB (PG15-compatible)
 - [Test 33 - MySQL Migrations](/docs/H/tests/test_33_mysql_migrations.md) - Tests MySQL/MariaDB database migration performance and execution
 - [Test 34 - SQLite Migrations](/docs/H/tests/test_34_sqlite_migrations.md) - Tests SQLite database migration performance and execution

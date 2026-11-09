@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.4.0 - 2026-11-09 - Added --range=START-END,N to run tests by number (e.g. --range=30-34,39)
 # 8.3.1 - 2026-09-06 - Fixed TEST/PASS/FAIL pairing: command availability results now emit as INFO
 #                     messages under the subtest, with a single final print_result (PASS or FAIL)
 # 8.3.0 - 2026-08-22 - Tests/Pass/Fail use tables num datatype (thousands separators)
@@ -69,7 +70,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="8.3.1"
+TEST_VERSION="8.4.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -209,6 +210,7 @@ SKIP_TESTS=false
 SEQUENTIAL_MODE=false
 SEQUENTIAL_GROUPS=( 6 )  # Default to group 6 (tests 60-69) sequentially as these are preformance-related and generally need the space
 TEST_ARGS=()
+RANGE_SPEC=""
 
 # Parse all arguments                                                  
 for arg in "$@"; do
@@ -232,6 +234,7 @@ for arg in "$@"; do
                 fi
             done
             ;;
+        --range=*) RANGE_SPEC+="${arg#--range=}," ;;
         --redisplay)
             REDISPLAY=true
             ;;
@@ -245,7 +248,7 @@ for arg in "$@"; do
 done
 
 show_help() {
-    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--redisplay] [--sequential] [--sequential-groups=M,N] [--help]"
+    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--redisplay] [--sequential] [--sequential-groups=M,N] [--range=START-END|N,N] [--help]"
     echo ""
     echo "Arguments:"
     echo "  test_name    Run specific tests (e.g., 01_compilation, 98_check_links)"
@@ -256,6 +259,7 @@ show_help() {
     echo "                           and re-run the coverage reconciliation/per-file discrepancy analysis"
     echo "  --sequential             Run tests sequentially instead of in parallel batches (default: parallel)"
     echo "  --sequential-groups=M,N  Run specific groups sequentially while others run in parallel"
+    echo "  --range=START-END        Run tests by number: START-END and/or N,N (e.g. --range=30-34,39); combines with test names"
     echo "  --help                   Show this help message"
     echo ""
     echo "Available Tests:"
@@ -273,6 +277,8 @@ show_help() {
     echo "  $0 --sequential                # Run all tests sequentially"
     echo "  $0 --sequential-groups=3       # Run group 3x (30-39) sequentially, others in parallel"
     echo "  $0 --sequential-groups=3,4     # Run groups 3x and 4x sequentially, others in parallel"
+    echo "  $0 --range=30-49              # Run tests 30 through 49"
+    echo "  $0 --range=30,32,39           # Run tests 30, 32 and 39"
     echo "  $0 --redisplay                 # Re-show final table + coverage analysis from last run (no re-run)"
     echo ""
     exit 0
@@ -289,14 +295,25 @@ while IFS= read -r script; do
     fi
 done < <("${FIND}" "${SCRIPT_DIR}" -name "test_*.sh" -type f | sort || true)
 
-# Check for help flag and skip-tests in single loop
-for arg in "$@"; do
-    case "${arg}" in
-        --help|-h) show_help ;;
-        --skip-tests) SKIP_TESTS=true ;;
-        *) ;;
-    esac
-done
+# Expand --range=30-34,39 style specs into test names (inclusive, test order; combines with named tests)
+if [[ -n "${RANGE_SPEC}" ]]; then
+    IFS=, read -ra range_parts <<< "${RANGE_SPEC}"
+    for range_part in "${range_parts[@]}"; do
+        [[ "${range_part}" =~ ^[0-9]+(-[0-9]+)?$ ]] || { echo "Error: Invalid --range '${range_part}' (e.g. --range=30-34,39)"; exit 1; }
+    done
+    range_matches=0
+    for script in "${TEST_SCRIPTS[@]}"; do
+        range_name=$(basename "${script}" .sh); range_name="${range_name#test_}"; range_num=$((10#${range_name%%_*}))
+        for range_part in "${range_parts[@]}"; do
+            lo=$((10#${range_part%-*})); hi=$((10#${range_part#*-}))
+            if (( range_num >= (lo < hi ? lo : hi) && range_num <= (lo < hi ? hi : lo) )); then TEST_ARGS+=("${range_name}"); range_matches=$((range_matches + 1)); break; fi
+        done
+    done
+    (( range_matches > 0 )) || { echo "Error: No tests found for --range=${RANGE_SPEC%,}"; exit 1; }
+fi
+
+# Help is handled here (after TEST_SCRIPTS is built); --skip-tests is already parsed above
+[[ " $* " == *" --help "* || " $* " == *" -h "* ]] && show_help
 
 # Function to run a single test and capture results
 run_single_test() {

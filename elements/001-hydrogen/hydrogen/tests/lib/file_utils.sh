@@ -18,6 +18,7 @@
 # sqlite_online_backup()
 
 # CHANGELOG
+# 2.1.2 - 2026-11-09 - should_exclude_file strips leading ./ so .lintignore patterns match find output
 # 2.1.1 - 2026-10-01 - sqlite3 backup is batch and skips ~/.sqliterc
 # 2.1.0 - 2026-09-08 - sqlite_online_backup via SQLite backup API
 # 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
@@ -74,7 +75,7 @@ fi
 
 # Check if a file should be excluded from linting
 should_exclude_file() {
-    local rel_file="$1"
+    local rel_file="${1#./}"  # Strip leading ./ so find output matches .lintignore patterns
     for pattern in "${LINT_IGNORE_PATTERNS[@]}"; do
         # shellcheck disable=SC2053,SC2250 # Right side needs to be a glob which doesn't work when quoted ?!
         if [[ "${rel_file}" == $pattern ]]; then

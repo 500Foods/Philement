@@ -32,7 +32,23 @@ TEST_VERSION="1.4.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+
+# End early when this engine is not in HYDROGEN_ENGINES
+ENGINE_SKIPPED=false
+# shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+if ! engine_enabled "firebird"; then
+    ENGINE_SKIPPED=true
+    TEST_NAME="${TEST_NAME} (skipped)"
+fi
+
 setup_test_environment
+
+if [[ "${ENGINE_SKIPPED}" = true ]]; then
+    skip_engine_test "Firebird"
+    ${ORCHESTRATION:-false} && return 0 || exit 0
+fi
 
 # Firebird env vars for Hydrogen config ${env.FIREBIRD_DB_PATH_TEST} and ${env.FIREBIRD_SYSDBA_PASSWORD}
 # Test work uses FIREBIRD_DB_USER/FIREBIRD_DB_PASS (non-SYSDBA account); SYSDBA

@@ -169,7 +169,7 @@ describe('barcode svg', () => {
     expect(shrunk).toBeNull();
   });
 
-  it('mounts the symbol and leaves the corner to the caller', () => {
+  it('mounts the symbol and leaves resize handles to the caller', () => {
     clearBarcodeCache();
     const doc = addItem(createBlank(), 'd1', { typeKey: 43 });
     const item = doc.bands.find((band) => band.id === 'd1').items.at(-1);
@@ -179,7 +179,7 @@ describe('barcode svg', () => {
     const node = el.querySelector('svg');
     expect(node).not.toBeNull();
     expect(node.getAttribute('preserveAspectRatio')).toBe('xMidYMid meet');
-    expect(el.querySelector('.reports-item-corner')).toBeNull();
+    expect(el.querySelector('.reports-item-handle')).toBeNull();
   });
 });
 

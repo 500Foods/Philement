@@ -43,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.9.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (tests/lib/engine_utils.sh)
 # 2.8.1 - 2026-10-01 - Config checks keep one result for the configuration-file subtest
 # 2.8.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (ports 15437, 15447)
 # 2.7.4 - 2026-09-20 - Replaced CockroachDB with Firebird engine
@@ -76,10 +77,13 @@ TEST_NAME="Scripting  {BLUE}engines: 8{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.8.1"
+TEST_VERSION="2.9.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+TEST_NAME="Scripting  {BLUE}engines: $(enabled_engine_count){RESET}"
 setup_test_environment
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -172,6 +176,8 @@ SCRIPTING_TEST_CONFIGS=(
     ["MSSQL-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_mssql_no_default.json:mssql_nd:mssql:MSSQL (no default DB)"
 )
 
+filter_engine_map SCRIPTING_TEST_CONFIGS 3
+
 # Timeouts (seconds). Fixtures are assumed pre-migrated, so READY is
 # quick; the fail-fast path keeps a broken engine from blocking here.
 STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
@@ -202,6 +208,8 @@ fi
 # One TEST for every engine/variant file. validate_config_file records its
 # own PASS/FAIL, so the per-file check stays here and only the summary closes it.
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
 config_valid=true
 for test_config in "${!SCRIPTING_TEST_CONFIGS[@]}"; do
     IFS=':' read -r config_file log_suffix _ description <<< "${SCRIPTING_TEST_CONFIGS[${test_config}]}"

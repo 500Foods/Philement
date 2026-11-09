@@ -1,7 +1,7 @@
 /*
  * Coloris picker additions shared by every Lithium colour field.
  * Imported by src/shared/coloris-picker.js. After Pavillion's picker:
- * round swatches, then a row of + / − / ✕ buttons.
+ * round swatches, then a row of + / − / none / ✓ / ✕ buttons.
  */
 
 .clr-picker {
@@ -16,6 +16,11 @@
 
 .clr-picker .clr-swatches button[data-user-swatch] {
   box-shadow: 0 0 0 1px var(--border-color, #888);
+}
+
+/* ✓ / ✕ replace Coloris's stock Close. */
+.clr-picker #clr-close {
+  display: none !important;
 }
 
 .clr-picker .lithium-color-actions {
@@ -68,4 +73,107 @@
 .clr-picker input.clr-color {
   padding: 0 8px;
   font-size: 12px;
+}
+
+/* Phase 77 named colours inside Coloris */
+.lithium-color-named {
+  position: relative;
+  margin: 0.4rem 0.5rem 0;
+}
+.lithium-color-named-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border-primary, #444);
+  border-radius: 4px;
+  background: var(--bg-primary, #1e1e1e);
+  color: var(--text-primary, #eee);
+}
+.lithium-color-named-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 10rem;
+  overflow: auto;
+  background: var(--bg-secondary, #2a2a2a);
+  border: 1px solid var(--border-primary, #444);
+  border-radius: 4px;
+}
+.lithium-color-named-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lithium-color-named-option:hover {
+  background: var(--bg-hover, #3a3a3a);
+}
+.lithium-color-named-swatch,
+.lithium-properties-color-named-swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 2px;
+  border: 1px solid rgb(255 255 255 / 25%);
+  background: var(--lithium-named-swatch, transparent);
+  flex: 0 0 auto;
+}
+
+/* Phase 77 colour name type-ahead */
+.lithium-properties-color-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.lithium-properties-color-wrap .lithium-properties-color {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+}
+.lithium-properties-color-named {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 12rem;
+  overflow: auto;
+  background: var(--bg-secondary, #2a2a2a);
+  border: 1px solid var(--border-primary, #444);
+  border-radius: 4px;
+}
+.lithium-properties-color-named-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lithium-properties-color-named-option:hover {
+  background: var(--bg-hover, #3a3a3a);
+}
+
+/* Phase 77: Name format tab — value field keeps stock clr-color look */
+.clr-picker.lithium-color-format-name input.clr-color {
+  /* same face as Hex/RGB; placeholder hints name mode */
+}
+
+.lithium-color-named-swatch-none {
+  background: repeating-conic-gradient(#888 0% 25%, #ccc 0% 50%) 50% / 8px 8px;
+}
+
+/* Hide the old mid-picker name strip if present */
+.clr-picker > .lithium-color-named {
+  display: none !important;
 }

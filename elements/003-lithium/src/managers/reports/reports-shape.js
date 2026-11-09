@@ -74,7 +74,7 @@ export const SHAPE_PURIFY = Object.freeze({
   ],
 });
 
-const SHAPE_ATTR_KEYS = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51];
+const SHAPE_ATTR_KEYS = [41, 42, 43, 44, 45, 46, 48, 49, 50, 51];
 
 /**
  * Lookup 075 keys 10–12. sortSeq sits between Object (4) and Position (5).
@@ -225,6 +225,7 @@ export function defaultShapeFields(kind) {
     strokeColor: '#000000',
     fillStyle: kind === 'line' ? 'none' : 'solid',
     fillPaint: { kind: 'solid', color: '#d3d3d3' },
+    backgroundColor: '#d3d3d3',
     rotation: 0,
   };
   if (kind === 'line') fields.side = 'bottom';
@@ -249,7 +250,7 @@ export function shapeAttributeKeys(item, keys) {
   const kind = item && item.kind;
   return next.filter((key) => {
     if (key === 42) return kind === 'line';
-    if (key === 47) return storedPaintKind(item) === 'solid';
+    if (key === 47) return false; // Fill Color retired; use Background Color (57)
     if (key >= 48 && key <= 51) return kind === 'roundrect';
     return true;
   });
@@ -393,7 +394,7 @@ export function shapeFillRows(doc, sel) {
   return shapeFillRowList(item);
 }
 
-/** Write Paint, Angle, or Stops. The color row stays key 47. */
+/** Write Paint, Angle, or Stops. Colour is Background Color (57). */
 export function applyShapeFill(doc, sel, rowId, value) {
   const item = selectedItem(doc, sel);
   if (!item || !isShapeItem(item.typeKey)) throw new Error('Fill needs a selected shape.');

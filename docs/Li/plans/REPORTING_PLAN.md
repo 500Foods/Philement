@@ -3,32 +3,10 @@
 # Reporting Plan
 
 **Date:** 2026-10-10
-**Revised:** 2026-11-05
-**Status:** Phase 0 complete. Approved 2026-10-10. Phases 1–7
-complete. Phases 6 and 7 closed 2026-10-31. Andrew confirmed
-drag, Undo, Redo, export, import, and the dots on the alternate
-database. Phase 8 is complete (2026-10-31). Andrew
-accepted the rulers, the corner cycle, and the unit name.
-The 2026-11-01 sidequest draws each band once, at the content
-width. The top ruler sits above the first band's descriptor and
-starts at 0. Each left ruler starts at 0 at that band's body.
-Snap starts on. Paper height and margin guides stay off the
-surface. Phase 9 is complete
-(2026-10-31). Andrew said the view scale works pretty
-well. Phase 10 is complete (2026-10-31). Andrew said
-it works pretty well. Phase 10-UI is complete
-(2026-10-31). Andrew said the changes are working. The
-shell has the report list, Report, Editor, JSON, and
-Revisions pages, and the three toolbars. The wheel zooms
-with Ctrl or Cmd. Phase 17 is complete (2026-10-31).
-Andrew reported QueryRefs 165–169 applied. Phase 18 is
-complete (2026-10-31). Andrew said the changes are
-working. The manager calls 165, 166, 167, and 168. Andrew reported Delete Report applied. The list calls QueryRef 170. Category is a reports row column. The Revisions page lists saved revisions through QueryRef 171, copies one onto a new report, and reverts through QueryRef 172. acuranzo_1433.lua stores the signed-in account on insert 168. acuranzo_1428.lua through acuranzo_1435.lua are applied on Andrew's 2026-10-31 check. The next Acuranzo file is 1436. The next caller-facing QueryRef is 173.
-Phase 11 is complete (2026-11-02). Andrew reported acuranzo_1436.lua applied, confirmed lookup 053, and Tests 31 and 98 pass. The next caller-facing QueryRef is 173. Phase 12 is complete (2026-11-02): Andrew reported acuranzo_1437.lua applied and confirmed lookup 054. Phase 13 is complete (2026-11-02): Andrew reported acuranzo_1438.lua applied and confirmed lookup 057. Phase 13b is complete (2026-11-02): Andrew reported acuranzo_1439.lua (lookup 074), acuranzo_1440.lua (lookup 075), and acuranzo_1441.lua (054 `section` key) applied. The next Acuranzo file is 1442. The next caller-facing QueryRef is 173. Phase 14 (property panel) is complete (2026-11-03). Phase 14b (property panel preferences) is complete (2026-11-03): Andrew said "Pretty good. Let's close this phase." The next phase starts when Andrew names it. Phase 15 (field items and a sample datasource) is complete (2026-11-03): Andrew said "Everything looks good." acuranzo_1443.lua is applied; the next Acuranzo file is 1444.
-Phase 16 (one group level) is complete (2026-11-03): Andrew said "Seems to be working pretty well." Phases 19, 19b, 20 and 28 are complete (2026-11-03); 28 ran ahead of 21 on Andrew's waiver. Phase 21 (Paging) is complete (2026-11-03). Acuranzo 1444–1450 are applied. Phases 22, 22a and 22b are complete (2026-11-03): Andrew applied acuranzo_1451–1453 and confirmed User time, UTC time, mask presets, and System User. Phase 23 (Page number and page count) is complete (2026-11-04): Andrew applied acuranzo_1454 and confirmed Page Number, Page Count and Page Label. **Phase 24 (HTML emit)** is complete (2026-11-04). Andrew confirmed the rendered Preview HTML page and the Editor-matching chrome. `acuranzo_1455.lua` is the applied script. `stage=html` returns `{ html, log }`. The Lua 5.5.1 probe matched `detail.html`. He did not send a separate byte dump. Preview HTML's Run button calls that stage and shows the sanitized page in a sandboxed iframe. Font settings stay off that tab. The next free Acuranzo file is **1457**. The next caller-facing QueryRef is **175**. No new lookup. Phase 25 (Preview) is complete (2026-11-04). Andrew declined auto-render. Run is the only trigger. He previewed two detail rows and the second band rendered. Phase 26 (Generation log) is complete (2026-11-04). Andrew said "Ok, I think that is working." The Log tab is aligned text in CodeMirror, Vanadium Mono, filled by the last Run. He did not quote the warn line, the warn count, or a clean-detail zero dump. Phase 27 (Over-cap preview) is complete (2026-11-04). Andrew applied acuranzo_1456.lua and asked to close the phase. Preview HTML saves a definition that does not fit in 256 KiB and calls Reports.Render with report_id and rev_id. The toast is Saved to preview. He did not quote the toast or a failed-save canvas. Phase 28 is already complete (2026-11-03). Phase 29 is complete (2026-11-04). Andrew applied `acuranzo_1457.lua` and asked to close the phase. He did not quote the two-row log line. A query datasource with no array in sources loads `query_type_a28` 3 and runs it on the session database. An array in sources still wins. Phase 38 (count, filled, unique, and sum) is complete (2026-11-04). Andrew said it works well, that 1457 has been applied, and that the aggregate functions were tested with no issues found. He did not name `acuranzo_1458.lua` or quote the fixture totals. The packet for this phase is `acuranzo_1458.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1458.lua` as written. Phase 39 (page totals) is complete (2026-11-04). Andrew said the latest migration applied is 1459, and that aggregate functions in page headers and footers work as indicated. He did not quote the page sums, the counts, or the names. The packet is `acuranzo_1459.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1459.lua` as written. The next free Acuranzo file is **1460**. QueryRef **175** stays unused. No new lookup. Phases 40, 41, and 42 are complete (2026-11-04). Andrew said they are fully operational and confirmed the values returned. He did not name `acuranzo_1460.lua`, `acuranzo_1461.lua`, or `acuranzo_1462.lua`, and he did not quote the fixture figures. On his eight amounts the mode tie printed -17.25 and the median was 65.995. A `#,##0.00` mask prints 66.00. The packets are those three files. Leave `acuranzo_1455.lua` through `acuranzo_1462.lua` as written. Phases 43 and 44 are complete (2026-11-04). Andrew said they look good. He did not name the files and he did not quote the fixture figures. That check is the apply report. The packets are `acuranzo_1463.lua` and `acuranzo_1464.lua`. Leave `acuranzo_1455.lua` through `acuranzo_1464.lua` as written. The next free Acuranzo file is **1467**. QueryRef **175** stays unused. Lookup **078** is Report Shape Kinds. The next free lookup id is **079**. The next free lookup 054 key is **52**. **Phase 44a (Static shapes)** is complete (2026-11-04). Andrew said everything else looks good and asked to wrap the phase. He did not quote the fixture colours. Andrew says 1466 is the last migration he sees and it is applied. **Phase 44b (Shape fill and gradient)** is complete (2026-11-04). Andrew said the gradients render on Preview HTML, everything tested passes, and 1467 is the latest migration applied. He did not quote the fixture colours. **Phase 44c (Static number, datetime, image, and memo)** is complete (2026-11-05). Andrew said the new version renders a Font Awesome duotone icon and asked to close the phase. He did not name `acuranzo_1468.lua`, and he did not quote `1,234.50` or `2026-Mar-05 14:07`. The packet is `acuranzo_1468.lua`. Phases 53 and 54 are in progress (2026-11-05). lua-zint and luatz are packed in the Hydrogen payload, not seeded into `scripts`. Andrew said all outstanding migrations have been applied, so `acuranzo_1469.lua` through `acuranzo_1474.lua` are applied. On 2026-11-09 the Render migrations were redone and Andrew recreates the databases. The seven non-Render migrations are `acuranzo_1460.lua` through `acuranzo_1466.lua`, in their old order. `acuranzo_1467.lua` through `acuranzo_1478.lua` insert the Reports.Render.* modules, and `acuranzo_1479.lua` makes Reports.Render their loader. See the 2026-11-09 log entry. The next free Acuranzo file is **1481**. QueryRef **175** stays unused. Next free lookup id **080**. Next free lookup 054 key **53**. Phase 45 has not started. Naming Phase 45 starts it. Phases 33–37, 46–48, Phase 55, PDFs, and charts stay on the temporary skip. Barcodes 53–54 are in progress. Phase 18's body is in
-[`/docs/Li/plans/reporting/02-save.md`](/docs/Li/plans/reporting/02-save.md).
-Phase 10-UI's body stays in
-[`/docs/Li/plans/reporting/01-designer.md`](/docs/Li/plans/reporting/01-designer.md).
+**Revised:** 2026-11-09
+**Status:** Phase 0 complete. Approved 2026-10-10. Phase status,
+applied migrations, and the next free numbers are in **Resume**
+under [Milestones](#milestones). It is the only copy.
 The contract note is
 [`/docs/Li/LITHIUM-RPT.md`](/docs/Li/LITHIUM-RPT.md).
 **Home:** Manager **24**, Report Manager, already registered.
@@ -39,7 +17,7 @@ Lithium is the designer. It writes a versioned JSON definition. The
 Helium script `Reports.Render` reads that definition plus zero or more
 JSON datasources, builds an intermediate document, and emits a format.
 PDF is the default stage. The build order is this index. Phase bodies
-for Phases 1–71 live in [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/).
+for Phases 1–81 live in [`/docs/Li/plans/reporting/`](/docs/Li/plans/reporting/).
 This file keeps the locks, the phase index, Phase 0, the backlog, and
 the Working Log. This plan does not move Course Manager or Scripting
 invoke.
@@ -48,6 +26,24 @@ CATCHUP Phase 1 (2026-10-16) already shipped the lifecycle fix.
 Argent Phase 15 "Report queries" in
 [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) is a set of
 bookkeeping QueryRefs. It is a different piece of work.
+
+## Terminology
+
+Andrew's terms (2026-11-09). Docs use these. Code keeps its own names
+until that code changes for another reason.
+
+| Term | Means | Stored as | Code name today |
+| --- | --- | --- | --- |
+| Band | A horizontal strip of the page: report header, page header, group header, detail, and the footers | Definition `bands[]`; lookup 053 keys 9–19 | band |
+| Element | A thing placed in a band | Definition `band.items[]`, with `typeKey` (lookup 053 key) | item; object in lookup names |
+| Category | The palette group an element comes from: Static, Field, Calculated, Aggregate, System, Bands | Lookup 074 Report Palette Groups; lookup 053 `value_int` | palette group, category button |
+| Kind | What an element shows: Text, Number, Image, Memo, DateTime, Shape, Chart, Barcode | Lookup 053 collection `group` key | group |
+| Property | One row in the Properties Panel (PP): a name and a value | Lookup 054 Report Object Attributes; lookup 053 collection `attributes` | attribute |
+| Section | A heading in the PP that groups properties: Object, Position, Fonts, Formatting, … | Lookup 075 Report Attribute Sections; lookup 054 collection `section` (the name is repeated in `Group`) | section; `Group` / `group` on 054 rows |
+
+Qualify other uses: report category (`reports.category` column),
+datasource kind (lookup 076), shape kind (lookup 078), and group
+header or footer (data grouping).
 
 ## Phases
 
@@ -141,19 +137,38 @@ Andrew reports the apply.
 | 69 | Zint PDF payload | Port repository | Medium | Not started |
 | 70 | D3 PDF payload | Port repository | Medium | Not started |
 | 71 | Place native PDF objects | Helium amendment | Medium | Not started |
+| 72 | Home/End in the single-line editor | Lithium UI | Easy | Complete |
+| 73 | Borders toggle | Lithium UI | Easy | Complete (2026-11-09) |
+| 74 | Resize from all sides and corners | Lithium UI | Medium | Complete (2026-11-09) |
+| 75 | Lookup Units, Background, Overflow | Helium, human apply | Easy | Complete (2026-11-09) |
+| 76 | Units defaults and font dropdown previews | Lithium UI | Medium | Complete (2026-11-09) |
+| 77 | Fore, Back, and Background colours | Lithium UI + Helium | Medium | In progress |
+| 78 | V. Align for un-measured text | Lithium UI + Helium | Easy | Not started |
+| 79 | Runtime font metrics (no width tables) | Lithium UI + Helium | Hard | Not started |
+| 80 | Overflow replaces Fit Height | Lithium UI + Helium | Medium | Not started |
+| 81 | Justified alignment | Lithium UI + Helium | Medium | Not started |
+| 82 | Element Link as URI anchor | Lithium UI + Helium | Medium | Not started |
+| 83 | Subreport designer element | Lithium UI | Medium | Not started |
+| 84 | Subreport Render (fixed box) | Helium amendment | Medium | Not started |
+| 85 | Subreport grow/shrink and page split | Helium amendment | Hard | Not started |
 
-Seventy-two phases, numbered 0 through 71. Each one is Easy or
-Medium, and each one closes on a single behavior. Easy is a
-fixture, a probe, or a decision. Medium adds a designer surface
-or a browser pass. A sitting that ends early marks that phase in
-progress and keeps its number. Phase 10-UI is a labeled
-sidequest between 10 and 11. Phases 13b and 14b are labeled
-phases added 2026-11-02 for the property panel. Phases 44a and
-44b are labeled phases added 2026-11-04 for static shapes.
-Phase 44c is complete (2026-11-05). The packet is
-`acuranzo_1468.lua`. Phase 31-UI is a labeled sidequest for the
-Preview PDF page, in progress (2026-11-05).
-None of these is an extra number in that count.
+Eighty-six phases, numbered 0 through 85. Each one is Easy,
+Medium, or Hard, and each one closes on a single behavior. Easy
+is a fixture, a probe, or a decision. Medium adds a designer
+surface or a browser pass. Hard is a multi-module Render change
+or a runtime dependency that needs a font-file prerequisite. A
+sitting that ends early marks that phase in progress and keeps
+its number. Phase 10-UI is a labeled sidequest between 10 and
+11. Phases 13b and 14b are labeled phases added 2026-11-02 for
+the property panel. Phases 44a and 44b are labeled phases added
+2026-11-04 for static shapes. Phase 44c is complete
+(2026-11-05). The packet is `acuranzo_1468.lua`. Phase 31-UI is
+a labeled sidequest for the Preview PDF page, in progress
+(2026-11-05). Phases 72–81 are the Static/Text element review
+(added 2026-11-09). Phase 82 (Element Link as URI anchor) follows
+that review (added 2026-11-09). Phases 83–85 are Subreports
+(added 2026-11-09). None of the labeled sidequests is an extra
+number in that count.
 
 A phase that hands a packet to a human is one sitting of agent work
 plus the wait for the apply. Its Status block records the wait.
@@ -179,10 +194,16 @@ They do not replace it.
 | 49 | Download CSV. |
 | 54 | See a barcode in the preview. A PDF barcode is a raster until Phase 71. |
 | 71 | Get charts and barcodes as vectors in the PDF. |
+| 74 | Resize any Element from eight handles; Borders toggle is available. |
+| 76 | See Position and Font units as `#0.## unit`, with font lists previewing their own values. |
+| 80 | Set Overflow (Clip, Ellipsis, Shrink, Grow) on Static Text instead of Fit Height. |
+| 81 | Justify Static Text; the last line of a block is not stretched. |
+| 82 | Set Link on any Element as a URI; HTML and PDF emit a safe anchor. |
+| 85 | Place a child report as a Subreport; Bind maps parent to child params. |
 
 ## Milestones
 
-Phase numbers stay 0 through 71. A sitting opens this file and the one
+Phase numbers stay 0 through 81. A sitting opens this file and the one
 milestone file that holds the current phase.
 
 | File | Phases | Stop when |
@@ -195,6 +216,8 @@ milestone file that holds the current phase.
 | [`05-formulas.md`](/docs/Li/plans/reporting/05-formulas.md) | 33–49 | Use formulas, totals, and breaks, and download CSV. |
 | [`06-graphics.md`](/docs/Li/plans/reporting/06-graphics.md) | 50–67 | Place images, barcodes, and charts, and export SVG and PNG. |
 | [`07-native-pdf.md`](/docs/Li/plans/reporting/07-native-pdf.md) | 68–71 | Get charts and barcodes as vectors in the PDF. |
+| [`08-elements.md`](/docs/Li/plans/reporting/08-elements.md) | 72–82 | Static/Text element review (72–81), then Element Link as URI anchor (82). |
+| [`09-subreports.md`](/docs/Li/plans/reporting/09-subreports.md) | 83–85 | Subreport element: designer, fixed-box Render, grow/shrink and page split. |
 
 **Resume:** Phases 1–7 are complete. Phases 6 and 7 closed
 2026-10-31. Andrew confirmed drag, Undo, Redo, export, import,
@@ -309,7 +332,7 @@ changes a lock, amend that lock here. When it blocks the current
 phase, that phase stays **in progress** and the handoff names the
 sidequest. Defer a work item with `[~]`, one line, and the phase
 it moves to. Moving a row out of "Later, not scheduled" means
-amending this file. Phase numbers stay 0 through 71.
+amending this file. Phase numbers stay 0 through 81.
 
 **Close-out.** In the milestone file, on the phase, write Status,
 Accomplished, Lessons learned, and Handoff. Handoff names what the
@@ -362,9 +385,31 @@ the phase body.
     then Designs, packs, and numbers in
     [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md). One file, one change.
     Copy an existing seed. Do not invent macros.
-12. Do not add a Hydrogen `test_NN` script, a new npm dependency, or a
+12. Reports.Render is a loader (`acuranzo_1479.lua`) and twelve
+    `scripts` rows, group Reports, script `Render.<Module>`
+    (`acuranzo_1467.lua` through `acuranzo_1478.lua`). A change is one
+    migration per module it touches: `UPDATE ${SCHEMA}scripts SET code`
+    for that row. `sql_old` is the module's current body, from the
+    newest migration that wrote it. Reverse restores it. Never copy the
+    whole renderer. New modules, the always-loaded set, and lazy-load
+    call sites change the loader. Core, Format, Layout, Data, Items, and
+    Paging always load. Zone loads at a datetime item that needs a zone
+    and before `now()`. Aggregate loads when the definition has an
+    aggregate item. Images and Shapes load before first use in
+    `item_out` and `emit_html`. Barcode loads before `emit_barcode`.
+    Html loads for `stage=html`. A helper two modules share goes in
+    Core. One body stays under 1000 lines, its encoded DB2 literal
+    under about 24 KB (DB2 rejects a string constant over 32,672
+    bytes), and its raw body under 60 KB (MariaDB and MySQL `text`).
+    Split a module before it nears that. A `JSON_INGEST` or `${JIS}`
+    payload is a JSON object, never `[...]`; Test 31 fails it. Check
+    with
+    [`/elements/002-helium/scripts/render/`](/elements/002-helium/scripts/render/README.md):
+    `render_check.sh` (every fixture against `HEAD`), `sizecheck.lua`,
+    and `jsoncheck.lua`.
+13. Do not add a Hydrogen `test_NN` script, a new npm dependency, or a
     new manager id unless a work item in this plan says so.
-13. Do not log JWTs, script params that contain report data, or
+14. Do not log JWTs, script params that contain report data, or
     datasource rows in normal logs.
 
 ### Verification
@@ -1508,23 +1553,26 @@ the worst level shown with the counts. The
 counts are the last generation's session state. They are not columns
 on `reports`. Switching reports clears them.
 
-`Reports.Render` is one invokable row. lua-pdfkit, lua-zint, and
-d3.lua are other rows, loaded with `require("group.script")`. Author
-formulas are not rows. Hydrogen's DB searcher splits on the first dot:
-group, then the rest of the name as `script_name`. `AllowDBModuleLoad`
-has to be on for those three libraries. `require("lua-pdfkit")` is
-rejected because it has no dot. The entry points are `lua-pdfkit.init`
-and `zint.barcode`; the d3.lua entry point is pinned at the Phase 56
-probe.
+`Reports.Render` is the one invokable row. It is a loader
+(`acuranzo_1479.lua`) that reads twelve non-invokable
+`Reports.Render.<Module>` rows (`acuranzo_1467.lua` through
+`acuranzo_1478.lua`) with `H.altquery_sync` and runs them with
+`load()` in one per-request environment; see Implementor workflow
+rule 12. Author formulas are not rows. lua-pdfkit, lua-zint, and luatz
+come from the Hydrogen payload (`payloads/lua/`) with
+`AllowDBModuleLoad` off: `require("pdfkit")`, `require("zint.barcode")`,
+and `require("luatz.tzcache")`. d3.lua is not seeded yet; its entry
+point is pinned at the Phase 56 probe.
 
 ### Lua libraries
 
-All three ports are pure Lua. None is in this repo yet. They were
+All three ports are pure Lua. lua-pdfkit and lua-zint are in the
+Hydrogen payload; d3.lua is not in this repo yet. They were
 written to run inside a host that has no native modules and no `io`.
 
 | Library | Where it lives today | What Reports.Render calls |
 | --- | --- | --- |
-| lua-pdfkit | `/home/asimard/DA/triton4/triton-toolkit-5b12870/tasks/lua-pdfkit/solution/lua-pdfkit/` (pure Lua; its own repo planned) | `PDFDocument.new`, then `doc:finish()`, then `doc:output()` for the bytes. Port of PDFKit 0.19.1. JPEG and PNG from raw bytes or a `data:` URI. |
+| lua-pdfkit | Hydrogen `payloads/lua/pdfkit/` (lua-pdfkit 1.0.0, base commit `058a55a`; `require("pdfkit")`). Source repo `/mnt/extra/Projects/lua-pdfkit`. | `PDFDocument.new`, then `doc:finish()`, then `doc:output()` for the bytes. Port of PDFKit 0.19.1. JPEG and PNG from raw bytes or a `data:` URI. |
 | lua-zint | Hydrogen `payloads/lua/zint/` (lua-zint-svg 0.1.0 commit `89a8231386682109312c29d8b84dc525c271eea3`). The earlier port home was `/home/asimard/DA/triton3/triton-toolkit-e8fb24a/tasks/lua-zint/solution/`. | `zint.barcode(opts)` returns an SVG string. Symbologies in the port: QR, Code 39, Code 128, UPC-A, GS1-128. |
 | d3.lua | Poseidon job artifact `/home/asimard/DA/poseidon1/jobs/lua-run10/` (pure Lua; its own repo planned). Validated byte-identical to D3.js on the reference pair `d3_chart.js` / `lua_chart.lua` | `d3.create_root`, `d3.scaleBand`, `d3.scaleLinear`, `d3.axisLeft` / `d3.axisRight` / `d3.axisBottom`, `d3.stack`, `d3.curveBasis`, `d3.line`, `d3.range`. Entry point pinned at the Phase 56 probe. |
 
@@ -1536,15 +1584,15 @@ refreshes by replacing `payloads/lua/luatz/`. The `scripts` rows stay
 and are unused, because the payload file wins (see Payload require
 below). `io` stays off, so zoneinfo still falls back to UTC.
 
-**Status:** lua-pdfkit and d3.lua are not in this repository.
-lua-zint and luatz are packed under Hydrogen `payloads/lua/`
-(2026-11-05). They are
+**Status:** d3.lua is not in this repository. lua-pdfkit,
+lua-zint, and luatz are packed under Hydrogen `payloads/lua/`
+(see `payloads/lua/SOURCES`). They are
 pure-Lua ports Andrew owns, each moving to its own repository: the zint
 and pdfkit ports ship `tests/test.sh` plus `PORTING-NOTES.md` /
 `AUTHOR-NOTES.md`, and the D3 port's validation is byte-equivalence
 against D3.js itself. Each library gets its own seed phase and probe
 (Phases 30, 53, and 56), and the packet records the repo commit or
-version it was generated from. For lua-pdfkit and d3.lua, the path
+version it was generated from. For d3.lua, the path
 in the table is the fallback when that repository does not exist yet. The seed phase stops and
 asks when neither the repository nor the path is there. If a port
 reaches LuaRocks, that helps
@@ -1865,6 +1913,9 @@ not a default.
 
 ### Designer rules
 
+- **UI — custom dropdowns.** Properties Panel lists never use a
+  native `<select>`. See Property panel → Custom dropdowns
+  (2026-11-09).
 - No new npm package for v1, except `@codemirror/lint` in Phase 35
   and `@melloware/coloris` (the Pavillion colour picker) in Phase 14.
   Pointer events do the dragging and the resize. Zoom is a CSS
@@ -2095,12 +2146,12 @@ definition.
 - **Name and title.** Open. Whether 054 keys 18–19 edit name and title
   in the panel, on the Report page, or both on one model is not
   locked. Ask Andrew in Phase 14.
-- **Sections.** Lookup 074 holds the 053 palette groups and lookup
-  075 holds the 054 attribute sections (Phase 13b; the ids are
+- **Sections.** Lookup 074 holds the 053 categories (palette groups)
+  and lookup 075 holds the 054 property sections (Phase 13b; the ids are
   re-checked on disk the day 13b is written). Each is plain rows:
   `key_idx`, `value_txt` label, `sort_seq` order, and `collection`
-  with `icon` and optional `lang`. A 053 row's group is its existing
-  `value_int`. A 054 row gains a numeric `section` key in its
+  with `icon` and optional `lang`. A 053 row's category is its existing
+  `value_int` (its `group` string is the kind). A 054 row gains a numeric `section` key in its
   collection. `Group` stays until Lithium reads `section`.
 - **Icons.** Section icons live on 074 and 075. Per-row icons stay on
   the item's own row as `icon` (053, 054, 057). The panel shows the
@@ -2122,6 +2173,20 @@ definition.
   Phase 15. `None` is read-only. An unknown editor toasts and skips
   the row. Later editors (icon chooser, formula, image, chart,
   barcode) plug into the same component.
+- **Custom dropdowns (lock 2026-11-09).** Properties Panel list
+  editors use `customDropdownEditor` in `lithium-properties.js` —
+  **never** a native `<select>` (Firefox chrome disliked; one look
+  everywhere). The menu mounts on `document.body` (fixed) so the
+  Tabulator tableholder cannot clip it. Font Family / Style / Size
+  are three separate custom dropdowns with independent previews;
+  Size is editable free entry; Family and Style are pick-only.
+  Other List / PageSize / Boolean rows are pick-only with plain
+  option text. Pick-only lists of **2 to 7** options **double-click
+  cycle** to the next value (wrap last→first; unknown current→first)
+  as one Undo step without opening the menu — booleans are the
+  two-option case; lists longer than 7 and editable lists (e.g. Font
+  Size) do not cycle. The ▾ control and a single click still open the
+  list. Home/End in an editable field stay in the field (Phase 72).
 - **Commits** go through the report model, one Undo step per
   committed edit.
 - **Preferences (Phase 14b).** Favourites, hidden properties, order
@@ -4955,3 +5020,155 @@ caller-facing QueryRef 175.
 - 1480 restores the lookup updates that rode on old 1467 and 1468:
   054 key 46 Fill Style lists six styles, and 053 keys 1-4 use the
   static-text attributes. The next free Acuranzo file is 1481.
+
+### 2026-11-09 — Static/Text element review planned (Phases 72–81)
+
+- Andrew switched from collect-then-implement to implementing the
+  Static/Text review now, with shared pieces (Units, Background,
+  borders, eight-handle resize, `#0.##` display, Overflow, runtime
+  metrics) built once for later Kinds.
+- Terminology Category / Kind / Section is already in this file.
+  Phase bodies are in
+  [`/docs/Li/plans/reporting/08-elements.md`](/docs/Li/plans/reporting/08-elements.md).
+  All ten phases are Not started.
+- Decisions: Justified = late Phase 81; Overflow replaces Fit
+  Height and Fit is removed from Static Text; Units Section holds
+  Position Units, Font Units, and Page Units; Background merges
+  with shape Fill (Fill Style patterns stay); Font Family / Size /
+  Style stay three separate dropdowns with independent previews;
+  no generated width tables (Phase 79 measures at runtime).
+- Next free Acuranzo file **1481** (Phase 75 lookups). Render
+  changes follow rule 12 from 1482 upward; see the tentative map
+  in `08-elements.md`. Lookup 075 next free **17**; lookup 054
+  next free **53**.
+- Phase 79 pdfkit check (lua-pdfkit at
+  `/mnt/extra/Projects/lua-pdfkit`): fontkit opens TTF/OTF/WOFF1/TTC
+  without a document (`create` / `openSync` + `layout` /
+  `advanceWidth`); standard 14 via `pdfkit.font.afm` + generated
+  modules; WOFF2 is not supported. Vanadium is only woff2 in
+  Lithium today — server needs TTF/OTF or WOFF1. Helvetica AFM
+  stays the fallback.
+- Background/Fill pinned later the same day: shared Background Color
+  on every Kind; migrate saved shape fill colours onto it; Fill
+  Style stays shape-specific. See `08-elements.md` Phases 75/77.
+- Server fonts pinned: TTF/OTF on the server filesystem under a
+  configurable root; Helvetica AFM fallback (Phase 79).
+
+### 2026-11-09 — Phase 72 complete (Home/End)
+
+- Single-line PP editor in `lithium-properties.js` stops Home/End
+  (and Arrow/Page keys) the same way the memo editor does. Enter
+  and Escape also stopPropagation.
+- ESLint on that file exited 0. Vitest deferred (72.2). Andrew
+  confirmed the browser check 2026-11-09. Phase 72 Status: Complete.
+
+### 2026-11-09 — Phase 73 complete (Borders toggle)
+
+- Borders button after Crosshair; session `_bordersOn` default true;
+  stage class `reports-borders-off` when off. Silver outline on
+  unselected items; selected stays blue. Outline only (no box size
+  change). ESLint on reports.js and reports-pointer.js exited 0.
+  templates:copy ran. Andrew confirmed the browser check
+  2026-11-09. Phase 73 Status: Complete.
+
+### 2026-11-09 — Phase 74 complete (eight resize handles)
+
+- Eight `.reports-item-handle` nodes; edge-aware drag/snap; one
+  undo for origin+size. Triangle chrome via `::before` +
+  `clip-path` (full 8×8 hit target). Side height 4px; corner
+  right-angle at handle centre (element corner), legs 4px inward.
+  Andrew confirmed sizing, undo, and triangles 2026-11-09.
+  Phase 74 Status: Complete.
+
+### 2026-11-09 — Phases 83–85 planned (Subreports)
+
+- Reuse 053 key **56** SubReport. Child reports are ordinary
+  standalone reports. Properties: Report (picker), **Bind**
+  (parent→child param map — not Link), Can Grow, Can Shrink,
+  Show child headers/footers. Designer: labelled box + Open
+  (child tab). Render: lazy `Render.Subreport`; depth limit +
+  cycle detection; later IN-list batch. Package use case =
+  parent report with Statement as a subreport in Detail — no
+  new band type (053 Package band key 10 stays unused for this).
+  Bind confirmed. Bindings mirror Datasources (Bind Count +
+  Bind N: Parent/Sub Datasource + Field). Own 074 Category
+  (next key 8); leave room for more Subreport Kinds. No
+  Subreport lookups in 1481. Bodies in `09-subreports.md`.
+
+### 2026-11-09 — Phase 75 in progress (lookup 1481)
+
+- Wrote `acuranzo_1481.lua`: 075 keys 17–18; 054 keys 53–58;
+  Align→Formatting+Justified; Page Units→Units; Static Text drops
+  Fit; Background Color on Element Kinds; shapes drop Fill Color
+  (47). Report Top gains Position/Font/Page Units names. No
+  Subreport lookups. test_31: SQL generation + sqruff pass for
+  1481 (mariadb/firebird/mssql skip as usual). Apply pending
+  Andrew. Shape JSON colour migrate stays Phase 77.
+
+### 2026-11-09 — Phase 75 Complete; Phase 76 in progress
+
+- Andrew applied `acuranzo_1481.lua` (new Units/Background/Overflow
+  rows visible, inert until Lithium). Phase 75 Complete (2026-11-09).
+- Phase 76: Lithium Units defaults (Position/Font/Page), display
+  `#0.## unit`, three font dropdown previews (Family/Size/Style).
+  Browser check pending.
+
+### 2026-11-09 — PP custom dropdowns (Phase 76)
+
+- Standing rule: never native `<select>` in the Properties Panel;
+  shared `customDropdownEditor` (body-mounted menu). Font Family /
+  Style / Size on that helper; all other List / PageSize / Boolean
+  rows converted (pick-only). Pick-only lists of 2–7 options double-click cycle.
+  Docs: Property panel lock + Designer rules; `08-elements.md`.
+
+
+
+
+### 2026-11-09 — Phase 76 Complete
+
+- **Lessons:** Shared `customDropdownEditor` (never native
+  `<select>`); pick-only lists of 2–7 cycle on double-click;
+  nested editors need `color: inherit`; menus on `document.body`.
+- **Work:** Units defaults + `#0.## unit` display; Font Family /
+  Size / Style custom dropdowns; all PP List/PageSize/Boolean on
+  the helper. Andrew confirmed browser 2026-11-09.
+- **Prep:** Phase 77 Fore/Back/Background colours. Lookups 55–57
+  live from 1481. Next free Acuranzo **1482**.
+
+
+### 2026-11-09 — Phase 77 in progress (colours + named lookup)
+
+- **Lessons:** Shared `backgroundColor` replaces shape Fill Color;
+  sync solid/stop-0 when Background Color is edited. Named-colour
+  seed (~1002 rows) must split across migrations for DB2 literal
+  size. `reports.report` JSON rewrite is an invokable script
+  (`Reports.RewriteBackgroundColor`); SQL cannot portably walk
+  JSON — Render fallback + load normalize cover until invoke.
+  Static Text canvas: property keys matched storage, but the
+  default `paintBandItems` path skipped `applyItemColourVars` —
+  storage without paint looks like a CSS bug.
+- **Work:** Lithium PP 55/56/57 + canvas paint (simple + measured)
+  + load normalize + fixtures + vitest (`reports-item-colours`).
+  Canonical stored `none`; Coloris ✓/✕ + Name tab; PP caret→names /
+  field→Coloris; color-wrap inherit. Render `1482`–`1484` 1.0.1
+  none (rule 12; sizecheck OK; shape diffs vs HEAD expected).
+  `1485` rewrite. Lookup 080 `1486`–`1500`.
+- **Prep:** Andrew applies `1482`–`1500`, invokes rewrite once,
+  browser-checks Fore/Back/Background on Static Text and named
+  picker. Next free after apply **1501**. Phase 78 next.
+
+
+### 2026-11-09 — Phase 82 planned (Element Link as URI anchor)
+
+- Lookup 054 key 29 Link (Object) is the old designer string;
+  Render does not read it today. Andrew: reuse it as a URI on
+  any Element Kind. Allowlist (case-insensitive) in one
+  `Render.Core` `safe_uri` table: `http`, `https`, `mailto`,
+  `tel`, `sms`, `geo`. Fax omitted (use `tel`). Empty/invalid →
+  no anchor. HTML: Items carries `link`; Html wraps the box in
+  `<a href>` (escaped), `rel="noopener noreferrer"`,
+  `target="_blank"` for http(s) only. PDF: `doc:link` when
+  `stage=pdf` lands. Field per-row override deferred. Optional
+  054 Editor `"Text"`. Rule 12; migration numbers TBD after
+  Phases 75–81. Phase body in `08-elements.md`. Phase 74 left
+  at 74.8 look check.

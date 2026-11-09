@@ -35,6 +35,8 @@ TEST_VERSION="1.13.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 
 # Test Setup
@@ -56,6 +58,24 @@ declare -A DESIGN_SCHEMAS
 DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 DESIGN_SCHEMAS["courses"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 DESIGN_SCHEMAS["argent"]="app::acuranzo:ACURANZO:test:testfb:testms:"
+
+# HYDROGEN_ENGINES decides which engines are validated (indexes still follow ENGINES)
+ENABLED_ENGINES=()
+SKIPPED_ENGINES=()
+declare -A ENGINE_IS_ENABLED
+for engine in "${ENGINES[@]}"; do
+    # shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+    if engine_enabled "${engine}"; then
+        ENABLED_ENGINES+=("${engine}")
+        ENGINE_IS_ENABLED["${engine}"]=true
+    else
+        SKIPPED_ENGINES+=("${engine}")
+    fi
+done
+warn_unknown_engines
+if [[ ${#SKIPPED_ENGINES[@]} -gt 0 ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINES[*]}"
+fi
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
@@ -253,6 +273,7 @@ for design in "${DESIGNS[@]}"; do
             migration_name=$(basename "${migration_file}" .lua)
             migration_num="${migration_name#"${design}"_}"
             for i in "${!ENGINES[@]}"; do
+                [[ -n "${ENGINE_IS_ENABLED[${ENGINES[${i}]}]:-}" ]] || continue
                 schema="${SCHEMA_ARRAY[${i}]:-}"
                 total_combos=$((total_combos + 1))
             done
@@ -294,6 +315,7 @@ for design in "${DESIGNS[@]}"; do
             # Validate against each database engine
             for i in "${!ENGINES[@]}"; do
                 engine="${ENGINES[${i}]}"
+                [[ -n "${ENGINE_IS_ENABLED[${engine}]:-}" ]] || continue
                 schema="${SCHEMA_ARRAY[${i}]:-}"
 
                 # Call function and capture both status and result
@@ -347,7 +369,7 @@ done
 TOTAL_DESIGNS=${#DESIGNS[@]}
 if [[ ${total_combos} -gt 0 ]]; then
     # Calculate total number of migration files across all designs
-    total_migration_files=$(( total_combos / ${#ENGINES[@]} ))
+    total_migration_files=$(( total_combos / ${#ENABLED_ENGINES[@]} ))
     TEST_NAME="${TEST_NAME}  {BLUE}${TOTAL_DESIGNS} designs, ${total_migration_files} migrations, ${TOTAL_MIGRATIONS} combos{RESET}"
 fi
 

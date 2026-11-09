@@ -39,6 +39,7 @@
 <fa fa-bell></fa>
 <fa fa-book-open-lines></fa>
 <fa fa-border-all></fa>
+<fa fa-border-outer></fa>
 <fa fa-brackets-curly></fa>
 <fa fa-brackets-square></fa>
 <fa fa-briefcase></fa>
@@ -50,6 +51,7 @@
 <fa fa-calendar-days></fa>
 <fa fa-calendar></fa>
 <fa fa-camera></fa>
+<fa fa-caret-down></fa>
 <fa fa-caret-large-right></fa>
 <fa fa-caret-right></fa>
 <fa fa-chart-line></fa>

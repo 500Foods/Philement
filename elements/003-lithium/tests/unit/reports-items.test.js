@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReportsManager from '../../src/managers/reports/reports.js';
 import { FIELD_DROP_PREFIX, SHAPE_DROP_KIND, TEXT_DROP_KIND, textDropOrigin } from '../../src/managers/reports/reports-drop.js';
-import { dragItemBox, staticItemText } from '../../src/managers/reports/items.js';
+import { dragItemBox, edgesFromHandle, staticItemText } from '../../src/managers/reports/items.js';
 import { pageSpan } from '../../src/managers/reports/rulers.js';
 
 vi.mock('../../src/tables/lithium-table-main.js', () => ({
@@ -67,12 +67,30 @@ describe('static text geometry', () => {
       left: 312, top: 2.4, width: 1, height: 1,
     });
   });
+  it('maps handle names to edges and resizes from north and west', () => {
+    expect(edgesFromHandle('se')).toEqual({ n: false, s: true, e: true, w: false });
+    expect(edgesFromHandle('nw')).toEqual({ n: true, s: false, e: false, w: true });
+    expect(edgesFromHandle('n')).toEqual({ n: true, s: false, e: false, w: false });
+    expect(edgesFromHandle('')).toBeNull();
+    const bounds = { width: 768, height: 96 };
+    const start = { left: 100, top: 40, width: 80, height: 40 };
+    expect(dragItemBox(start, 0, -20, bounds, true, { n: true, s: false, e: false, w: false })).toEqual({
+      left: 100, top: 20, width: 80, height: 60,
+    });
+    expect(dragItemBox(start, -30, 0, bounds, true, { n: false, s: false, e: false, w: true })).toEqual({
+      left: 70, top: 40, width: 110, height: 40,
+    });
+    expect(dragItemBox(start, 50, 10, bounds, true, { n: true, s: false, e: false, w: true })).toEqual({
+      left: 150, top: 50, width: 30, height: 30,
+    });
+  });
+
 
   it('clips item text with hidden overflow and an inset selection outline', () => {
     const rule = itemRule();
     expect(rule).toContain('overflow: hidden');
     expect(rule).toContain('white-space: nowrap');
-    expect(rule).toContain('color: #2a2a2a');
+    expect(rule).toContain('color: var(--reports-item-fore-color, #2a2a2a)');
     expect(css).toContain('outline-offset: -1px');
   });
 });
@@ -221,7 +239,7 @@ describe('Report Manager static text', () => {
     expect(bandEl('d1').querySelector('.reports-band-body').style.getPropertyValue('--reports-band-height'))
       .toBe(`${toCssPx('0.25 in')}px`);
 
-    const corner = textEl().querySelector('.reports-item-corner');
+    const corner = textEl().querySelector('.reports-item-handle-se');
     corner.dispatchEvent(pointer('pointerdown', 0, 0));
     document.dispatchEvent(pointer('pointermove', 96, 0));
     document.dispatchEvent(pointer('pointerup', 96, 0));

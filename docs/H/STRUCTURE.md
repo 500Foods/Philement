@@ -659,7 +659,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 ### API Tests
 
 - [tests/test_30_database.sh](/elements/001-hydrogen/hydrogen/tests/test_30_database.sh) - All Engines Parallel Operational Test
-- [tests/test_32_postgres_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_32_postgres_migrations.sh) - PostgreSQL migration performance test
+- [tests/test_32_postgresql_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_32_postgresql_migrations.sh) - PostgreSQL migration performance test
 - [tests/test_33_mysql_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_33_mysql_migrations.sh) - MySQL migration performance test
 - [tests/test_34_sqlite_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
 - [tests/test_35_db2_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_35_db2_migrations.sh) - DB2 migration performance test

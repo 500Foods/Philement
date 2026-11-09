@@ -1,11 +1,12 @@
 /**
  * Static text items on a band body.
  * The box is CSS pixels at 96 per inch, before view scale.
- * A move slides the box. A corner resize keeps the top left
- * and changes width and height. Both stay inside the band.
- * A resize is at least 1 CSS pixel when the band has room.
- * Import does not use this clamp. The canvas clips the text
- * to the box. The band does not grow.
+ * A move slides the box. A resize uses the dragged edges
+ * (`n`/`s`/`e`/`w`); a missing edges map on resize keeps the
+ * top left (south-east), matching the old corner handle.
+ * Both stay inside the band. A resize is at least 1 CSS pixel
+ * when the band has room. Import does not use this clamp.
+ * The canvas clips the text to the box. The band does not grow.
  */
 
 import './reports-static.css';
@@ -18,6 +19,7 @@ import { isBarcodeType } from './model/barcode.js';
 import { paintBarcode } from './reports-barcode.js';
 import { FIELD_SHAPE, SHAPE_TYPE, paintShape, shapeKindFromValue } from './reports-shape.js';
 import { paintMeasuredItem, paintsMeasured } from './reports-static.js';
+import { applyItemColourVars, makeItemTextLabel } from './reports-colours.js';
 
 /** Smallest resize, in CSS pixels. */
 export const ITEM_MIN_PX = 1;
@@ -30,6 +32,75 @@ function finite(value, fallback) {
   return Number.isFinite(number) ? number : fallback;
 }
 
+/**
+ * @param {string|null|undefined} name
+ * @returns {{ n: boolean, s: boolean, e: boolean, w: boolean }|null}
+ */
+export function edgesFromHandle(name) {
+  if (typeof name !== 'string' || name === '') return null;
+  const n = name.includes('n');
+  const s = name.includes('s');
+  const e = name.includes('e');
+  const w = name.includes('w');
+  if (!n && !s && !e && !w) return null;
+  return { n, s, e, w };
+}
+
+/**
+ * Eight resize handles on an item. Visible only when selected (CSS).
+ * @param {HTMLElement} el
+ */
+export function appendResizeHandles(el) {
+  if (!el) return;
+  for (const edge of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
+    const handle = document.createElement('div');
+    handle.className = `reports-item-handle reports-item-handle-${edge}`;
+    handle.dataset.edge = edge;
+    handle.title = 'Resize item';
+    el.append(handle);
+  }
+}
+
+function floorSize(limit) {
+  return limit >= ITEM_MIN_PX ? ITEM_MIN_PX : Math.max(0, limit);
+}
+
+/**
+ * Clamp one axis when the far edge is fixed (west or north drag).
+ * @param {number} origin
+ * @param {number} size
+ * @param {number} fixedEnd
+ * @param {number} limit
+ */
+function clampFixedEnd(origin, size, fixedEnd, limit) {
+  const roomLimit = limit > 0 ? limit : 0;
+  const floor = floorSize(roomLimit);
+  let nextOrigin = finite(origin, 0);
+  let nextSize = finite(size, floor);
+  if (nextSize < floor) {
+    nextSize = floor;
+    nextOrigin = fixedEnd - nextSize;
+  }
+  if (nextOrigin < 0) {
+    nextOrigin = 0;
+    nextSize = fixedEnd - nextOrigin;
+  }
+  if (nextSize < floor) nextSize = floor;
+  if (nextOrigin + nextSize > roomLimit) {
+    nextOrigin = Math.max(0, roomLimit - nextSize);
+    nextSize = Math.min(nextSize, roomLimit - nextOrigin);
+    if (nextSize < floor) nextSize = Math.min(floor, roomLimit);
+  }
+  return { origin: nextOrigin, size: nextSize };
+}
+
+/**
+ * Clamp one axis when the origin is fixed (east or south drag, or move).
+ * @param {number} origin
+ * @param {number} size
+ * @param {number} limit
+ * @param {boolean} resize
+ */
 function clampSpan(origin, size, limit, resize) {
   const roomLimit = limit > 0 ? limit : 0;
   if (resize) {
@@ -54,23 +125,58 @@ function clampSpan(origin, size, limit, resize) {
 }
 
 /**
- * Pixel box after a pointer move. `resize` keeps the top left.
+ * Pixel box after a pointer move.
+ * `resize` with no `edges` keeps the top left (south-east).
  * @param {{ left: number, top: number, width: number, height: number }} start
  * @param {number} dx
  * @param {number} dy
  * @param {{ width: number, height: number }} bounds Band body, in CSS pixels.
  * @param {boolean} resize
+ * @param {{ n?: boolean, s?: boolean, e?: boolean, w?: boolean }|null} [edges]
  * @returns {{ left: number, top: number, width: number, height: number }}
  */
-export function dragItemBox(start, dx, dy, bounds, resize) {
-  const left = resize ? start.left : start.left + finite(dx, 0);
-  const top = resize ? start.top : start.top + finite(dy, 0);
-  const width = resize ? start.width + finite(dx, 0) : start.width;
-  const height = resize ? start.height + finite(dy, 0) : start.height;
+export function dragItemBox(start, dx, dy, bounds, resize, edges) {
   const limitW = bounds && bounds.width > 0 ? bounds.width : 0;
   const limitH = bounds && bounds.height > 0 ? bounds.height : 0;
-  const horizontal = clampSpan(left, width, limitW, resize);
-  const vertical = clampSpan(top, height, limitH, resize);
+  if (!resize) {
+    const left = start.left + finite(dx, 0);
+    const top = start.top + finite(dy, 0);
+    const horizontal = clampSpan(left, start.width, limitW, false);
+    const vertical = clampSpan(top, start.height, limitH, false);
+    return {
+      left: horizontal.origin,
+      top: vertical.origin,
+      width: horizontal.size,
+      height: vertical.size,
+    };
+  }
+  const active = edges && (edges.n || edges.s || edges.e || edges.w)
+    ? edges
+    : { n: false, s: true, e: true, w: false };
+  const ddx = finite(dx, 0);
+  const ddy = finite(dy, 0);
+  const right0 = start.left + start.width;
+  const bottom0 = start.top + start.height;
+  let left = start.left;
+  let top = start.top;
+  let width = start.width;
+  let height = start.height;
+  if (active.e && !active.w) width = start.width + ddx;
+  else if (active.w && !active.e) {
+    left = start.left + ddx;
+    width = right0 - left;
+  }
+  if (active.s && !active.n) height = start.height + ddy;
+  else if (active.n && !active.s) {
+    top = start.top + ddy;
+    height = bottom0 - top;
+  }
+  const horizontal = active.w && !active.e
+    ? clampFixedEnd(left, width, right0, limitW)
+    : clampSpan(left, width, limitW, true);
+  const vertical = active.n && !active.s
+    ? clampFixedEnd(top, height, bottom0, limitH)
+    : clampSpan(top, height, limitH, true);
   return {
     left: horizontal.origin,
     top: vertical.origin,
@@ -78,13 +184,6 @@ export function dragItemBox(start, dx, dy, bounds, resize) {
     height: vertical.size,
   };
 }
-
-/**
- * Band body in CSS pixels. Width is the content box. Height is the band.
- * @param {object} doc
- * @param {object} band
- * @returns {{ width: number, height: number }}
- */
 export function bandItemBounds(doc, band) {
   const page = doc && doc.page;
   if (!page || typeof page.width !== 'string' || typeof page.height !== 'string') {
@@ -148,6 +247,10 @@ function fontFamily(value) {
   const trimmed = value.trim();
   if (!FAMILY_PATTERN.test(trimmed)) return 'Vanadium Sans';
   return trimmed;
+}
+
+function applyItemColours(el, item) {
+  applyItemColourVars(el, item);
 }
 
 function itemFont(doc, item) {
@@ -233,11 +336,9 @@ export function paintBandItems(body, band, doc) {
         if (code) view = { ...item, kind: code };
         shape.dataset.unbound = String(!queryBound(item));
       }
+      applyItemColours(shape, view);
       paintShape(shape, view, doc);
-      const shapeCorner = document.createElement('div');
-      shapeCorner.className = 'reports-item-corner';
-      shapeCorner.title = 'Resize item';
-      shape.append(shapeCorner);
+      appendResizeHandles(shape);
       body.append(shape);
       continue;
     }
@@ -293,11 +394,9 @@ export function paintBandItems(body, band, doc) {
         body.append(itemNote(message));
         continue;
       }
+      applyItemColours(el, item);
       paintBarcode(el, item, doc);
-      const barcodeCorner = document.createElement('div');
-      barcodeCorner.className = 'reports-item-corner';
-      barcodeCorner.title = 'Resize item';
-      el.append(barcodeCorner);
+      appendResizeHandles(el);
       body.append(el);
       continue;
     }
@@ -347,13 +446,10 @@ export function paintBandItems(body, band, doc) {
       body.append(itemNote(message));
       continue;
     }
-    const label = document.createElement('span');
-    label.className = 'reports-item-text';
-    label.textContent = aggregate ? aggregateItemLabel(item) : system ? systemItemLabel(item) : param ? paramItemLabel(item) : field ? fieldItemLabel(item) : staticItemText(item);
-    const corner = document.createElement('div');
-    corner.className = 'reports-item-corner';
-    corner.title = 'Resize item';
-    el.append(label, corner);
+    const text = aggregate ? aggregateItemLabel(item) : system ? systemItemLabel(item) : param ? paramItemLabel(item) : field ? fieldItemLabel(item) : staticItemText(item);
+    el.append(makeItemTextLabel(text));
+    applyItemColours(el, item);
+    appendResizeHandles(el);
     body.append(el);
   }
 }

@@ -50,37 +50,48 @@ export function boxesNear(a, b) {
 
 /**
  * Snap a box, then clamp it inside the band.
- * A move snaps the left and the top. A resize snaps the right
- * and the bottom and keeps the top left.
+ * A move snaps the left and the top. A resize snaps the moved
+ * edges (default south-east: right and bottom, top left fixed).
  * @param {{ left: number, top: number, width: number, height: number }} box
  * @param {number} spacingPx
  * @param {{ width: number, height: number }} bounds
  * @param {boolean} resize
+ * @param {{ n?: boolean, s?: boolean, e?: boolean, w?: boolean }|null} [edges]
  * @returns {{ left: number, top: number, width: number, height: number }}
  */
-export function snapItemBox(box, spacingPx, bounds, resize) {
+export function snapItemBox(box, spacingPx, bounds, resize, edges) {
   if (!(spacingPx > 0) || !box) return box;
-  const next = resize
-    ? {
-      left: box.left,
-      top: box.top,
-      width: snapToGrid(box.left + box.width, spacingPx) - box.left,
-      height: snapToGrid(box.top + box.height, spacingPx) - box.top,
-    }
-    : {
+  if (!resize) {
+    const next = {
       left: snapToGrid(box.left, spacingPx),
       top: snapToGrid(box.top, spacingPx),
       width: box.width,
       height: box.height,
     };
-  return dragItemBox(next, 0, 0, bounds, Boolean(resize));
+    return dragItemBox(next, 0, 0, bounds, false);
+  }
+  const active = edges && (edges.n || edges.s || edges.e || edges.w)
+    ? edges
+    : { n: false, s: true, e: true, w: false };
+  let left = box.left;
+  let top = box.top;
+  let width = box.width;
+  let height = box.height;
+  const right = left + width;
+  const bottom = top + height;
+  if (active.e && !active.w) width = snapToGrid(right, spacingPx) - left;
+  else if (active.w && !active.e) {
+    left = snapToGrid(left, spacingPx);
+    width = right - left;
+  }
+  if (active.s && !active.n) height = snapToGrid(bottom, spacingPx) - top;
+  else if (active.n && !active.s) {
+    top = snapToGrid(top, spacingPx);
+    height = bottom - top;
+  }
+  return dragItemBox({ left, top, width, height }, 0, 0, bounds, true, active);
 }
 
-/**
- * Grid step for a snap. An unusable grid returns 0.
- * @param {object} doc
- * @returns {number}
- */
 export function snapSpacingPx(doc) {
   const spec = gridSpec(doc);
   if (!spec || spec.error || !(spec.spacingPx > 0)) return 0;

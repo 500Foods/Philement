@@ -2,7 +2,7 @@
  * Helvetica AFM advances for ASCII 32–126, in units per 1000 em.
  * Roman is Helvetica and Helvetica-Oblique. Bold is Helvetica-Bold
  * and Helvetica-BoldOblique. A missing glyph uses 278.
- * The same tables are in acuranzo_1468.lua.
+ * The same tables are in the Reports.Render.Layout module.
  */
 
 export const AFM_MISSING = 278;

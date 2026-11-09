@@ -23,10 +23,19 @@
     "color": "silver",
     "background": "white"
   },
-  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+  "font": {
+    "family": "Vanadium Sans",
+    "size": "10 pt",
+    "style": "Normal"
+  },
   "datasources": [],
   "bands": [
-    { "id": "ph", "typeKey": 13, "height": "0.4 in", "items": [] },
+    {
+      "id": "ph",
+      "typeKey": 13,
+      "height": "0.4 in",
+      "items": []
+    },
     {
       "id": "detail",
       "typeKey": 15,
@@ -40,9 +49,18 @@
           "strokeStyle": "solid",
           "strokeColor": "#000000",
           "fillStyle": "solid",
-          "fillPaint": { "kind": "solid", "color": "#d3d3d3" },
+          "fillPaint": {
+            "kind": "solid",
+            "color": "#d3d3d3"
+          },
           "rotation": 0,
-          "box": { "left": "0 in", "top": "0 in", "width": "1 in", "height": "0.6 in" }
+          "box": {
+            "left": "0 in",
+            "top": "0 in",
+            "width": "1 in",
+            "height": "0.6 in"
+          },
+          "backgroundColor": "#d3d3d3"
         },
         {
           "id": "round",
@@ -58,9 +76,18 @@
           "strokeStyle": "solid",
           "strokeColor": "#000000",
           "fillStyle": "solid",
-          "fillPaint": { "kind": "solid", "color": "#c8c8c8" },
+          "fillPaint": {
+            "kind": "solid",
+            "color": "#c8c8c8"
+          },
           "rotation": 0,
-          "box": { "left": "1.2 in", "top": "0 in", "width": "1 in", "height": "0.6 in" }
+          "box": {
+            "left": "1.2 in",
+            "top": "0 in",
+            "width": "1 in",
+            "height": "0.6 in"
+          },
+          "backgroundColor": "#c8c8c8"
         },
         {
           "id": "rule",
@@ -71,9 +98,18 @@
           "strokeStyle": "solid",
           "strokeColor": "#000000",
           "fillStyle": "none",
-          "fillPaint": { "kind": "solid", "color": "#d3d3d3" },
+          "fillPaint": {
+            "kind": "solid",
+            "color": "#d3d3d3"
+          },
           "rotation": 0,
-          "box": { "left": "0 in", "top": "0.8 in", "width": "1 in", "height": "0.25 in" }
+          "box": {
+            "left": "0 in",
+            "top": "0.8 in",
+            "width": "1 in",
+            "height": "0.25 in"
+          },
+          "backgroundColor": "#d3d3d3"
         },
         {
           "id": "hex",
@@ -83,9 +119,18 @@
           "strokeStyle": "solid",
           "strokeColor": "#000000",
           "fillStyle": "solid",
-          "fillPaint": { "kind": "solid", "color": "#778899" },
+          "fillPaint": {
+            "kind": "solid",
+            "color": "#778899"
+          },
           "rotation": 30,
-          "box": { "left": "1.2 in", "top": "0.8 in", "width": "0.8 in", "height": "0.8 in" }
+          "box": {
+            "left": "1.2 in",
+            "top": "0.8 in",
+            "width": "0.8 in",
+            "height": "0.8 in"
+          },
+          "backgroundColor": "#778899"
         },
         {
           "id": "back",
@@ -95,9 +140,18 @@
           "strokeStyle": "solid",
           "strokeColor": "#000000",
           "fillStyle": "solid",
-          "fillPaint": { "kind": "solid", "color": "#112233" },
+          "fillPaint": {
+            "kind": "solid",
+            "color": "#112233"
+          },
           "rotation": 0,
-          "box": { "left": "3 in", "top": "0.2 in", "width": "0.8 in", "height": "0.8 in" }
+          "box": {
+            "left": "3 in",
+            "top": "0.2 in",
+            "width": "0.8 in",
+            "height": "0.8 in"
+          },
+          "backgroundColor": "#112233"
         },
         {
           "id": "front",
@@ -107,13 +161,27 @@
           "strokeStyle": "solid",
           "strokeColor": "#000000",
           "fillStyle": "solid",
-          "fillPaint": { "kind": "solid", "color": "#abcdef" },
+          "fillPaint": {
+            "kind": "solid",
+            "color": "#abcdef"
+          },
           "rotation": 0,
-          "box": { "left": "3.2 in", "top": "0.35 in", "width": "0.8 in", "height": "0.8 in" }
+          "box": {
+            "left": "3.2 in",
+            "top": "0.35 in",
+            "width": "0.8 in",
+            "height": "0.8 in"
+          },
+          "backgroundColor": "#abcdef"
         }
       ]
     },
-    { "id": "pf", "typeKey": 17, "height": "0.4 in", "items": [] }
+    {
+      "id": "pf",
+      "typeKey": 17,
+      "height": "0.4 in",
+      "items": []
+    }
   ],
   "functions": []
 }

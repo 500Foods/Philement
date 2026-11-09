@@ -2,7 +2,10 @@
  * LithiumProperties: a two column Tabulator property grid.
  * Rows are grouped by section (see sections.js). Editors:
  * Text, Number (text with unit), List, Boolean (Yes/No select),
- * PageSize (choices given by the caller), Color (Coloris). Read-only
+ * PageSize, List, Boolean, FontFamily / FontStyle / FontSize via
+ * customDropdownEditor (never native <select> in the PP). Pick-only
+ * lists of 2…CUSTOM_DROPDOWN_CYCLE_MAX options double-click cycle
+ * without opening the menu. Color (Coloris). Read-only
  * rows do not edit. Omitted values show the default in italics with
  * the row's note as a tooltip. No header; the name column resizes
  * from its cell edge.
@@ -23,7 +26,9 @@
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { FlatpickrPicker } from '../shared/flatpickr-picker.js';
-import { setupColorPicker } from '../shared/coloris-picker.js';
+import { hexColor, namedColourOptionButton, namedColourMenuEntries, setupColorPicker, closeOpenPicker } from '../shared/coloris-picker.js';
+import { resolveNamedColour } from '../managers/reports/reports-named-colours.js';
+import { NONE_COLOR, normalizeColorValue } from '../managers/reports/reports-colours.js';
 import { groupBySection } from './sections.js';
 import { processIcons } from '../core/icons.js';
 
@@ -62,6 +67,302 @@ export function choiceLabel(value, list) {
   if (!Array.isArray(list)) return null;
   const hit = list.find((entry) => entry && typeof entry === 'object' && String(entry.value) === String(value));
   return hit && hit.label != null ? String(hit.label) : null;
+}
+
+/** Normalize list entries to { value, label }. */
+export function listChoices(list) {
+  return (list || []).map((entry) => (
+    entry && typeof entry === 'object'
+      ? { value: entry.value, label: entry.label == null ? String(entry.value) : String(entry.label) }
+      : { value: entry, label: entry }
+  ));
+}
+
+/** CSS for a Font Style list caption (independent of Family/Size). */
+export function fontStyleCss(style) {
+  const text = String(style || '');
+  const bold = /bold/i.test(text);
+  const italic = /italic/i.test(text);
+  return {
+    fontWeight: bold ? '700' : '400',
+    fontStyle: italic ? 'italic' : 'normal',
+  };
+}
+
+/** Pick-only lists with this many options or fewer cycle on double-click. */
+export const CUSTOM_DROPDOWN_CYCLE_MAX = 7;
+
+/**
+ * True when a pick-only list should cycle on double-click (2…CYCLE_MAX).
+ * Booleans are the two-option case. Editable lists never cycle.
+ */
+export function isCycleableChoices(choices) {
+  if (!Array.isArray(choices)) return false;
+  const n = choices.length;
+  return n >= 2 && n <= CUSTOM_DROPDOWN_CYCLE_MAX;
+}
+
+/** @deprecated Prefer isCycleableChoices; kept as the 2-option boolean case. */
+export function isBooleanPairChoices(choices) {
+  return Array.isArray(choices) && choices.length === 2 && isCycleableChoices(choices);
+}
+
+const STAY_KEYS = new Set([
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  'Home', 'End', 'PageUp', 'PageDown',
+]);
+
+/**
+ * Custom Properties Panel dropdown (never native `<select>`).
+ * Menu mounts on document.body (fixed) so Tabulator overflow cannot
+ * clip it. `editable: true` allows free entry (Font Size); false is
+ * pick-only (Font Family / Font Style). `styleOption` paints each
+ * option independently. Keyboard: arrows move highlight, Enter picks,
+ * Esc closes (then cancels if already closed), Home/End stay in the
+ * field when editable (Phase 72). Pick-only lists with 2…
+ * CUSTOM_DROPDOWN_CYCLE_MAX options cycle on double-click (wrap;
+ * unknown current → first); longer or editable lists do not.
+ *
+ * @param {object} cell Tabulator cell
+ * @param {Function} onRendered
+ * @param {Function} success
+ * @param {Function} cancel
+ * @param {{ value: unknown, label: string }[]} choices
+ * @param {{ editable?: boolean, inputMode?: string, title?: string,
+ *   ariaLabel?: string, className?: string,
+ *   styleOption?: (choice: { value: unknown, label: string }, el: HTMLElement) => void,
+ *   commitValue?: (raw: string) => unknown }} [opts]
+ */
+export function customDropdownEditor(cell, onRendered, success, cancel, choices, opts = {}) {
+  const editable = opts.editable !== false;
+  const canCycle = !editable && isCycleableChoices(choices);
+  const wrap = document.createElement('div');
+  wrap.className = 'lithium-properties-combo';
+  const input = document.createElement('input');
+  input.type = 'text';
+  if (opts.inputMode) input.inputMode = opts.inputMode;
+  input.className = `lithium-properties-combo-input${opts.className ? ` ${opts.className}` : ''}`;
+  if (opts.title) input.title = opts.title;
+  input.readOnly = !editable;
+  {
+    const raw = cell.getValue() ?? '';
+    const match = choices.find((choice) => String(choice.value) === String(raw));
+    input.value = !editable && match ? match.label : (raw ?? '');
+  }
+  if (!editable) input.classList.add('lithium-properties-combo-pick');
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'lithium-properties-combo-toggle';
+  toggle.setAttribute('aria-label', opts.ariaLabel || 'Open list');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.tabIndex = -1;
+  toggle.textContent = '▾';
+  const menu = document.createElement('div');
+  menu.className = 'lithium-properties-combo-menu';
+  menu.hidden = true;
+  menu.setAttribute('role', 'listbox');
+  const buttons = [];
+  let highlight = -1;
+  for (const choice of choices) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lithium-properties-combo-option';
+    btn.setAttribute('role', 'option');
+    btn.dataset.value = String(choice.value);
+    btn.textContent = choice.label;
+    if (typeof opts.styleOption === 'function') opts.styleOption(choice, btn);
+    btn.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      pick(choice);
+    });
+    menu.append(btn);
+    buttons.push(btn);
+  }
+  wrap.append(input, toggle);
+
+  let done = false;
+  let openTimer = null;
+  const currentIndex = () => {
+    const raw = String(input.value ?? '');
+    const byValue = buttons.findIndex((btn) => btn.dataset.value === raw);
+    if (byValue >= 0) return byValue;
+    return buttons.findIndex((btn) => btn.textContent === raw);
+  };
+  const setHighlight = (index) => {
+    if (!buttons.length) { highlight = -1; return; }
+    highlight = ((index % buttons.length) + buttons.length) % buttons.length;
+    buttons.forEach((btn, i) => {
+      btn.classList.toggle('lithium-properties-combo-option-active', i === highlight);
+      if (i === highlight) btn.setAttribute('aria-selected', 'true');
+      else btn.removeAttribute('aria-selected');
+    });
+    buttons[highlight].scrollIntoView({ block: 'nearest' });
+  };
+  const placeMenu = () => {
+    const rect = wrap.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.left = `${rect.left}px`;
+    menu.style.top = `${rect.bottom}px`;
+    menu.style.width = `${Math.max(rect.width, 4)}px`;
+    menu.style.right = 'auto';
+  };
+  const closeMenu = () => {
+    menu.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (menu.parentNode) menu.remove();
+  };
+  const openMenu = () => {
+    placeMenu();
+    if (!menu.parentNode) document.body.append(menu);
+    menu.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    const at = currentIndex();
+    setHighlight(at >= 0 ? at : 0);
+  };
+  const finish = (ok, value) => {
+    if (done) return;
+    done = true;
+    closeMenu();
+    if (ok) {
+      const raw = value === undefined ? input.value : value;
+      success(typeof opts.commitValue === 'function' ? opts.commitValue(raw) : raw);
+    } else cancel();
+  };
+  const pick = (choice) => {
+    input.value = String(choice.value);
+    finish(true, String(choice.value));
+  };
+
+  toggle.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (openTimer) { clearTimeout(openTimer); openTimer = null; }
+    if (menu.hidden) openMenu();
+    else closeMenu();
+    input.focus();
+  });
+  if (!editable) {
+    input.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      if (canCycle) {
+        // Delay open so a double-click can cycle without flashing the menu.
+        if (openTimer) clearTimeout(openTimer);
+        openTimer = setTimeout(() => {
+          openTimer = null;
+          if (done) return;
+          if (menu.hidden) openMenu();
+          else closeMenu();
+        }, 280);
+      } else if (menu.hidden) openMenu();
+      else closeMenu();
+      input.focus();
+    });
+  }
+  if (canCycle) {
+    wrap.addEventListener('dblclick', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (openTimer) { clearTimeout(openTimer); openTimer = null; }
+      closeMenu();
+      const raw = String(cell.getValue() ?? '');
+      let idx = choices.findIndex((choice) => String(choice.value) === raw);
+      if (idx < 0) idx = choices.findIndex((choice) => String(choice.label) === raw);
+      // Unknown current → first; else advance with wrap.
+      const next = idx < 0 ? 0 : (idx + 1) % choices.length;
+      pick(choices[next]);
+    });
+  }
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (done) return;
+      if (!menu.hidden && (menu.contains(document.activeElement) || document.activeElement === input)) {
+        return;
+      }
+      if (editable) finish(true);
+      else finish(true, String(cell.getValue() ?? ''));
+    }, 0);
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (menu.hidden) openMenu();
+      else setHighlight(highlight + 1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (menu.hidden) openMenu();
+      else setHighlight(highlight - 1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.stopPropagation();
+      if (!menu.hidden && highlight >= 0 && buttons[highlight]) {
+        event.preventDefault();
+        pick({ value: buttons[highlight].dataset.value, label: buttons[highlight].textContent });
+        return;
+      }
+      if (editable) finish(true);
+      else if (!menu.hidden) closeMenu();
+      else finish(true, String(cell.getValue() ?? ''));
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      if (!menu.hidden) { closeMenu(); return; }
+      finish(false);
+      return;
+    }
+    if (STAY_KEYS.has(event.key)) {
+      event.stopPropagation();
+    }
+  });
+  onRendered(() => {
+    input.focus();
+    if (editable) input.select();
+  });
+  return wrap;
+}
+
+/** Font Size: editable custom dropdown; each option at that size. */
+function fontSizeEditor(cell, onRendered, success, cancel, choices) {
+  return customDropdownEditor(cell, onRendered, success, cancel, choices, {
+    editable: true,
+    inputMode: 'decimal',
+    className: 'lithium-properties-number',
+    title: 'A size number (bare uses Font Units) or a size with a unit.',
+    ariaLabel: 'Font size list',
+    styleOption: (choice, el) => {
+      const pt = Number(choice.value);
+      if (Number.isFinite(pt) && pt > 0) el.style.fontSize = `${pt}pt`;
+    },
+  });
+}
+
+/** Font Family: pick-only; each option in its own face. */
+function fontFamilyEditor(cell, onRendered, success, cancel, choices) {
+  return customDropdownEditor(cell, onRendered, success, cancel, choices, {
+    editable: false,
+    ariaLabel: 'Font family list',
+    styleOption: (choice, el) => {
+      el.style.fontFamily = `"${choice.label}", sans-serif`;
+    },
+  });
+}
+
+/** Font Style: pick-only; each option in its own style. */
+function fontStyleEditor(cell, onRendered, success, cancel, choices) {
+  return customDropdownEditor(cell, onRendered, success, cancel, choices, {
+    editable: false,
+    ariaLabel: 'Font style list',
+    styleOption: (choice, el) => {
+      const css = fontStyleCss(choice.label);
+      el.style.fontWeight = css.fontWeight;
+      el.style.fontStyle = css.fontStyle;
+    },
+  });
 }
 
 export function valueWidth(inner, label, min = VALUE_MIN_WIDTH) {
@@ -247,32 +548,85 @@ export function sectionOrder(displayed, caption) {
 
 function colorEditor(cell, onRendered, success, cancel) {
   setupColoris();
+  const wrap = document.createElement('div');
+  wrap.className = 'lithium-properties-color-wrap';
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'lithium-properties-color';
   input.value = cell.getValue() ?? '';
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'lithium-properties-color-toggle';
+  toggle.title = 'Named colours';
+  toggle.setAttribute('aria-label', 'Named colours');
+  toggle.innerHTML = '<fa fa-caret-down></fa>';
+  const menu = document.createElement('div');
+  menu.className = 'lithium-properties-color-named';
+  menu.hidden = true;
+  wrap.append(input, toggle, menu);
   let done = false;
-  const finish = () => {
+  const finish = (raw = input.value) => {
     if (done) return;
     done = true;
-    success(input.value);
+    menu.hidden = true;
+    let resolved;
+    try {
+      resolved = normalizeColorValue(raw);
+    } catch {
+      resolved = resolveNamedColour(raw) || hexColor(raw) || NONE_COLOR;
+    }
+    success(resolved);
   };
-  input.addEventListener('change', finish);
-  // Coloris fires change (if the colour moved) and then close on the input.
-  input.addEventListener('close', finish);
+  const paintMenu = () => {
+    const hits = namedColourMenuEntries(input.value, 30);
+    menu.textContent = '';
+    for (const entry of hits) {
+      menu.append(namedColourOptionButton(entry, (picked) => {
+        input.value = picked.hex === 'none' ? NONE_COLOR : picked.hex;
+        menu.hidden = true;
+        finish(input.value);
+      }));
+    }
+    menu.hidden = hits.length === 0;
+  };
+  const openNames = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    // Caret opens the name list; do not leave Coloris covering it.
+    closeOpenPicker();
+    paintMenu();
+    menu.hidden = false;
+    input.focus();
+  };
+  toggle.addEventListener('mousedown', openNames);
+  toggle.addEventListener('click', openNames);
+  // Typing in the field: type-ahead names without opening Coloris until click.
+  input.addEventListener('input', () => {
+    if (!menu.hidden || document.activeElement === input) paintMenu();
+  });
+  input.addEventListener('change', () => finish());
+  input.addEventListener('close', () => finish());
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') finish();
-    if (event.key === 'Escape') { done = true; cancel(); }
+    if (event.key === 'Escape') { done = true; menu.hidden = true; cancel(); }
   });
   input.addEventListener('blur', () => setTimeout(() => {
+    if (menu.contains(document.activeElement) || toggle.contains(document.activeElement)) return;
     if (!document.getElementById('clr-picker')?.classList.contains('clr-open')) finish();
   }, 0));
-  // Coloris opens on click, not focus, so open it for the new input.
+  // Click the field (not the arrow) opens Coloris.
+  input.addEventListener('click', (event) => {
+    if (event.target === toggle) return;
+    menu.hidden = true;
+  });
   onRendered(() => {
+    processIcons(wrap);
     input.focus();
+    // Opening the editor on the value field starts Coloris; the caret
+    // closes it and shows named colours instead (see openNames).
     input.click();
   });
-  return input;
+  return wrap;
 }
 
 /** A Date value as Flatpickr's date only `YYYY-MM-DD`, or '' when unset. */
@@ -804,7 +1158,9 @@ export class LithiumProperties {
 
   _format(cell) {
     const data = cell.getRow().getData();
-    let text = data.value === undefined || data.value === null ? '' : String(data.value);
+    let text = data.display !== undefined && data.display !== null
+      ? String(data.display)
+      : (data.value === undefined || data.value === null ? '' : String(data.value));
     if (data.editor === 'PageSize') {
       const hit = this.pageSizes().find((entry) => Number(entry.value) === Number(data.value));
       if (hit) text = hit.label;
@@ -853,38 +1209,32 @@ export class LithiumProperties {
     if (data.editor === 'Date') return dateEditor(cell, onRendered, success, cancel);
     let choices = data.editor === 'PageSize'
       ? this.pageSizes()
-      : (data.list || []).map((entry) => (
-        entry && typeof entry === 'object'
-          ? { value: entry.value, label: entry.label == null ? String(entry.value) : String(entry.label) }
-          : { value: entry, label: entry }
-      ));
+      : listChoices(data.list);
     if (data.editor === 'Boolean') {
       choices = [{ value: 'True', label: 'Yes' }, { value: 'False', label: 'No' }];
     }
+    if (data.editor === 'FontFamily' && choices.length) {
+      return fontFamilyEditor(cell, onRendered, success, cancel, choices);
+    }
+    if (data.editor === 'FontStyle' && choices.length) {
+      return fontStyleEditor(cell, onRendered, success, cancel, choices);
+    }
+    if (data.editor === 'FontSize') {
+      return fontSizeEditor(cell, onRendered, success, cancel, choices);
+    }
     if (data.editor === 'PageSize' || data.editor === 'Boolean' || (data.editor === 'List' && choices.length)) {
-      const select = document.createElement('select');
-      for (const choice of choices) {
-        const option = document.createElement('option');
-        option.value = String(choice.value);
-        option.textContent = choice.label;
-        select.append(option);
-      }
-      select.value = data.editor === 'Boolean'
-        ? (cell.getValue() === true || cell.getValue() === 'True' ? 'True' : 'False')
-        : String(cell.getValue());
-      let done = false;
-      const commit = () => {
-        if (done) return;
-        done = true;
-        success(data.editor === 'PageSize' ? Number(select.value) : select.value);
+      // Standing rule: custom dropdown only — never native <select>.
+      const seed = {
+        getValue: () => (data.editor === 'Boolean'
+          ? (cell.getValue() === true || cell.getValue() === 'True' ? 'True' : 'False')
+          : cell.getValue()),
       };
-      select.addEventListener('change', commit);
-      select.addEventListener('blur', commit);
-      select.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') { done = true; cancel(); }
+      return customDropdownEditor(seed, onRendered, success, cancel, choices, {
+        editable: false,
+        ariaLabel: data.editor === 'PageSize' ? 'Page size list'
+          : data.editor === 'Boolean' ? 'Yes or No' : 'Choose a value',
+        commitValue: data.editor === 'PageSize' ? (raw) => Number(raw) : undefined,
       });
-      onRendered(() => select.focus());
-      return select;
     }
     if (data.multiline) {
       const area = document.createElement('textarea');
@@ -946,9 +1296,21 @@ export class LithiumProperties {
       success(input.value);
     };
     input.addEventListener('blur', commit);
+    const stay = new Set([
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+      'Home', 'End', 'PageUp', 'PageDown',
+    ]);
     input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') commit();
-      if (event.key === 'Escape') { done = true; cancel(); }
+      if (event.key === 'Enter') {
+        event.stopPropagation();
+        commit();
+      } else if (event.key === 'Escape') {
+        event.stopPropagation();
+        done = true;
+        cancel();
+      } else if (stay.has(event.key)) {
+        event.stopPropagation();
+      }
     });
     onRendered(() => { input.focus(); input.select(); });
     return input;

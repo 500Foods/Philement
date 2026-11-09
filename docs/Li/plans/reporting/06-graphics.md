@@ -73,7 +73,8 @@ The script update applied, lint, and the browser check.
 Field Image (lookup 053 key 22) is already on the Field toolbar.
 The cell is a base64 data URI, `data:image/png;base64,...` or
 `data:image/svg+xml;base64,...`. Preview HTML uses that URI.
-`acuranzo_1476.lua` carries the render path and is not applied.
+Reports.Render.Images (`acuranzo_1476.lua` since the 2026-11-09
+split) carries the render path.
 The file browser, the `doc.images` hash, and the shared display
 PNG in this phase stay unstarted. Do not mark this phase in
 progress. Do not start it by writing its import pipeline.
@@ -251,11 +252,11 @@ refresh the archive. Probe `require("zint.barcode")` and
 `opts.output` unset. `io` stays off. Do not restart the pintura
 Hydrogen. Do not apply a migration for the library itself. Phase 54
 in this file is the barcode UI and is also in progress. Do not start
-Phase 55, Phase 30, or Phase 45. Andrew applied
-`acuranzo_1469.lua` through `acuranzo_1474.lua`.
-`acuranzo_1475.lua`, `acuranzo_1476.lua`, and `acuranzo_1477.lua`
-are written and not applied. The next free Acuranzo file is
-**1478**.
+Phase 55, Phase 30, or Phase 45. The 2026-11-09 renumber voids the
+file numbers above: zint.Svg is `acuranzo_1461.lua`, and the barcode
+SVG path is Reports.Render.Barcode (`acuranzo_1477.lua`). A Render
+change follows REPORTING_PLAN.md Implementor workflow rule 12. The
+next free Acuranzo file is **1481**.
 
 ---
 
@@ -361,15 +362,17 @@ Applied script update, lint, and the browser check.
 
 ### Handoff
 
-Andrew applied `acuranzo_1469.lua` through `acuranzo_1474.lua`.
-Apply `acuranzo_1475.lua`, then `acuranzo_1476.lua`, then
-`acuranzo_1477.lua`. 1477 adds lookup 075 keys 13–16. A barcode
+Since the 2026-11-09 renumber, `acuranzo_1465.lua` adds lookup 075
+keys 13–16, `acuranzo_1464.lua` lists Datasource before Field, and
+the render path is in the Reports.Render.* modules (`acuranzo_1467.lua`
+through `acuranzo_1479.lua`). A Render change follows REPORTING_PLAN.md
+Implementor workflow rule 12. A barcode
 shows Barcode Placement, Barcode Text, Barcode Colors, and
 Barcode Symbology between Object and Position. The Symbology
 picker stays in Object. Check digit is in Barcode Symbology.
 Code 39 and GS1-128 hide that section. The headers show before
-1477 is applied. 1475 lists Datasource before Field on lookup
-053 keys 20, 21, 22, 23, 24, and 26. 1476 reads that pair for a field memo, image, and shape.
+1465 is applied. 1464 lists Datasource before Field on lookup
+053 keys 20, 21, 22, 23, 24, and 26. Reports.Render reads that pair for a field memo, image, and shape.
 A text, number, or datetime field uses the datasource when it is
 set, and uses the current row when it is absent. The iterating
 datasource uses the current row. Any other datasource uses its
@@ -389,7 +392,7 @@ any other string keeps the designed rectangle. The barcode
 rectangle stays free. Leave `opts.output` unset. Do not deploy.
 Do not apply from this session. Do not restart the pintura
 Hydrogen. Do not start Phase 55 or Phase 50. The next free
-Acuranzo file is **1478**. QueryRef **175** stays unused. Next
+Acuranzo file is **1481**. QueryRef **175** stays unused. Next
 free lookup id **080**. Next free lookup 054 key **53**.
 
 ---

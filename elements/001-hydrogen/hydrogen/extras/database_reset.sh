@@ -24,7 +24,8 @@
 # CHANGELOG
 # 1.0.1 - 2026-10-08 - Ignore ~/.my.cnf and ~/.sqliterc when counting and resetting
 # 1.0.1 - 2026-10-09 - Refactored into extras/database_reset_lib/ modules
-# TEST_VERSION: 1.0.1
+# 1.1.0 - 2026-11-09 - Honour HYDROGEN_ENGINES (an explicit --engine still wins)
+# TEST_VERSION: 1.1.0
 
 set -euo pipefail
 set +H
@@ -62,6 +63,8 @@ TARGETS=(
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source library modules
+# shellcheck source=tests/lib/engine_utils.sh # HYDROGEN_ENGINES filtering
+source "${SCRIPT_DIR}/../tests/lib/engine_utils.sh"
 # shellcheck source=extras/database_reset_lib/common.sh # shared helpers
 source "${SCRIPT_DIR}/database_reset_lib/common.sh"
 # shellcheck source=extras/database_reset_lib/mysql.sh # MySQL/MariaDB backend
@@ -93,6 +96,9 @@ databases and database files are not dropped.
   --group demo    Only the eight test 40 schemas.
   --engine name   One engine: postgresql, mysql, sqlite, db2, mariadb,
                   firebird, yugabytedb, mssql.
+
+Only engines listed in HYDROGEN_ENGINES are used (unset means all).
+An explicit --engine overrides HYDROGEN_ENGINES.
 
 Credentials are the environment variables already referenced by the
 test JSON configs. Stop Hydrogen before running this so open transactions
@@ -195,6 +201,9 @@ main() {
     fi
     printf 'Build schemas for tests 32-39 (test) and test 40 (demo).\n'
     printf 'Databases and database files are kept. Objects inside the schema are removed.\n\n'
+    if [[ -z "${ENGINE_FILTER}" && -n "${HYDROGEN_ENGINES:-}" ]]; then
+        printf 'HYDROGEN_ENGINES %s (other engines skipped)\n\n' "${HYDROGEN_ENGINES}"
+    fi
 
     for row in "${TARGETS[@]}"; do
         if ! selected_row "${row}"; then

@@ -22,6 +22,7 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.11.0 - 2026-11-09 - Engines filtered by HYDROGEN_ENGINES (tests/lib/engine_utils.sh)
 # 1.10.0 - 2026-09-30 - Eighth engine: MSSQL, schema demoms, port 5409
 # 1.9.5 - 2026-09-02 - Retry DML transaction probe 3x under suite-parallel load
 # 1.9.4 - 2026-08-27 - Invalid-login accepts 503 congestion (not credential fail).
@@ -70,10 +71,12 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.10.0"
+TEST_VERSION="1.11.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
 setup_test_environment
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
 [[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "${SCRIPT_DIR}/lib/group40_http.sh"
@@ -96,6 +99,8 @@ AUTH_TEST_CONFIGS=(
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
     ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mssql.json:mssql:mssql:MSSQL Engine"
 )
+
+filter_engine_map AUTH_TEST_CONFIGS 3
 
 # Test timeouts (seconds)
 STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
@@ -625,6 +630,8 @@ for test_config in "${!AUTH_TEST_CONFIGS[@]}"; do
 done
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
+warn_unknown_engines
+[[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
 if [[ "${config_valid}" = true ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All configuration files validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))

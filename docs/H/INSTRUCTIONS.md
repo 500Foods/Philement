@@ -120,7 +120,7 @@ This list is every `tests/test_*.sh` script. When a script is added or renamed, 
 - tests/test_27_reporting_image_scale.sh - Reporting image scale endpoint with ImageMagick
 - tests/test_30_database.sh - All-engines parallel operational test (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB, MSSQL, plus a combined config)
 - tests/test_31_migrations.sh - SQL-lints Helium migration files on disk with sqruff. Does not launch Hydrogen
-- tests/test_32_postgres_migrations.sh - PostgreSQL migration performance test
+- tests/test_32_postgresql_migrations.sh - PostgreSQL migration performance test
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
 - tests/test_35_db2_migrations.sh - DB2 migration performance test

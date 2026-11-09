@@ -118,7 +118,8 @@ describe('shape fill', () => {
     expect(labels()).toEqual(expect.arrayContaining(['Angle', 'Stops']));
     expect(propertyRows(doc, sel, lookups).some((row) => row.key === 47)).toBe(false);
     doc = applyProperty(doc, sel, 'fill-stops', '0 #1d4e89, 1 #f0c808');
-    doc = applyProperty(doc, sel, '47', '#abcdef');
+    doc = applyProperty(doc, sel, '57', '#abcdef');
+    expect(doc.bands[1].items[0].backgroundColor).toBe('#abcdef');
     expect(doc.bands[1].items[0].fillPaint.stops[0].color).toBe('#abcdef');
     expect(doc.bands[1].items[0].fillPaint.stops[1].color).toBe('#f0c808');
     expect(doc.bands[1].items[0].fillPaint.kind).toBe('linear');

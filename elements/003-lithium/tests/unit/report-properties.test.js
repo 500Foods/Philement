@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createBlank, addItem } from '../../src/managers/reports/model/document.js';
-import { CLIENT_SECTIONS, applyProperty, attributeKeys, propertyRows, withUnit } from '../../src/managers/reports/report-properties.js';
+import {
+  CLIENT_SECTIONS, applyProperty, attributeKeys, propertyRows, withUnit,
+  fontUnitsOf, positionUnitsOf, pageUnitsOf, displayLengthValue, FONT_SIZE_LIST,
+} from '../../src/managers/reports/report-properties.js';
+import { fontStyleCss } from '../../src/properties/lithium-properties.js';
 import { tableData } from '../../src/properties/lithium-properties.js';
 import { outlineEntries } from '../../src/managers/reports/reports-panel.js';
 import { createHistory } from '../../src/managers/reports/model/history.js';
@@ -9,7 +13,7 @@ const attr = (key, name, collection) => ({ key_idx: key, value_txt: name, collec
 const lookups = {
   objectTypes: [
     { key_idx: 0, value_txt: 'Static Text', collection: JSON.stringify({ attributes: [0, 1, 2, 3, 4, 14, 29] }) },
-    { key_idx: 9, value_txt: 'Report Top', collection: JSON.stringify({ attributes: ['Title', 'Link', 'Page Size', 'Grid Color', 'Grid Background Color', 'Font Size'] }) },
+    { key_idx: 9, value_txt: 'Report Top', collection: JSON.stringify({ attributes: ['Title', 'Link', 'Page Size', 'Position Units', 'Font Units', 'Page Units', 'Grid Color', 'Grid Background Color', 'Font Family', 'Font Size', 'Font Style'] }) },
   ],
   attributes: [
     attr(0, 'Top', { Group: 'Position', section: 5, Editor: 'Number' }),
@@ -19,8 +23,13 @@ const lookups = {
     attr(4, 'Align', { Group: 'Position', section: 5, Editor: 'List', List: ['Left', 'Center', 'Right'] }),
     attr(6, 'Object Name', { Group: 'Object', section: 4, Label: 'Name', Editor: 'Text' }),
     attr(14, 'Rotation', { Group: 'Position', section: 5, Editor: 'Number' }),
+    attr(15, 'Font Family', { Group: 'Fonts', section: 6, Label: 'Font Family', Editor: 'List', List: ['Vanadium Sans', 'Helvetica'] }),
     attr(16, 'Font Size', { Group: 'Fonts', section: 6, Label: 'Font Size', Editor: 'Number' }),
+    attr(17, 'Font Style', { Group: 'Fonts', section: 6, Label: 'Font Style', Editor: 'List', List: ['Normal', 'Bold', 'Italic', 'Bold + Italic'] }),
     attr(18, 'Title', { Group: 'Report', section: 1, Label: 'Title', Editor: 'Text' }),
+    attr(34, 'Page Units', { Group: 'Units', section: 17, Label: 'Page Units', Editor: 'List', List: ['in', 'mm', 'cm', 'px', 'pt'] }),
+    attr(53, 'Position Units', { Group: 'Units', section: 17, Label: 'Position Units', Editor: 'List', List: ['in', 'mm', 'cm', 'px', 'pt'] }),
+    attr(54, 'Font Units', { Group: 'Units', section: 17, Label: 'Font Units', Editor: 'List', List: ['pt', 'in', 'mm', 'cm', 'px'] }),
     attr(21, 'Grid Color', { Group: 'Grid', section: 8, Label: 'Color', Editor: 'Color' }),
     attr(24, 'Grid Background Color', { Group: 'Grid', section: 8, Label: 'Background', Editor: 'Color' }),
     attr(29, 'Link', { Group: 'Object', section: 4, Label: 'Link', Editor: 'None' }),
@@ -42,7 +51,7 @@ describe('report property rows', () => {
     expect(item).toEqual([0, 1, 2, 3, 4, 14, 29]);
     expect(item).not.toContain(24);
     const report = attributeKeys(doc, { bandId: 'd1', itemId: '' }, lookups);
-    expect(report).toEqual([6, 18, 29, 30, 21, 24, 16]);
+    expect(report).toEqual([6, 18, 29, 30, 53, 54, 34, 21, 24, 15, 16, 17]);
     const sel = { bandId: 'd1', itemId: 't1' };
     const labels = propertyRows(doc, sel, lookups).map((row) => row.label);
     expect(labels).toEqual([
@@ -146,5 +155,59 @@ describe('report property rows', () => {
     expect(reportNoted.notes).toBe('cover');
     expect(propertyRows(doc, {}, lookups).some((row) => row.label === 'ID')).toBe(false);
     expect(() => applyProperty(doc, sel, 'object-id', 'x')).toThrow(/read only/);
+  });
+});
+
+describe('Phase 76 units and font editors', () => {
+  it('resolves Position/Font/Page Units with defaults', () => {
+    const doc = createBlank();
+    expect(positionUnitsOf(doc)).toBe('in');
+    expect(fontUnitsOf(doc)).toBe('pt');
+    expect(pageUnitsOf(doc)).toBe('in');
+    doc.page.positionUnits = 'mm';
+    doc.page.fontUnits = 'px';
+    doc.page.units = 'cm';
+    expect(withUnit('2', doc)).toBe('2 mm');
+    expect(withUnit('2', doc, 'font')).toBe('2 px');
+    expect(withUnit('2', doc, 'page')).toBe('2 cm');
+    expect(withUnit('2 in', doc, 'font')).toBe('2 in');
+  });
+
+  it('bare position and font size use the matching unit; changing units does not rewrite', () => {
+    const doc = withText();
+    const sel = { bandId: 'd1', itemId: 't1' };
+    const moved = applyProperty(doc, sel, '1', '0.5');
+    expect(moved.bands[1].items[0].box.left).toBe('0.5 in');
+    const sized = applyProperty(doc, sel, '16', '14');
+    expect(sized.bands[1].items[0].font.size).toBe('14 pt');
+    const next = applyProperty(moved, {}, '53', 'mm');
+    expect(next.page.positionUnits).toBe('mm');
+    expect(next.bands[1].items[0].box.left).toBe('0.5 in');
+  });
+
+  it('shows Units on the report and Font preview editors', () => {
+    const rows = propertyRows(createBlank(), {}, lookups);
+    expect(rows.find((row) => row.key === 53)).toMatchObject({ label: 'Position Units', value: 'in' });
+    expect(rows.find((row) => row.key === 54)).toMatchObject({ label: 'Font Units', value: 'pt' });
+    expect(rows.find((row) => row.key === 34)).toMatchObject({ label: 'Page Units', value: 'in' });
+    expect(rows.find((row) => row.key === 15)).toMatchObject({
+      editor: 'FontFamily',
+      list: ['Vanadium Sans', 'Helvetica'],
+    });
+    expect(rows.find((row) => row.key === 17)).toMatchObject({
+      editor: 'FontStyle',
+      list: ['Normal', 'Bold', 'Italic', 'Bold + Italic'],
+    });
+    expect(rows.find((row) => row.key === 16)).toMatchObject({
+      editor: 'FontSize',
+      display: '10 pt',
+      list: FONT_SIZE_LIST.map((n) => ({ value: String(n), label: String(n) })),
+    });
+    expect(rows.find((row) => row.key === 16).display).toBe('10 pt');
+    const itemRows = propertyRows(withText(), { bandId: 'd1', itemId: 't1' }, lookups);
+    expect(itemRows.find((row) => row.key === 0).display).toBeDefined();
+    expect(displayLengthValue('1.2345 in')).toBe('1.23 in');
+    expect(fontStyleCss('Bold + Italic')).toEqual({ fontWeight: '700', fontStyle: 'italic' });
+    expect(fontStyleCss('Normal')).toEqual({ fontWeight: '400', fontStyle: 'normal' });
   });
 });

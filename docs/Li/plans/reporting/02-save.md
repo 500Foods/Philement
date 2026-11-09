@@ -323,8 +323,8 @@ file is 1442. The next caller-facing QueryRef is 173.
 ### Lessons learned
 
 - 053 needs no column for its palette group: `value_int` already is
-  one, so 074 keys on it. 053's `group` string is a subtype, not the
-  palette group.
+  one, so 074 keys on it. 053's `group` string is the kind (Text,
+  Number, Image, …), not the category.
 - 1441 was built from 1087 with 1437's keys 4, 15, and 17 laid over,
   so the reverse restores the live JSON, not the original 1087.
 - 054 editor oddities remain for Phase 14: keys 21 and 24 use `Text`

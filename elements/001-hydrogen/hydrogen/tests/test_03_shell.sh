@@ -396,7 +396,7 @@ declare -a ENV_VARS=(
     "HELIUM_DOCS_ROOT|all|Helium project root|Root directory path of the Helium project. Required for payload generation and cross-project operations."
                               
     # Key project parameters
-    "HYDROGEN_ENGINES|30-59|supported databases|Database engines that can be tested against - used when running build on platforms like GitHub where not all DBs are installed"
+    "HYDROGEN_ENGINES|30-39|supported databases|Database engines that can be tested against - used when running build on platforms like GitHub where not all DBs are installed"
     "HYDROGEN_SCHEMA|10-69|schema validation|The location of the JSON schma file (2020-12) used for validating Hydrogen configuration files."
     "HYDROGEN_DEV_EMAIL|02,12|Developer email|The email address of the developer responsible for this Hydrogen instance. Used for notifications and support contact."
 

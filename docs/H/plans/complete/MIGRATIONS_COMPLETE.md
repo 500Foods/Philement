@@ -174,7 +174,7 @@ if (deallocate_query) {
 
 #### 4.1 Performance Testing
 
-**Test**: `tests/test_32_postgres_migrations.sh`
+**Test**: `tests/test_32_postgresql_migrations.sh`
 **Metric**: Migration completion time
 **Actual Results**: 25s → 19.9s (20.4% improvement)
 
@@ -291,7 +291,7 @@ The optimizations successfully eliminated network/protocol overhead, but the rem
 
 ### Test Infrastructure
 
-- `tests/test_32_postgres_migrations.sh` - PostgreSQL migration performance test
+- `tests/test_32_postgresql_migrations.sh` - PostgreSQL migration performance test
 - `tests/test_35_db2_migrations.sh` - DB2 migration performance test
 - `tests/test_30_database.sh` - All engines operational test
 

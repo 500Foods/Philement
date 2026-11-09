@@ -1,7 +1,7 @@
 /**
  * Pointer editing for the report page.
- * A band edge resizes the band. An item moves, and its corner
- * resizes it. Both commit on pointerup. A band click selects
+ * A band edge resizes the band. An item moves, and its handles
+ * resize it from any side or corner. Both commit on pointerup. A band click selects
  * that band and clears the item. A ruler click selects the report;
  * the End of Report marker selects itself.
  */
@@ -9,7 +9,7 @@
 import { log, Subsystems, Status } from '../../core/log.js';
 import { toast } from '../../shared/toast.js';
 import { dragBandHeight } from './bands.js';
-import { bandItemBounds, dragItemBox, itemBox } from './items.js';
+import { bandItemBounds, dragItemBox, edgesFromHandle, itemBox } from './items.js';
 import { bandHeight, moveItem, resizeBand, resizeItem } from './model/document.js';
 import { hideRulerSpan, pageSpan, setRulerLength, showRulerSpan, trackReportCursor } from './rulers.js';
 import { readViewScale } from './scale.js';
@@ -100,6 +100,31 @@ export const reportPointerMethods = {
     this._onCrosshair = null;
   },
 
+  _syncBorders() {
+    const stage = this.elements && this.elements.stage;
+    if (stage) stage.classList.toggle('reports-borders-off', this._bordersOn === false);
+    setToolbarToggle(this.elements && this.elements.bordersBtn, this._bordersOn !== false);
+  },
+
+  /** Borders toggle: session only, like Grid. Off hides silver item outlines. */
+  _bindBorders() {
+    const button = this.elements.bordersBtn;
+    if (!button) return;
+    if (this._bordersOn === undefined) this._bordersOn = true;
+    this._syncBorders();
+    this._onBorders = () => {
+      this._bordersOn = !this._bordersOn;
+      this._syncBorders();
+    };
+    button.addEventListener('click', this._onBorders);
+  },
+
+  _unbindBorders() {
+    const button = this.elements && this.elements.bordersBtn;
+    if (button && this._onBorders) button.removeEventListener('click', this._onBorders);
+    this._onBorders = null;
+  },
+
   _unbindRuler() {
     const button = this.elements && this.elements.rulerBtn;
     if (button && this._onRuler) button.removeEventListener('click', this._onRuler);
@@ -176,7 +201,7 @@ export const reportPointerMethods = {
         this._selectPointerItem(itemEl);
         return;
       }
-      this._beginItemDrag(event, itemEl, Boolean(target.closest('.reports-item-corner')));
+      this._beginItemDrag(event, itemEl, edgesFromHandle(target.closest('.reports-item-handle')?.dataset?.edge));
       return;
     }
     if (target.closest('.reports-band-edge')) {
@@ -227,7 +252,7 @@ export const reportPointerMethods = {
     if (this._drag && (this._drag.kind === 'move' || this._drag.kind === 'resize')) this._drag = null;
   },
 
-  _beginItemDrag(event, itemEl, resize) {
+  _beginItemDrag(event, itemEl, edges) {
     if (!this._recordEditing) return;
     const bandEl = itemEl.closest('.reports-band');
     const bandId = bandEl && bandEl.dataset.bandId;
@@ -249,9 +274,11 @@ export const reportPointerMethods = {
       this._failEdit(error, 'Item could not be moved.');
       return;
     }
+    const resize = Boolean(edges);
     event.preventDefault();
     this._drag = {
       kind: resize ? 'resize' : 'move',
+      edges: resize ? edges : null,
       bandId,
       itemId,
       itemEl,
@@ -274,7 +301,8 @@ export const reportPointerMethods = {
     const scale = drag.scale > 0 ? drag.scale : 1;
     const dx = (event.clientX - drag.startX) / scale;
     const dy = (event.clientY - drag.startY) / scale;
-    const preview = dragItemBox(drag.box, dx, dy, drag.bounds, drag.kind === 'resize');
+    const resizing = drag.kind === 'resize';
+    const preview = dragItemBox(drag.box, dx, dy, drag.bounds, resizing, drag.edges);
     drag.preview = preview;
     drag.itemEl.style.left = `${preview.left}px`;
     drag.itemEl.style.top = `${preview.top}px`;
@@ -293,7 +321,7 @@ export const reportPointerMethods = {
       this._clearSnapPreview();
       return;
     }
-    const snapped = snapItemBox(preview, spacing, drag.bounds, drag.kind === 'resize');
+    const snapped = snapItemBox(preview, spacing, drag.bounds, resizing, drag.edges);
     this._showItemSnap(body, preview, snapped);
   },
 
@@ -302,13 +330,19 @@ export const reportPointerMethods = {
     this._clearItemDrag();
     if (!drag || drag.kind === 'band' || this._closed || !this.doc || !drag.preview) return;
     const spacing = this._snapSpacing();
+    const resizing = drag.kind === 'resize';
     const box = spacing > 0
-      ? snapItemBox(drag.preview, spacing, drag.bounds, drag.kind === 'resize')
+      ? snapItemBox(drag.preview, spacing, drag.bounds, resizing, drag.edges)
       : drag.preview;
     let next;
     try {
-      if (drag.kind === 'resize') {
-        next = resizeItem(this.doc, drag.bandId, drag.itemId, {
+      if (resizing) {
+        // One undo step: origin and size together when n/w edges move.
+        next = moveItem(this.doc, drag.bandId, drag.itemId, {
+          left: `${box.left} px`,
+          top: `${box.top} px`,
+        });
+        next = resizeItem(next, drag.bandId, drag.itemId, {
           width: `${box.width} px`,
           height: `${box.height} px`,
         });
@@ -332,7 +366,7 @@ export const reportPointerMethods = {
     }
     this._commitDocument(next);
     const placed = after || {};
-    log(Subsystems.MANAGER, Status.INFO, `[Reports] ${drag.kind === 'resize' ? 'Resized' : 'Moved'} ${drag.itemId} to ${placed.left}, ${placed.top}, ${placed.width} by ${placed.height}`);
+    log(Subsystems.MANAGER, Status.INFO, `[Reports] ${resizing ? 'Resized' : 'Moved'} ${drag.itemId} to ${placed.left}, ${placed.top}, ${placed.width} by ${placed.height}`);
   },
 
   _clearBandDrag() {

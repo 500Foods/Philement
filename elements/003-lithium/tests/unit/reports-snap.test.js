@@ -75,6 +75,21 @@ describe('grid snap', () => {
     expect(boxesNear(moved, { left: 324, top: 0, width: 144, height: 10 })).toBe(true);
     expect(boxesNear(moved, grown)).toBe(false);
   });
+  it('snaps the dragged north and west edges', () => {
+    const bounds = { width: 768, height: 96 };
+    const shrunk = snapItemBox(
+      { left: 322, top: 14, width: 100, height: 40 },
+      step,
+      bounds,
+      true,
+      { n: true, s: false, e: false, w: true },
+    );
+    expect(shrunk.left).toBe(324);
+    expect(shrunk.top).toBe(12);
+    expect(shrunk.width).toBe(98);
+    expect(shrunk.height).toBe(42);
+  });
+
 
   it('reads the document grid and skips a grid that cannot be measured', () => {
     expect(snapSpacingPx(createBlank())).toBe(step);

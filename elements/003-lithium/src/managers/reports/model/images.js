@@ -3,7 +3,7 @@
  * Bytes live once in doc.images, keyed by a FNV-1a hash of the
  * data URI. The item stores that hash. Preview builds one raster
  * per hash, pixel size, fit, anchor, grayscale, and invert.
- * acuranzo_1468.lua reads the same key in params.rasters.
+ * The Reports.Render.Images module reads the same key in params.rasters.
  */
 
 import { convertLength, parseLength } from './units.js';

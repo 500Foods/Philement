@@ -1,8 +1,8 @@
 /**
  * Line breaks and fitHeight for a band instance.
  * Widths are Helvetica AFM advances. The HTML and PDF emitters
- * paint the lines this function returns. acuranzo_1468.lua
- * keeps the same advance table and the same break rules.
+ * paint the lines this function returns. The Reports.Render.Layout
+ * module keeps the same advance table and the same break rules.
  * A grown item is drawn in Helvetica so the measured line fits.
  */
 

@@ -351,7 +351,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_27_reporting_image_scale.md](/docs/H/tests/test_27_reporting_image_scale.md): Reporting image_scale endpoint (ImageMagick)
 - [test_30_database.md](/docs/H/tests/test_30_database.md): All Engines Parallel Operational Test
 - [test_31_migrations.md](/docs/H/tests/test_31_migrations.md): Database migration validation
-- [test_32_postgres_migrations.md](/docs/H/tests/test_32_postgres_migrations.md): PostgreSQL migration performance test
+- [test_32_postgresql_migrations.md](/docs/H/tests/test_32_postgresql_migrations.md): PostgreSQL migration performance test
 - [test_33_mysql_migrations.md](/docs/H/tests/test_33_mysql_migrations.md): MySQL migration performance test
 - [test_34_sqlite_migrations.md](/docs/H/tests/test_34_sqlite_migrations.md): SQLite migration performance test
 - [test_35_db2_migrations.md](/docs/H/tests/test_35_db2_migrations.md): DB2 migration performance test

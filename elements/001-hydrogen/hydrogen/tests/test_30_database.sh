@@ -60,6 +60,9 @@ TEST_VERSION="1.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/engine_utils.sh # Resolve path statically
+[[ -n "${ENGINE_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/engine_utils.sh"
+TEST_NAME="Databases  {BLUE}engines: $(enabled_engine_count){RESET}"
 setup_test_environment
 
 # Parallel execution configuration
@@ -80,6 +83,36 @@ DATABASE_TEST_CONFIGS=(
     ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mssql.json:mssql:mssql:MSSQL Engine"
     ["Multi"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_multi.json:multi:multi:Multi Engine"
 )
+
+# HYDROGEN_ENGINES decides which engines run. Drop the others, and give Multi a
+# copy of its config holding only the connections for enabled engines.
+# Multi connection name -> engine
+declare -A MULTI_CONNECTION_ENGINES=(
+    ["ACZ"]="postgresql"
+    ["CNV"]="mysql"
+    ["Helium"]="sqlite"
+    ["HTST"]="db2"
+    ["FB"]="firebird"
+    ["MDB"]="mariadb"
+    ["YB"]="yugabytedb"
+    ["MS"]="mssql"
+)
+filter_engine_map DATABASE_TEST_CONFIGS 3
+if [[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]] && [[ -n "${DATABASE_TEST_CONFIGS["Multi"]:-}" ]]; then
+    multi_keep=()
+    for connection in "${!MULTI_CONNECTION_ENGINES[@]}"; do
+        # shellcheck disable=SC2310 # engine_enabled is a test, its status is the point
+        if engine_enabled "${MULTI_CONNECTION_ENGINES[${connection}]}"; then
+            multi_keep+=("${connection}")
+        fi
+    done
+    multi_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_multi.json"
+    multi_keep_json=$("${PRINTF}" '%s\n' "${multi_keep[@]}" | jq -R . | jq -sc 'map(select(length > 0))')
+    # shellcheck disable=SC2016 # $keep is a jq variable, not a shell one
+    jq --argjson keep "${multi_keep_json}" '.Databases.Connections |= map(select(.Name as $n | $keep | index($n))) | .Databases.ConnectionCount = (.Databases.Connections | length)' \
+        "${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_multi.json" > "${multi_config}"
+    DATABASE_TEST_CONFIGS["Multi"]="${multi_config}:multi:multi:Multi Engine"
+fi
 
 # Test timeouts
 STARTUP_TIMEOUT=15
@@ -481,6 +514,11 @@ for test_config in "${!DATABASE_TEST_CONFIGS[@]}"; do
 done
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
+warn_unknown_engines
+if [[ ${#SKIPPED_ENGINE_KEYS[@]} -gt 0 ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipped by HYDROGEN_ENGINES: ${SKIPPED_ENGINE_KEYS[*]}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Multi Engine uses only: ${multi_keep[*]:-}"
+fi
 if [[ "${config_valid}" = true ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All configuration files validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))

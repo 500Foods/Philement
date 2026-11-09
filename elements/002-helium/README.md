@@ -6,6 +6,7 @@ The primary Helium project documentation can be found in [Helium Docs](/docs/He/
 
 - [migration_index.sh](scripts/migration_index.sh) script is used to populate a README.md file with an index of migrations automatically generated from the migration files themselves.
 - [helium_update.sh](scripts/helium_update.sh) script runs the migration_index for each of the schemas as well as updates the repository and performs other checks
+- [render/](scripts/render/README.md) holds the Reports.Render dev tools: a fixture harness that compares two builds, plus size and JSON checks for a migration.
 
 ## Schemas
 

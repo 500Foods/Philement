@@ -51,7 +51,7 @@
 
 .reports-manager[data-editing='false'] .reports-band-edge,
 .reports-manager[data-editing='false'] .reports-item,
-.reports-manager[data-editing='false'] .reports-item-corner {
+.reports-manager[data-editing='false'] .reports-item-handle {
   cursor: default;
 }
 
@@ -588,12 +588,21 @@
   font-weight: 400;
   font-style: normal;
   line-height: 1.2;
-  color: #2a2a2a;
+  color: var(--reports-item-fore-color, #2a2a2a);
+  background-color: var(--reports-item-background-color, transparent);
   text-align: left;
   white-space: nowrap;
   cursor: move;
   user-select: none;
   touch-action: none;
+}
+
+/* Back Color is on inline .reports-item-text-ink (glyph highlight),
+   not this block face — otherwise it fills the line like Background. */
+.reports-item-text-ink {
+  background-color: var(--reports-item-back-color, transparent);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .reports-item[data-align='Center'] {
@@ -617,17 +626,22 @@
   font-style: italic;
 }
 
+.reports-stage:not(.reports-borders-off) .reports-item:not(.reports-item-selected) {
+  outline: 1px solid silver;
+  outline-offset: -1px;
+}
+
 .reports-item-selected {
   outline: 1px solid var(--accent-info);
   outline-offset: -1px;
 }
 
 .reports-item-field {
-  color: #1d4e89;
+  color: var(--reports-item-fore-color, #1d4e89);
 }
 
 .reports-item-field[data-unbound='true'] {
-  color: #8a8a8a;
+  color: var(--reports-item-fore-color, #8a8a8a);
   font-style: italic;
 }
 
@@ -637,19 +651,131 @@
   pointer-events: none;
 }
 
-.reports-item-corner {
+/*
+ * Resize handles (Phase 74). Each hit target is an 8×8 square
+ * centred on the element edge or corner (offset -4px). The
+ * element edge/corner therefore sits at the handle centre
+ * (50%, 50%). ::before fills the handle (`inset: 0`); clip-path
+ * draws the chrome. Handle background stays transparent so the
+ * full square stays clickable.
+ *
+ * Side triangle height = 4px (midline → inward edge of the 8×8).
+ * Corner legs use that same 4px: right angle at the handle
+ * centre (element corner), legs along the two edges into the
+ * element. Polygons stay in the inward quadrant so
+ * `.reports-item { overflow: hidden }` does not clip them.
+ *   nw: polygon(50% 50%, 100% 50%, 50% 100%)
+ *   ne: polygon(50% 50%, 0 50%, 50% 100%)
+ *   sw: polygon(50% 50%, 100% 50%, 50% 0)
+ *   se: polygon(50% 50%, 0 50%, 50% 0)
+ *
+ * Edges: base on the element-edge midline; apex at the inward
+ * mid-side (height 4px).
+ *   n: polygon(0 50%, 100% 50%, 50% 100%)
+ *   s: polygon(0 50%, 100% 50%, 50% 0)
+ *   e: polygon(50% 0, 50% 100%, 0 50%)
+ *   w: polygon(50% 0, 50% 100%, 100% 50%)
+ */
+.reports-item-handle {
   position: absolute;
-  right: 0;
-  bottom: 0;
   z-index: 1;
   width: 8px;
   height: 8px;
-  cursor: nwse-resize;
+  box-sizing: border-box;
   touch-action: none;
+  background: transparent;
 }
 
-.reports-item-selected .reports-item-corner {
+.reports-item-selected .reports-item-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background-color: var(--accent-info);
+  pointer-events: none;
+}
+
+.reports-item-handle-n {
+  top: -4px;
+  left: 50%;
+  margin-left: -4px;
+  cursor: ns-resize;
+}
+
+.reports-item-handle-n::before {
+  clip-path: polygon(0 50%, 100% 50%, 50% 100%);
+}
+
+.reports-item-handle-s {
+  bottom: -4px;
+  left: 50%;
+  margin-left: -4px;
+  cursor: ns-resize;
+}
+
+.reports-item-handle-s::before {
+  clip-path: polygon(0 50%, 100% 50%, 50% 0);
+}
+
+.reports-item-handle-e {
+  right: -4px;
+  top: 50%;
+  margin-top: -4px;
+  cursor: ew-resize;
+}
+
+.reports-item-handle-e::before {
+  clip-path: polygon(50% 0, 50% 100%, 0 50%);
+}
+
+.reports-item-handle-w {
+  left: -4px;
+  top: 50%;
+  margin-top: -4px;
+  cursor: ew-resize;
+}
+
+.reports-item-handle-w::before {
+  clip-path: polygon(50% 0, 50% 100%, 100% 50%);
+}
+
+.reports-item-handle-ne {
+  top: -4px;
+  right: -4px;
+  cursor: nesw-resize;
+}
+
+.reports-item-handle-ne::before {
+  clip-path: polygon(50% 50%, 0 50%, 50% 100%);
+}
+
+.reports-item-handle-nw {
+  top: -4px;
+  left: -4px;
+  cursor: nwse-resize;
+}
+
+.reports-item-handle-nw::before {
+  clip-path: polygon(50% 50%, 100% 50%, 50% 100%);
+}
+
+.reports-item-handle-se {
+  bottom: -4px;
+  right: -4px;
+  cursor: nwse-resize;
+}
+
+.reports-item-handle-se::before {
+  clip-path: polygon(50% 50%, 0 50%, 50% 0);
+}
+
+.reports-item-handle-sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: nesw-resize;
+}
+
+.reports-item-handle-sw::before {
+  clip-path: polygon(50% 50%, 100% 50%, 50% 0);
 }
 
 .reports-page-note {
@@ -850,7 +976,37 @@
 }
 
 .lithium-properties .tabulator-cell.tabulator-editing > input:not([type='checkbox']),
-.lithium-properties .tabulator-cell.tabulator-editing > select {
+.lithium-properties .tabulator-cell.tabulator-editing > select,
+.lithium-properties .tabulator-cell.tabulator-editing .lithium-properties-combo-input {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+/* Combo sits in the cell; nested input must pick up the same face colour
+   as the direct-child editors (past invisible-text fix). */
+.lithium-properties .tabulator-cell.tabulator-editing .lithium-properties-combo {
+  width: 100%;
+  height: 100%;
+  color: inherit;
+}
+
+/* Colour wrap: same inherit fix as combo (nested input was invisible). */
+.lithium-properties .tabulator-cell.tabulator-editing .lithium-properties-color-wrap {
+  width: 100%;
+  height: 100%;
+  color: inherit;
+}
+
+.lithium-properties .tabulator-cell.tabulator-editing .lithium-properties-color-wrap .lithium-properties-color {
   width: 100%;
   height: 100%;
   margin: 0;
@@ -1045,4 +1201,117 @@
   white-space: pre-line;
   font-family: var(--font-mono, monospace);
   font-size: 0.9em;
+}
+
+/* Phase 76: Font Family / Style / Size preview editors */
+.lithium-properties-font-select {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.lithium-properties-combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+.lithium-properties-combo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+  padding-right: 1.25em;
+}
+
+.lithium-properties-combo-toggle {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.lithium-properties-combo-menu {
+  /* position/size set in JS (fixed, on document.body) so the
+     Tabulator tableholder does not clip the list. */
+  z-index: var(--z-dropdown, 100);
+  max-height: 16rem;
+  overflow: auto;
+  margin: 0;
+  padding: 2px 0;
+  box-sizing: border-box;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-row-border, #ccc);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.lithium-properties-combo-option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 2px 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-family: sans-serif;
+  line-height: 1.2;
+}
+
+.lithium-properties-combo-pick {
+  cursor: pointer;
+}
+
+.lithium-properties-combo-option:hover,
+.lithium-properties-combo-option:focus,
+.lithium-properties-combo-option-active {
+  background: var(--accent-primary, #4a90d9);
+  color: #fff;
+}
+
+
+.lithium-properties-color-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 100%;
+}
+
+.lithium-properties-color-wrap .lithium-properties-color {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lithium-properties-color-toggle {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lithium-properties-color-toggle svg,
+.lithium-properties-color-toggle .icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: inherit;
+  fill: currentcolor;
 }

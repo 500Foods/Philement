@@ -162,7 +162,8 @@ describe('shape items', () => {
     expect(body.querySelector('[data-item-id="hex"] path').getAttribute('transform')).toContain('rotate(30');
     expect(body.querySelector('[data-item-id="round"] path').getAttribute('d')).toContain('C ');
     expect(body.querySelector('[data-item-id="rule"] path').getAttribute('fill')).toBe('none');
-    expect(items[0].querySelector('.reports-item-corner')).not.toBeNull();
+    expect(items[0].querySelectorAll('.reports-item-handle')).toHaveLength(8);
+    expect(items[0].querySelector('.reports-item-handle-se')).not.toBeNull();
     expect(items[0].querySelector('svg').getAttribute('style')).toBeNull();
   });
 
@@ -213,10 +214,11 @@ describe('shape items', () => {
     expect(sections.find((section) => section.id === 10).sortSeq).toBe(4.2);
     expect(sections.find((section) => section.id === 11)).toMatchObject({ label: 'Fill', sortSeq: 4.4 });
     expect(sections.find((section) => section.id === 12).sortSeq).toBe(4.6);
-    const painted = applyProperty(doc, sel, '47', '#ABCDEF');
+    const painted = applyProperty(doc, sel, '57', '#ABCDEF');
+    expect(painted.bands[1].items[0].backgroundColor).toBe('#abcdef');
     expect(painted.bands[1].items[0].fillPaint).toEqual({ kind: 'solid', color: '#abcdef' });
-    expect(() => applyProperty(doc, sel, '47', 'red')).toThrow(/hex color/);
-    expect(shapeAttributeKeys({ kind: 'rectangle' }, [0, 4, 24])).toEqual([0, 41, 43, 44, 45, 46, 47]);
+    expect(() => applyProperty(doc, sel, '57', 'red')).toThrow(/hex color/);
+    expect(shapeAttributeKeys({ kind: 'rectangle' }, [0, 4, 24])).toEqual([0, 41, 43, 44, 45, 46]);
     expect(outlineEntries(doc).map((entry) => entry.label)).toContain('s1 Rectangle');
     expect(propertyRows(doc, sel, lookups).find((row) => row.id === 'object-id')).toMatchObject({ value: 's1', readOnly: true });
     expect(propertyRows(doc, sel, lookups).at(-1).key).toBe(29);

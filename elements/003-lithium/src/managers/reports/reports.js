@@ -210,6 +210,7 @@ export default class ReportsManager {
       gridBtn: this.container.querySelector('#reports-grid-btn'),
       rulerBtn: this.container.querySelector('#reports-ruler-btn'),
       crosshairBtn: this.container.querySelector('#reports-crosshair-btn'),
+      bordersBtn: this.container.querySelector('#reports-borders-btn'),
       staticBtn: this.container.querySelector('#reports-static-btn'),
       categories: this.container.querySelector('#reports-categories'),
       itemsToolbar: this.container.querySelector('#reports-items-toolbar'),
@@ -337,6 +338,7 @@ export default class ReportsManager {
     this._bindGrid();
     this._bindRuler();
     this._bindCrosshair();
+    this._bindBorders();
     this._registerKeys();
     this._watchPane();
     this._listening = true;
@@ -594,6 +596,7 @@ export default class ReportsManager {
     this._unbindGrid();
     this._unbindRuler();
     this._unbindCrosshair();
+    this._unbindBorders();
     unregisterShortcut('reports-undo');
     unregisterShortcut('reports-redo');
     unregisterShortcut('reports-delete');

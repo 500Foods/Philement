@@ -1,3 +1,4 @@
+import { shapeFillColor } from './reports-colours.js';
 /**
  * Shape fill (Phase 44b). The style and the paint are separate.
  * Grid, dots, and hatch use the report grid spacing. Hatch is one
@@ -119,9 +120,14 @@ function validStops(stops) {
  * @param {object|null|undefined} fillPaint
  * @returns {{ color: string, gradient: object|null }}
  */
-export function resolvePaint(fillPaint) {
+export function resolvePaint(fillPaint, backgroundColor) {
   const paint = fillPaint && typeof fillPaint === 'object' && !Array.isArray(fillPaint) ? fillPaint : null;
-  const color = hexColor(paint && paint.color, DEFAULT_COLOR);
+  const rawBg = typeof backgroundColor === 'string' ? backgroundColor.trim().toLowerCase() : '';
+  if (rawBg === 'none' || rawBg === 'transparent') {
+    return { color: 'none', gradient: null };
+  }
+  const fromBg = rawBg ? hexColor(backgroundColor, '') : '';
+  const color = fromBg || hexColor(paint && paint.color, DEFAULT_COLOR);
   const kind = paint && typeof paint.kind === 'string' ? paint.kind : 'solid';
   if (kind !== 'linear' && kind !== 'radial') return { color, gradient: null };
   const stops = validStops(paint.stops);
@@ -291,7 +297,7 @@ export function fillPlan(item, kind, w, h, spacing) {
   if (kind === 'line') style = 'none';
   else if (style == null || style === '') style = 'solid';
   else if (!FILL_STYLES.has(style)) style = 'none';
-  const paint = resolvePaint(item && item.fillPaint);
+  const paint = resolvePaint(item && item.fillPaint, item && item.backgroundColor);
   const step = spacing > 0 ? spacing : toCssPx('0.125 in');
   if (style === 'none') return { style, color: paint.color, gradient: null, marks: null };
   const gradient = placedGradient(paint.gradient, w, h);
@@ -471,10 +477,7 @@ function paintObject(item) {
 }
 
 function currentColor(item) {
-  const paint = paintObject(item);
-  if (HEX.test(paint.color || '')) return paint.color.toLowerCase();
-  const stops = validStops(paint.stops);
-  return stops ? stops[0].color : DEFAULT_COLOR;
+  return shapeFillColor(item, DEFAULT_COLOR) || DEFAULT_COLOR;
 }
 
 function formatAt(at) {
@@ -508,8 +511,8 @@ function ensureStops(item) {
 }
 
 /**
- * Panel rows for the paint. Color stays the lookup row and is hidden
- * while the paint is a gradient. These rows are not lookup keys.
+ * Panel rows for the paint. Background Color (054 key 57) is the
+ * shared colour; these rows are paint kind / angle / stops only.
  * @param {object|null} item
  * @returns {object[]}
  */
