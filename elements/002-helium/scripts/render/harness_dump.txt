@@ -1,1 +1,1 @@
-{"ok":true,"result":{"log":[{"level":"warn","message":"band d1 has unknown typeKey nil; skipped"}],"pages":[{"bands":[]}]},"rv":0}
+{"ok":true,"result":{"error":"compose failed: Reports.Render.Html:195: invalid conversion '%\"' to 'format'","log":[{"level":"error","message":"compose failed: Reports.Render.Html:195: invalid conversion '%\"' to 'format'"}]},"rv":0}

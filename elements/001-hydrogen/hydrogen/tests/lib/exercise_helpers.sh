@@ -6,6 +6,9 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.1.1 - 2026-11-09 - exercise_filter_config restores DATABASE_NAMES from a snapshot so a
+#                      second exercise test sourced in the same suite shell (41 then 44)
+#                      still disables the HYDROGEN_ENGINES-excluded connections.
 # 1.1.0 - 2026-11-09 - exercise_filter_config: honour HYDROGEN_ENGINES
 # 1.0.7 - 2026-10-01 - hydrogen_ presence is grep of a file, not echo | grep -q.
 #                     pipefail turned grep -q's early exit into SIGPIPE (141).
@@ -26,7 +29,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.1.0"
+EXERCISE_HELPERS_VERSION="1.1.1"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -283,6 +286,17 @@ exercise_filter_config() {
     local dest="$2"
     local db_engine off_json
     local -a off=()
+    # test_00_all sources tests into one shell, so an earlier call may already have
+    # unset keys; rebuild the full map from the first-call snapshot.
+    if ! declare -p EXERCISE_ALL_DATABASE_NAMES >/dev/null 2>&1; then
+        declare -gA EXERCISE_ALL_DATABASE_NAMES=()
+        for db_engine in "${!DATABASE_NAMES[@]}"; do
+            EXERCISE_ALL_DATABASE_NAMES["${db_engine}"]="${DATABASE_NAMES[${db_engine}]}"
+        done
+    fi
+    for db_engine in "${!EXERCISE_ALL_DATABASE_NAMES[@]}"; do
+        DATABASE_NAMES["${db_engine}"]="${EXERCISE_ALL_DATABASE_NAMES[${db_engine}]}"
+    done
     # shellcheck disable=SC2034 # read by the calling test
     EXERCISE_SKIPPED_DBS=()
     for db_engine in "${!DATABASE_NAMES[@]}"; do

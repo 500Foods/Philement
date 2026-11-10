@@ -7,7 +7,7 @@ import { applyProperty, propertyRows } from '../../src/managers/reports/report-p
 import { outlineEntries } from '../../src/managers/reports/reports-panel.js';
 import { previewSrcdoc } from '../../src/managers/reports/reports-preview.js';
 import {
-  SEEDED_PATHS, defaultShapeFields, setShapeCatalog, shapeAttributeKeys, shapeDrawing, shapeKindOptions, shapeSvg,
+  SEEDED_PATHS, defaultShapeFields, resolveSide, setShapeCatalog, shapeAttributeKeys, shapeDrawing, shapeKindOptions, shapeSvg,
   withShapeSections,
 } from '../../src/managers/reports/reports-shape.js';
 
@@ -49,11 +49,24 @@ describe('shape geometry', () => {
     }));
     expect(round.d).toContain('C ');
     const line = shapeDrawing(shapeItem('line', { side: 'bottom', box: box('1 in', '0.25 in') }));
-    expect(line.d).toBe('M 0 24 L 96 24');
+    expect(line.d).toBe('M 0 23.3333 L 96 23.3333');
     expect(line.fill).toBe('none');
     const hex = shapeDrawing(shapeItem('hexagon', { rotation: 30, box: box('0.8 in', '0.8 in') }));
     expect(hex.transform).toBe('rotate(30 38.4 38.4)');
     expect(hex.d).toContain('Z');
+  });
+
+
+  it('normalizes Side case and keeps Top above Bottom', () => {
+    expect(resolveSide('Top')).toBe('top');
+    expect(resolveSide('BOTTOM')).toBe('bottom');
+    const top = shapeDrawing(shapeItem('line', { side: 'Top', box: box('1 in', '0.5 in'), strokeWidth: '2 pt' }));
+    const bottom = shapeDrawing(shapeItem('line', { side: 'bottom', box: box('1 in', '0.5 in'), strokeWidth: '2 pt' }));
+    const topY = Number(top.d.match(/M 0 ([\d.]+)/)[1]);
+    const bottomY = Number(bottom.d.match(/M 0 ([\d.]+)/)[1]);
+    expect(topY).toBeLessThan(bottomY);
+    expect(topY).toBeGreaterThan(0); // inset inside the box
+    expect(bottomY).toBeLessThan(48);
   });
 
   it('clamps a corner so it cannot swallow the next one', () => {
@@ -71,7 +84,7 @@ describe('shape geometry', () => {
     expect(drawn.sw).toBeCloseTo(96 / 72, 6);
     const line = shapeDrawing({ kind: 'line', box: box('1 in', '0.25 in') });
     expect(line.fill).toBe('none');
-    expect(line.d).toBe('M 0 24 L 96 24');
+    expect(line.d).toBe('M 0 23.3333 L 96 23.3333');
   });
 
   it('dashes at four stroke widths and dots with a round cap', () => {

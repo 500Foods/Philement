@@ -615,6 +615,20 @@
 
 .reports-item[data-align='Justified'] {
   text-align: justify;
+  text-align-last: left;
+}
+
+/* Measured Justified: one .reports-item-text per line; word-spacing set in paint. */
+.reports-item[data-justify='lines'] {
+  text-align: left;
+  text-align-last: auto;
+  white-space: normal;
+}
+
+.reports-item[data-justify='lines'] .reports-item-justify-line {
+  display: block;
+  white-space: pre;
+  line-height: var(--reports-item-line-height, 1.2);
 }
 
 .reports-item[data-font-style='Bold'] {

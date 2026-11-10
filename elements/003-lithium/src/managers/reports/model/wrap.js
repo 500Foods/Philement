@@ -412,6 +412,88 @@ function resolveMaxFontPt(item, setPt) {
  * Truncate text with an ellipsis so measurePt(text) <= widthPt.
  * @returns {string}
  */
+
+/**
+ * Extra word-spacing (pt) per gap for Justified lines.
+ * Last line of each hard-newline paragraph is not stretched; nowrap
+ * and single-word lines stay 0. Pass forceLast[i]=true to also treat
+ * line i as last (Ellipsis truncated line).
+ * @param {string[]} lines
+ * @param {number} widthPt
+ * @param {number} fontSizePt
+ * @param {string} [style]
+ * @param {string} [family]
+ * @param {string} [mode] wrap mode
+ * @param {string} [source] original text (for paragraph ends)
+ * @param {boolean[]} [forceLast] optional per-line "treat as last" (additive)
+ * @returns {number[]}
+ */
+export function justifyWordSpacings(lines, widthPt, fontSizePt, style, family, mode = 'pre-line', source = '', forceLast) {
+  const out = (lines || []).map(() => 0);
+  if (!lines || lines.length === 0 || mode === 'nowrap') return out;
+  if (!(widthPt > EPS)) return out;
+
+  const last = new Set();
+  const src = source == null ? '' : String(source);
+
+  const markWrapped = (blocks, blockMode) => {
+    let index = 0;
+    for (const block of blocks) {
+      const wrapped = wrapText(block, widthPt, fontSizePt, style, blockMode, family);
+      if (wrapped.length > 0) last.add(index + wrapped.length - 1);
+      index += wrapped.length;
+    }
+    return index;
+  };
+
+  if (mode === 'normal') {
+    markWrapped([collapse(src)], 'normal');
+  } else if (mode === 'pre') {
+    // Each hard line is its own (unwrapped) paragraph line → all are last.
+    const blocks = src.replace(/\r/g, '').split('\n');
+    let index = 0;
+    for (let i = 0; i < blocks.length; i += 1) { last.add(index); index += 1; }
+  } else if (mode === 'pre-wrap') {
+    const blocks = src.replace(/\r/g, '').split('\n');
+    const n = markWrapped(blocks.map((b) => b), 'pre-wrap');
+    if (n !== lines.length && lines.length > 0) last.add(lines.length - 1);
+  } else {
+    // pre-line (default): collapse each hard-newline block, then soft-wrap.
+    const blocks = src.replace(/\r/g, '').split('\n');
+    let index = 0;
+    for (const block of blocks) {
+      const collapsed = collapseLine(block);
+      const wrapped = collapsed === '' ? [''] : wrapText(collapsed, widthPt, fontSizePt, style, 'normal', family);
+      if (wrapped.length > 0) last.add(index + wrapped.length - 1);
+      index += wrapped.length;
+    }
+    if (index !== lines.length && lines.length > 0) last.add(lines.length - 1);
+  }
+
+  if (Array.isArray(forceLast)) {
+    forceLast.forEach((flag, i) => { if (flag) last.add(i); });
+  }
+  if (lines.length > 0 && last.size === 0) last.add(lines.length - 1);
+
+  for (let i = 0; i < lines.length; i += 1) {
+    if (last.has(i)) continue;
+    const line = lines[i] == null ? '' : String(lines[i]);
+    const parts = line.split(' ').filter((w) => w.length > 0);
+    if (parts.length < 2) continue;
+    const spaceW = measurePt(' ', fontSizePt, style, family);
+    let natural = 0;
+    for (let w = 0; w < parts.length; w += 1) {
+      natural += measurePt(parts[w], fontSizePt, style, family);
+      if (w < parts.length - 1) natural += spaceW;
+    }
+    const gaps = parts.length - 1;
+    const slack = widthPt - natural;
+    if (slack <= EPS) continue;
+    out[i] = slack / gaps;
+  }
+  return out;
+}
+
 export function ellipsisLine(text, widthPt, fontSizePt, style, family) {
   const source = text == null ? '' : String(text);
   const ellipsis = '…';
@@ -654,12 +736,24 @@ export function layoutBand(doc, band, entries, warn) {
     items: placed.map((row) => {
       const grown = Math.abs(row.usedH - row.storedH) > EPS;
       const block = row.lines ? Math.max(row.lines.length, 0) * row.leading : 0;
+      const align = row.item.align || 'Left';
+      let wordSpacings = null;
+      if (align === 'Justified' && row.lines && row.lines.length) {
+        const forceLast = row.overflow === 'Ellipsis'
+          ? row.lines.map((_, idx) => idx === row.lines.length - 1)
+          : undefined;
+        wordSpacings = justifyWordSpacings(
+          row.lines, row.width, row.fontSize, row.font.style, row.font.family,
+          row.mode, row.text, forceLast,
+        );
+      }
       return {
         id: row.item.id,
         typeKey: row.item.typeKey,
         text: row.text,
         lines: row.lines,
-        align: row.item.align || 'Left',
+        align,
+        wordSpacings,
         font: row.font,
         grown,
         valign: row.valign,

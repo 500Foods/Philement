@@ -14,8 +14,9 @@ import {
 import { toCssPx } from './model/units.js';
 import { appendResizeHandles } from './items.js';
 import {
-  VALIGNS, WRAP_MODES, defaultWrap, layoutBand, lengthPt, wrapText,
+  VALIGNS, WRAP_MODES, defaultWrap, justifyWordSpacings, layoutBand, lengthPt, wrapText,
 } from './model/wrap.js';
+export { justifyWordSpacings } from './model/wrap.js';
 export { VALIGNS } from './model/wrap.js';
 import { formatStaticDate, formatStaticNumber } from './reports-format.js';
 import { canonicalImage } from './reports-rasters.js';
@@ -514,7 +515,35 @@ export function paintMeasuredItem(body, item, doc, options = {}) {
     const valign = VALIGNS.includes(item.valign) ? item.valign : 'top';
     el.dataset.valign = valign;
     el.style.setProperty('--reports-item-line-height', `${leading * sizePt * CSS_PX_PER_PT}px`);
-    el.append(makeItemTextLabel(lines.join('\n')));
+    const spacings = row && Array.isArray(row.wordSpacings)
+      ? row.wordSpacings
+      : (align === 'Justified'
+        ? justifyWordSpacings(
+          lines,
+          lengthPt(box.width) || 0,
+          sizePt,
+          font.style,
+          font.family,
+          WRAP_MODES.includes(item.wrap) ? item.wrap : defaultWrap(typeKey),
+          shown,
+          item.overflow === 'Ellipsis'
+            ? lines.map((_, idx) => idx === lines.length - 1)
+            : undefined,
+        )
+        : null);
+    if (align === 'Justified' && Array.isArray(spacings) && lines.length) {
+      // Per-line spans so word-spacing matches Render (V. Align stays flex).
+      el.dataset.justify = 'lines';
+      for (let i = 0; i < lines.length; i += 1) {
+        const lineEl = makeItemTextLabel(lines[i]);
+        lineEl.classList.add('reports-item-justify-line');
+        const gap = spacings[i] || 0;
+        if (gap > 0) lineEl.style.wordSpacing = `${gap * CSS_PX_PER_PT}px`;
+        el.append(lineEl);
+      }
+    } else {
+      el.append(makeItemTextLabel(lines.join('\n')));
+    }
   }
   applyItemColours(el, item);
   appendResizeHandles(el);

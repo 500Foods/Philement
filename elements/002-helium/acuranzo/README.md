@@ -438,7 +438,7 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1478](/elements/002-helium/acuranzo/migrations/acuranzo_1478.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
 | [1479](/elements/002-helium/acuranzo/migrations/acuranzo_1479.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render loader and stage dispatch (Reporting) |
 | [1480](/elements/002-helium/acuranzo/migrations/acuranzo_1480.lua) | lookups | 1.0.0 | 2026-11-09 | 12 | ✗ | Report property lists for shape fill and static items (Reporting) |
-| [1481](/elements/002-helium/acuranzo/migrations/acuranzo_1481.lua) | lookups | 1.0.0 | 2026-11-09 | 106 | ✗ | Report Units, Background, Overflow lookups (Reporting Phase 75) |
+ | [1481](/elements/002-helium/acuranzo/migrations/acuranzo_1481.lua) | lookups | 1.0.0 | 2026-11-09 | 106 | ✗ | Report Units, Background, Overflow lookups (Reporting Phase 75) |
 | [1482](/elements/002-helium/acuranzo/migrations/acuranzo_1482.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | Reports.Render.Items (Reporting) |
 | [1483](/elements/002-helium/acuranzo/migrations/acuranzo_1483.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
 | [1484](/elements/002-helium/acuranzo/migrations/acuranzo_1484.lua) | scripts | 1.0.1 | 2026-11-09 | 4 | ✗ | Reports.Render.Shapes (Reporting) |
@@ -469,4 +469,11 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1509](/elements/002-helium/acuranzo/migrations/acuranzo_1509.lua) | queries | 1.0.0 | 2026-11-09 | 4 | ✗ | QueryRef #149 add options column |
 | [1510](/elements/002-helium/acuranzo/migrations/acuranzo_1510.lua) | queries | 1.0.0 | 2026-11-09 | 4 | ✗ | QueryRef #153 add options column |
 | [1511](/elements/002-helium/acuranzo/migrations/acuranzo_1511.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render: enable sandbox.io via scripts.options |
-| **436** | | | | **2595** | **436** | |
+| [1512](/elements/002-helium/acuranzo/migrations/acuranzo_1512.lua) | lookups | 1.0.0 | 2026-11-09 | 53 | ✗ | Lookup Overflow Fit + Min/Max Font Size (Reporting Phase 80) |
+| [1513](/elements/002-helium/acuranzo/migrations/acuranzo_1513.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Layout (Reporting) |
+| [1514](/elements/002-helium/acuranzo/migrations/acuranzo_1514.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Paging (Reporting) |
+| [1515](/elements/002-helium/acuranzo/migrations/acuranzo_1515.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Layout (Reporting) |
+| [1516](/elements/002-helium/acuranzo/migrations/acuranzo_1516.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Paging (Reporting) |
+| [1517](/elements/002-helium/acuranzo/migrations/acuranzo_1517.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Html (Reporting) |
+| [1518](/elements/002-helium/acuranzo/migrations/acuranzo_1518.lua) | scripts | 1.0.0 | 2026-11-09 | 4 | ✗ | Reports.Render.Shapes (Reporting) |
+| **443** | | | | **2672** | **443** | |

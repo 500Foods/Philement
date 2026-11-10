@@ -220,7 +220,7 @@ enum MHD_Result handle_conduit_cap_query_request(
         cap_fallback = true;
     }
 
-    log_this(SR_API, "%s: Cap verification %s", LOG_LEVEL_TRACE, 1, conduit_service_name(),
+    log_this(SR_API, "%s: Cap verification %s", LOG_LEVEL_TRACE, 2, conduit_service_name(),
              cap_fallback ? "accepted via fallback" : "succeeded");
 
     // Lookup protected database queue and query cache entry (type 11)

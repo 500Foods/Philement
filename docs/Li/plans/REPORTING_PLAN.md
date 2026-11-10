@@ -145,8 +145,8 @@ Andrew reports the apply.
 | 77 | Fore, Back, and Background colours | Lithium UI + Helium | Medium | Complete |
 | 78 | V. Align for un-measured text | Lithium UI + Helium | Easy | Complete (2026-11-09) |
 | 79 | Runtime font metrics (no width tables) | Lithium UI + Helium | Hard | Complete (2026-11-09) |
-| 80 | Overflow replaces Fit Height | Lithium UI + Helium | Medium | In progress |
-| 81 | Justified alignment | Lithium UI + Helium | Medium | Not started |
+| 80 | Overflow replaces Fit Height | Lithium UI + Helium | Medium | Complete (2026-11-09) |
+| 81 | Justified alignment | Lithium UI + Helium | Medium | In progress |
 | 82 | Element Link as URI anchor | Lithium UI + Helium | Medium | Not started |
 | 83 | Subreport designer element | Lithium UI | Medium | Not started |
 | 84 | Subreport Render (fixed box) | Helium amendment | Medium | Not started |
@@ -5241,6 +5241,25 @@ caller-facing QueryRef 175.
 - **Prep:** Andrew applies 1504–1506; browser-checks Vanadium grow.
   Phase 80 next free **1507**.
 
+
+
+
+### 2026-11-09 — Phase 81 in progress (Justified)
+
+- Packets `1515` Layout (wordSpacings), `1516` Paging (copy),
+  `1517` Html (per-line word-spacing). Stored value `Justified`.
+- PDF later: reuse `wordSpacings` / lua-pdfkit justify (docs only).
+- Next free **1518**. Post-81 phases left: **4** (82–85).
+
+### 2026-11-09 — Phase 80 Complete (Overflow)
+
+- Andrew: good enough (Fit works horizontally with Wrap = No Wrap);
+  applied 1512–1514.
+- **Lessons:** Overflow panel was blank because lookup 054 key 58 had
+  no `ITEM_FIELDS` binder. Fit target depends on Wrap (wrap → height
+  fit at box width; no-wrap → width fit). Grow keeps the item font
+  (Paging no longer forces Helvetica).
+- **Prep:** Phase 81 Justified. Next free **1515**.
 
 ### 2026-11-09 — Phase 80 in progress (Overflow)
 

@@ -22,6 +22,12 @@ export const FIELD_SHAPE = 26;
 const KAPPA = 0.5522847498;
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 const SIDES = new Set(['top', 'right', 'bottom', 'left']);
+
+/** Canonical line side. Unknown or blank → bottom. */
+export function resolveSide(value) {
+  const side = String(value ?? '').trim().toLowerCase();
+  return SIDES.has(side) ? side : 'bottom';
+}
 const STROKE_STYLES = new Set(['solid', 'dashed', 'dotted', 'none']);
 const GEOMETRY = new Set(['line', 'rectangle', 'roundrect', 'ellipse']);
 const CORNER_NAMES = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'];
@@ -281,7 +287,7 @@ function readField(item, key, fallback) {
 function applyKind(item, kind) {
   item.kind = kind;
   if (kind === 'line') {
-    if (!SIDES.has(item.side)) item.side = 'bottom';
+    item.side = resolveSide(item.side);
     if (!Object.hasOwn(item, 'fillStyle')) item.fillStyle = 'none';
   } else {
     delete item.side;
@@ -321,8 +327,10 @@ export const shapeItemFields = {
   42: {
     get: (doc, sel) => readField(selectedItem(doc, sel), 'side', 'bottom'),
     set: (doc, sel, value) => {
-      const side = String(value ?? '');
-      if (!SIDES.has(side)) throw new Error(`Side must be top, right, bottom, or left.`);
+      const side = resolveSide(value);
+      if (!SIDES.has(String(value ?? '').trim().toLowerCase())) {
+        throw new Error('Side must be top, right, bottom, or left.');
+      }
       return editShape(doc, sel, (item) => { item.side = side; });
     },
   },
@@ -517,11 +525,17 @@ function ellipseCommands(w, h) {
   ];
 }
 
-function lineCommands(w, h, side) {
-  if (side === 'top') return [['M', 0, 0], ['L', w, 0]];
-  if (side === 'right') return [['M', w, 0], ['L', w, h]];
-  if (side === 'left') return [['M', 0, 0], ['L', 0, h]];
-  return [['M', 0, h], ['L', w, h]];
+/**
+ * Line along one edge. Path is inset by half the stroke so a centered
+ * stroke lies inside the box (Preview and the canvas match).
+ */
+function lineCommands(w, h, side, strokeWidth) {
+  const sw = typeof strokeWidth === 'number' && strokeWidth > 0 ? strokeWidth : 0;
+  const inset = Math.min(sw / 2, Math.max(0, w / 2), Math.max(0, h / 2));
+  if (side === 'top') return [['M', 0, inset], ['L', w, inset]];
+  if (side === 'right') return [['M', w - inset, 0], ['L', w - inset, h]];
+  if (side === 'left') return [['M', inset, 0], ['L', inset, h]];
+  return [['M', 0, h - inset], ['L', w, h - inset]];
 }
 
 function cornerRadii(item) {
@@ -558,8 +572,9 @@ export function shapeDrawing(item, spacingPx) {
   const source = pathSource(kind);
   if (!source) return { warn: `Shape kind ${kind} is not in the list.` };
   if (source.bad) return { warn: 'Shape has a bad command.' };
+  const sw = lengthPx(item.strokeWidth, toCssPx('1 pt'));
   let commands;
-  if (source.geometry === 'line') commands = lineCommands(w, h, SIDES.has(item.side) ? item.side : 'bottom');
+  if (source.geometry === 'line') commands = lineCommands(w, h, resolveSide(item.side), sw);
   else if (source.geometry === 'rectangle') commands = [['M', 0, 0], ['L', w, 0], ['L', w, h], ['L', 0, h], ['Z']];
   else if (source.geometry === 'roundrect') commands = roundRectCommands(w, h, clampCorners(w, h, cornerRadii(item)));
   else if (source.geometry === 'ellipse') commands = ellipseCommands(w, h);
@@ -567,7 +582,6 @@ export function shapeDrawing(item, spacingPx) {
     commands = scaleCommands(source.commands, w, h);
     if (source.closed && commands[commands.length - 1][0] !== 'Z') commands = [...commands, ['Z']];
   }
-  const sw = lengthPx(item.strokeWidth, toCssPx('1 pt'));
   let style = item.strokeStyle;
   if (!STROKE_STYLES.has(style)) style = 'solid';
   const stroke = style === 'none' || !(sw > 0) ? 'none' : hexColor(item.strokeColor, '#000000');
@@ -629,7 +643,7 @@ function fontFaceStyleOk(value) {
   return /^@font-face\{font-family:"[A-Za-z0-9][A-Za-z0-9,._-]*";src:url\(data:font\/woff2;base64,[A-Za-z0-9+/=]+\);?\}$/.test(text);
 }
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
-const PATH_D = /^[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+\-]+$/;
+const PATH_D = /[MmLlHhVvCcSsQqTtAaZz0-9eE\s,.+-]+/;
 const SAFE_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const PAINT_REF = /^(?:none|currentColor|#[0-9A-Fa-f]{3}|#[0-9A-Fa-f]{4}|#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{8}|url\(#[A-Za-z][A-Za-z0-9_-]*\))$/;
 const OPACITY_ATTR = /^(?:0(?:\.0+)?|1(?:\.0+)?|0?\.\d+)$/;

@@ -994,29 +994,25 @@ Lookup + Render packets applied, checks green, Andrew confirms.
 
 ### Status
 
-**In progress** — packets `1512`–`1514` written (unapplied).
+**Complete (2026-11-09)** — Andrew tested; good enough (Fit × No Wrap).
 
 ### Accomplished
 
-- Lookup Fit + Min/Max Font Size; `ITEM_FIELDS` 58/59/60 (Overflow
-  was blank because key 58 had no binder).
-- Fit Height removed; fitHeight→overflow load map; wrap Shrink/Fit
-  /Ellipsis/Grow/Clip.
-- Layout 1513 returns resolved font; Paging 1514 copies it (Grow
-  keeps family — no Helvetica force).
+- Lookup Fit + Min/Max Font Size; `ITEM_FIELDS` 58/59/60.
+- Fit Height removed; fitHeight→overflow load map; Overflow behaviours
+  in designer + Layout/Paging.
 - Fixtures overflow-*; vitest + ESLint clean.
 
 ### Lessons learned
 
-- Lookup attribute without `ITEM_FIELDS[key]` shows a blank List
-  value and cannot persist.
-- Grow = max(stored, content); short content keeps the stored box.
-- Shrink floors to Min Font Size when the string never fits.
+- Overflow blank: 054 key 58 listed but no `ITEM_FIELDS` binder.
+- Fit target depends on Wrap (wrap = height at box width; no-wrap =
+  width only).
+- Grow keeps the item font (no Helvetica force on grown lines).
 
 ### Handoff
 
-Andrew applies `1512`–`1514`, browser-checks Overflow × Wrap, Preview
-HTML vs designer. Next free **1515**. Phase 81 Justified next.
+Phase 81 Justified. Next free **1515**.
 
 ---
 
@@ -1034,15 +1030,17 @@ Phase 80 Status complete. Lookup already lists Justified (Phase 75).
 
 ### Work items
 
-- [ ] 81.1 Lithium designer: justify measured lines except the last
-      line of a block. Un-measured Clip+Justified: CSS
-      `text-align: justify` with the browser's last-line behaviour,
-      or match measured rules if Clip stays single-line.
-- [ ] 81.2 Render: when align is Justified, emit per-line spacing
-      for full lines; last line not justified. Html CSS and any
-      PDF path that already draws lines. Rule 12 per module.
-- [ ] 81.3 `render_check.sh`; browser check with multi-line wrap +
-      Justified.
+- [x] 81.1 Lithium designer: `justifyWordSpacings` + per-line
+      `word-spacing` on measured paint; Clip+Justified uses CSS
+      `text-align: justify; text-align-last: left`. No Wrap stays
+      left (gap 0).
+- [x] 81.2 Render: Layout returns `wordSpacings`; Paging copies;
+      Html emits per-line `word-spacing` (pt). PDF can reuse the
+      same field (lua-pdfkit `align` justify / `wordSpacing` —
+      docs only). Rule 12: `1515` Layout, `1516` Paging, `1517` Html.
+- [x] 81.3 Fixtures `justify-*`; vitest; ESLint; `render_check`
+      (new fixtures DIFF vs HEAD as expected). Browser check left
+      for Andrew.
 
 ### Done means
 
@@ -1055,23 +1053,36 @@ Packets (if any) applied, checks green, Andrew confirms.
 
 ### Status
 
-**not started**
+**In progress** — packets `1515`–`1517` written (unapplied). Awaiting
+Andrew apply + browser check.
 
 ### Accomplished
 
-_(empty until the phase closes)_
+- Stored align spelling stays `Justified` (lookup Phase 75).
+- `justifyWordSpacings` (Lithium + Layout): stretch full soft-wrapped
+  lines; last line of each hard-newline paragraph, Ellipsis last
+  line, single-word, and No Wrap → 0.
+- Designer measured paint: one ink span per line with CSS
+  `word-spacing`; Clip path keeps `text-align: justify` +
+  `text-align-last: left`.
+- Html: per-line `word-spacing` when `wordSpacings` present;
+  non-lines Justified uses justify + text-align-last. Escaped
+  `width:100%%` in the Clip format string (Lua 5.5).
+- Fixtures `justify-basic`, `justify-ellipsis`; unit tests.
 
 ### Lessons learned
 
-_(empty until the phase closes)_
+- Fit/Overflow interaction: Shrink/Fit size first, then justify at
+  the resolved size. Grow keeps family; justify uses Layout lines.
+- Back Color stays on the per-line ink span.
+- No Wrap + Justified = left (documented).
 
 ### Handoff
 
-Static/Text review (72–81) complete. Phase 82 (Element Link as URI
-anchor) is next in this file. Further Kind reviews start when
-Andrew names them. Shared pieces (Units, Background, borders,
-eight-handle resize, Metrics, Overflow) are already in place for
-later Elements.
+Andrew applies `1515`–`1517`, browser-checks Justified × Wrap /
+Overflow / V. Align / Back Color / No Wrap, Preview HTML vs designer.
+Next free **1518**. Phase 82 Link next. Post-81 phases left: **4**
+(82–85).
 
 ---
 

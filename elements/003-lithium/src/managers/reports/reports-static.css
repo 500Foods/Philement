@@ -42,3 +42,10 @@
   filter: var(--reports-image-filter, none);
   pointer-events: none;
 }
+
+/* Phase 81: Justified measured lines — full width so word-spacing fills the box. */
+.reports-item[data-justify='lines'] > .reports-item-justify-line {
+  width: 100%;
+  line-height: var(--reports-item-line-height, 1.2);
+  white-space: pre;
+}

@@ -343,7 +343,7 @@ function gradientTag(draw) {
 
 /** SVG markup. Preview HTML uses the same commands from Reports.Render. */
 export function shapeMarkup(draw) {
-  const open = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" overflow="visible" viewBox="0 0 ${shapeFmt(draw.w)} ${shapeFmt(draw.h)}" preserveAspectRatio="none">`;
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="display:block" overflow="visible" viewBox="0 0 ${shapeFmt(draw.w)} ${shapeFmt(draw.h)}" preserveAspectRatio="none">`;
   const chunks = [open];
   if (draw.gradient || draw.marks) {
     chunks.push('<defs>');
