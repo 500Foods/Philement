@@ -242,12 +242,11 @@ MutexResult mutex_unlock(pthread_mutex_t* mutex) {
     int result = pthread_mutex_unlock(mutex);
     if (result == 0) {
         // DEBUG: Log unlock operation (only if not already in a logging operation to avoid circular dependency)
-        MutexId *op_id = get_current_mutex_op_id();
-        pthread_mutex_t *op_ptr = get_current_mutex_op_ptr();
-        if (!log_is_in_logging_operation() && op_id && op_ptr == mutex) {
-            log_this(op_id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
-                     (unsigned int)(uintptr_t)mutex, op_id->name, op_id->function);
-        }
+        // MutexId *op_id = get_current_mutex_op_id();
+        // pthread_mutex_t *op_ptr = get_current_mutex_op_ptr();
+        // if (!log_is_in_logging_operation() && op_id && op_ptr == mutex) {
+        //     log_this(op_id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3, (unsigned int)(uintptr_t)mutex, op_id->name, op_id->function);
+        // }
         
         if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
             for (size_t i = 0; i < locked_mutex_count; i++) {
@@ -276,16 +275,15 @@ MutexResult mutex_unlock(pthread_mutex_t* mutex) {
 /*
  * Unlock mutex with identification for logging
  */
-MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
+MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, const MutexId* id) {
     if (!mutex) {
         return MUTEX_ERROR;
     }
     int result = pthread_mutex_unlock(mutex);
     if (result == 0) {
-        if (!log_is_in_logging_operation()) {
-            log_this(id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
-                     (unsigned int)(uintptr_t)mutex, id->name, id->function);
-        }
+        // if (!log_is_in_logging_operation()) {
+        //     log_this(id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3, (unsigned int)(uintptr_t)mutex, id->name, id->function);
+        // }
 
         if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
             for (size_t i = 0; i < locked_mutex_count; i++) {

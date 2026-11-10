@@ -79,7 +79,7 @@ MutexResult mutex_try_lock(
 MutexResult mutex_unlock(pthread_mutex_t* mutex);
 
 // Unlock with identification for logging
-MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id);
+MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, const MutexId* id);
 
 // Deadlock detection and monitoring
 void mutex_enable_deadlock_detection(bool enable);
