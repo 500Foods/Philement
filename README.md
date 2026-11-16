@@ -64,11 +64,11 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-11-11 01:24:39 UTC
+Last updated at 2026-11-16 01:29:51 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           666            492              0        2173774
+JSON                           666            492              0        2173864
 C                             1902          77641          62477         335627
 Lua                            913          25872          23083         226734
 Text                           410            404              0         181259
@@ -92,9 +92,9 @@ YAML                             2              8             13             37
 Pascal                           2             11              2             31
 MSBuild script                   1              3              0             11
 -------------------------------------------------------------------------------
-SUM:                          5927         179263         284886        3255427
+SUM:                          5927         179263         284886        3255517
 -------------------------------------------------------------------------------
-534 Files were skipped (duplicate, binary, or without source code):
+537 Files were skipped (duplicate, binary, or without source code):
   css: 173
   html: 135
   md: 38
@@ -104,8 +104,8 @@ SUM:                          5927         179263         284886        3255427
   br: 16
   pem: 11
   kid: 10
+  gitignore: 8
   bak-phase6: 7
-  gitignore: 7
   jpg: 5
   mp4: 5
   bak-health-select: 4
@@ -113,6 +113,8 @@ SUM:                          5927         179263         284886        3255427
   woff2: 4
   clp: 3
   ico: 3
+  ggignore: 2
+  gitattributes: 2
   lintignore-markdown: 2
   list: 2
   sqruff_db2: 2
@@ -127,8 +129,6 @@ SUM:                          5927         179263         284886        3255427
   disabled: 1
   dproj: 1
   gcode: 1
-  ggignore: 1
-  gitattributes: 1
   key: 1
   lintignore-bash: 1
   lintignore-c: 1
