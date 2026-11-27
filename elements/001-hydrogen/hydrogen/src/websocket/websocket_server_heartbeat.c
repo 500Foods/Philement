@@ -3,7 +3,7 @@
  *
  * Implements ping/pong heartbeat mechanism for WebSocket connections.
  * This ensures connections remain alive through proxies and load balancers
- * (like Traefik in DOKS clusters) and detects dead connections.
+ * (like Traefik in VKE clusters) and detects dead connections.
  *
  * Note: This implementation works with the session data to track
  * connection health. The actual ping frames are sent via the writable

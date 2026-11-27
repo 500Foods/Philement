@@ -10,9 +10,9 @@
 #   . setup_victoria_logs_dev.sh
 
 # VictoriaLogs configuration
-# Point to local VictoriaLogs instance (default port 9428)
-# If you don't have VictoriaLogs running locally, leave this unset to disable
-export VICTORIALOGS_URL="http://10.118.0.5:9428/insert/jsonline?_stream_fields=app,kubernetes_namespace,kubernetes_pod_name,kubernetes_container_name"
+# Point to the VKE VictoriaLogs WireGuard proxy (port 9428), reachable from angrin.
+# Leave this unset to disable VictoriaLogs shipping.
+export VICTORIALOGS_URL="http://10.116.0.10:9428/insert/jsonline?_stream_fields=app,kubernetes_namespace,kubernetes_pod_name,kubernetes_container_name"
 
 # Minimum log level to send to VictoriaLogs
 # TRACE=0, DEBUG=1, STATE=2, ALERT=3, ERROR=4, FATAL=5

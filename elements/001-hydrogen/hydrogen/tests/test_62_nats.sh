@@ -432,7 +432,7 @@ fi
 if nats_locate_server; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using nats-server: ${NATS_SERVER_BIN}"
 else
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "nats-server was not found on PATH or at /usr/local/bin/nats-server. Install a local NATS 2.x server that speaks the plaintext client protocol. The cluster image is nats:2.11.4. Do not use the live DOKS broker."
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "nats-server was not found on PATH or at /usr/local/bin/nats-server. Install a local NATS 2.x server that speaks the plaintext client protocol. The cluster image is nats:2.11.4. Do not use the live VKE broker."
 fi
 if [[ "${NATS62_HAVE_BIN}" -eq 1 ]] && [[ -n "${NATS_SERVER_BIN}" ]]; then
     nat62_pass "Coverage binary and nats-server located"

@@ -6,8 +6,9 @@
 # PostgreSQL and YugabyteDB via psql.
 #
 # CHANGELOG
+# 1.1.0 - 2026-11-27 - Send SQL via stdin (single-statement protocol) and retry on YugabyteDB Catalog Version Mismatch
 # 1.0.0 - 2026-10-09 - Split from database_reset.sh
-# TEST_VERSION: 1.0.0
+# TEST_VERSION: 1.1.0
 
 # shellcheck disable=SC2154,SC2034,SC2310,SC2311,SC2312 # CONN_* globals set in database_reset.sh; error handling in || and command substitution
 
@@ -37,20 +38,28 @@ psql_value() {
 
 psql_do() {
     local sql="$1"
-    local dest
+    local dest rc attempt err_text
     dest="$(make_tmp)"
     assert_no_drop_database "${sql}" || return 1
-    set +e
-    PGCONNECT_TIMEOUT=10 PGPASSWORD="${CONN_PASS}" \
-        psql -X -q -h "${CONN_HOST}" -p "${CONN_PORT}" -U "${CONN_USER}" -d "${CONN_DATABASE}" \
-        -v ON_ERROR_STOP=1 -c "${sql}" >"${dest}" 2>&1
-    local rc=$?
-    set -e
-    if [[ "${rc}" -ne 0 ]]; then
+    for attempt in 1 2 3; do
+        set +e
+        PGCONNECT_TIMEOUT=10 PGPASSWORD="${CONN_PASS}" \
+            psql -X -q -h "${CONN_HOST}" -p "${CONN_PORT}" -U "${CONN_USER}" -d "${CONN_DATABASE}" \
+            -v ON_ERROR_STOP=1 >"${dest}" 2>&1 <<< "${sql}"
+        rc=$?
+        set -e
+        if [[ "${rc}" -eq 0 ]]; then
+            return 0
+        fi
+        err_text="$(cat "${dest}")"
+        if [[ "${attempt}" -lt 3 && "${err_text}" == *"Catalog Version Mismatch"* ]]; then
+            sleep 1
+            continue
+        fi
         scrub_file "${dest}" "${CONN_PASS}" >&2
         return 1
-    fi
-    return 0
+    done
+    return 1
 }
 
 count_psql() {

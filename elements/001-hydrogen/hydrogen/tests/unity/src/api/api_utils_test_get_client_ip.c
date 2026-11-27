@@ -208,7 +208,7 @@ void test_api_get_client_ip_xforwarded_for_first_in_chain(void) {
 // No trusted proxy set, so XFF must be ignored
 void test_api_get_client_ip_xforwarded_for_skips_internal(void) {
     setup_mock_ipv4("10.0.0.1");
-    mock_mhd_add_lookup("X-Forwarded-For", "10.118.0.19, 24.86.168.176");
+    mock_mhd_add_lookup("X-Forwarded-For", "10.116.0.19, 24.86.168.176");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);

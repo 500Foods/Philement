@@ -280,7 +280,7 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
         }
 
         // Set connection and network timeout options to prevent indefinite hangs
-        // on remote MySQL clusters (e.g. DOKS) when the server is slow to respond
+        // on remote MySQL clusters (e.g. VKE) when the server is slow to respond
         // or the prepared-statement protocol stalls. MariaDB Connector/C has
         // different default behavior; libmysqlclient defaults to infinite timeouts.
         if (mysql_options_ptr) {

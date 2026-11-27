@@ -3,11 +3,18 @@
 #
 # This library is sourced by extras/database_reset.sh after common.sh.
 # It provides connection, counting, and schema-emptying operations for
-# MySQL and MariaDB via the mysql/mariadb client.
+# the MySQL engine and the MariaDB engine. Those are separate servers
+# and are never interchangeable; labels and error text keep the engine
+# name from the caller. Both are reached with the same command-line
+# client: prefer the `mariadb` binary so Fedora does not print the
+# deprecated-`mysql` program-name warning. TLS stays enabled.
 #
 # CHANGELOG
+# 1.1.0 - 2026-11-27 - Prefer the mariadb client binary; keep TLS and skip
+#           server-certificate verification (Festival MySQL lab cert).
+#           MySQL and MariaDB remain distinct engines.
 # 1.0.0 - 2026-10-09 - Split from database_reset.sh
-# TEST_VERSION: 1.0.0
+# TEST_VERSION: 1.1.0
 
 # shellcheck disable=SC2154,SC2034,SC2310,SC2311,SC2312 # CONN_* and DB2_* globals set in database_reset.sh; error handling in || and command substitution
 
@@ -29,8 +36,11 @@ write_mysql_defaults() {
 }
 
 mysql_bin() {
-    local engine="$1"
-    if [[ "${engine}" == "mariadb" ]] && command -v mariadb >/dev/null 2>&1; then
+    # Prefer `mariadb` for both engines. On Fedora, `/usr/bin/mysql` is a
+    # symlink to that binary and prints a deprecation warning when invoked
+    # by the `mysql` name. That is only the client program; it does not
+    # make the MySQL and MariaDB engines the same.
+    if command -v mariadb >/dev/null 2>&1; then
         printf 'mariadb'
         return 0
     fi
@@ -38,11 +48,7 @@ mysql_bin() {
         printf 'mysql'
         return 0
     fi
-    if command -v mariadb >/dev/null 2>&1; then
-        printf 'mariadb'
-        return 0
-    fi
-    warn "Error: mysql client not found"
+    warn "Error: mariadb or mysql client not found"
     return 1
 }
 
@@ -51,13 +57,23 @@ mysql_run() {
     local sql_file="$2"
     local dest="$3"
     local client cnf err rc
+    local -a ssl_args=()
     client="$(mysql_bin "${engine}")" || return 1
+    # Keep TLS (--ssl is already the client default). Do not pass --skip-ssl.
+    # The MariaDB 11 client verifies server certificates by default. The
+    # remote MySQL test server presents a lab-generated certificate that
+    # is not in the system trust store (ERROR 2026). Oracle mysql does
+    # not take this flag and does not verify by default.
+    if [[ "$(basename "${client}")" == "mariadb" ]]; then
+        ssl_args=(--skip-ssl-verify-server-cert)
+    fi
     cnf="$(make_tmp)"
     err="$(make_tmp)"
     write_mysql_defaults "${cnf}" "${CONN_PASS}" || return 1
     assert_no_drop_database "$(cat "${sql_file}")" || return 1
     set +e
     "${client}" --defaults-file="${cnf}" --protocol=TCP --connect-timeout=10 \
+        "${ssl_args[@]}" \
         -h "${CONN_HOST}" -P "${CONN_PORT}" -u "${CONN_USER}" \
         --batch --raw --skip-column-names --silent \
         < "${sql_file}" >"${dest}" 2>"${err}"

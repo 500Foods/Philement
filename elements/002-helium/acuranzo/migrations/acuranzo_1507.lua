@@ -8,6 +8,7 @@
 -- luacheck: no unused args
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-11-27 - Split forward migration: MySQL omits JSON NOT NULL DEFAULT (BLOB/TEXT/JSON can't have defaults) and backfills '{}'
 -- 1.0.0 - 2026-11-09 - ADD scripts.options JSON NOT NULL DEFAULT '{}'
 
 return function(engine, design_name, schema_name, cfg)
@@ -19,7 +20,83 @@ cfg.MIGRATION = "1507"
 -- ----------------------------------------------------------------------------
 -- Forward: ADD options
 -- ----------------------------------------------------------------------------
-table.insert(queries,{sql=[[
+-- MySQL does not allow literal DEFAULT values on JSON/TEXT/BLOB columns
+if engine == 'mysql' then table.insert(queries,{sql=[[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN options ${JSON};
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${TABLE}
+              SET options = '{}'
+            WHERE options IS NULL;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Add scripts.options JSON'                                          AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: scripts.options
+
+            Adds `options` (${JSON}) to `scripts` and backfills existing rows
+            to `'{}'`.
+
+            Note: MySQL does not allow literal DEFAULT values on JSON columns,
+            so `NOT NULL DEFAULT '{}'` is omitted in the MySQL arm.
+
+            Shape (absent keys = deny / use global defaults):
+
+            ```json
+            {
+              "sandbox": {
+                "io": true,
+                "osExecute": false,
+                "debug": false,
+                "loadlib": false
+              },
+              "limits": {
+                "memorySoftKB": 32768,
+                "memoryHardKB": 65536,
+                "maxRuntimeSeconds": 3600,
+                "instructionHookInterval": 5000
+              }
+            }
+            ```
+
+            Sandbox flags are opt-in when the global Scripting.Sandbox.*
+            config is false. Limits feed ScoreboardJobLimits at submit.
+            No diagram (column add; same as 1297 / 1365).
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+
+if engine ~= 'mysql' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -82,7 +159,7 @@ table.insert(queries,{sql=[[
         ${COMMON_INSERT}
     FROM next_query_id;
 
-]]})
+]]}) end
 
 -- ----------------------------------------------------------------------------
 -- Reverse: DROP options

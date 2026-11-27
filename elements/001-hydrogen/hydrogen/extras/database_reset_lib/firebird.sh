@@ -2,28 +2,39 @@
 # database_reset_lib/firebird.sh — Firebird reset backend for database_reset.sh.
 #
 # This library is sourced by extras/database_reset.sh after common.sh.
-# It provides counting and schema-reset operations for Firebird via isql-fb.
+# It provides counting and schema-reset operations for Firebird via isql-fb
+# over a SuperServer network attach (host/port:path), matching
+# tests/lib/transaction_utils.sh.
 #
 # CHANGELOG
+# 1.1.0 - 2026-11-27 - Attach through SuperServer (host/port:path) instead of
+#           embedded file-path mode; drop FIREBIRD_LOCK / FIREBIRD_TMP overrides.
 # 1.0.0 - 2026-10-09 - Split from database_reset.sh
-# TEST_VERSION: 1.0.0
+# TEST_VERSION: 1.1.0
 
 # shellcheck disable=SC2154,SC2034,SC2310,SC2311,SC2312 # CONN_* globals set in database_reset.sh; error handling in || and command substitution
 
 firebird_isql() {
     local sqlfile="$1"
     local dest="$2"
-    local lock err rc
+    local err rc host port server
     if ! command -v isql-fb >/dev/null 2>&1; then
         warn "Error: isql-fb not found"
         return 1
     fi
-    lock="$(make_tmpdir)"
+    host="${CONN_HOST:-localhost}"
+    port="${CONN_PORT:-3050}"
+    if [[ -z "${host}" ]]; then
+        host="localhost"
+    fi
+    if [[ -z "${port}" ]]; then
+        port="3050"
+    fi
+    server="${host}/${port}:${CONN_DATABASE}"
     err="$(make_tmp)"
     set +e
-    FIREBIRD_LOCK="${lock}" FIREBIRD_TMP="${lock}" \
-        ISC_USER="${CONN_USER}" ISC_PASSWORD="${CONN_PASS}" \
-        isql-fb -q -b -pag 0 -ch UTF8 "${CONN_DATABASE}" -i "${sqlfile}" \
+    ISC_USER="${CONN_USER}" ISC_PASSWORD="${CONN_PASS}" \
+        isql-fb -q -b -pag 0 -ch UTF8 "${server}" -i "${sqlfile}" \
         >"${dest}" 2>"${err}"
     rc=$?
     set -e
